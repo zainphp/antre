@@ -52,22 +52,6 @@ export default defineConfig({
         options: {
             denyWarnings: true,
             typeAware: true,
-        }, rules: {
-            'check-file/filename-naming-convention': [
-                'error',
-                {
-                    'src/**/*.{js,ts,jsx,tsx,vue,css,scss}': 'KEBAB_CASE',
-                },
-                {
-                    ignoreMiddleExtensions: true,
-                },
-            ],
-            'check-file/folder-naming-convention': [
-                'error',
-                {
-                    'src/**/': 'KEBAB_CASE',
-                },
-            ],
         },
     },
     fmt: {

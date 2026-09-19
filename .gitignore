@@ -9,7 +9,9 @@
 /resources/js/routes
 /resources/js/wayfinder
 /storage/*.key
+/storage/logs
 /storage/pail
+*.pem
 /vendor
 .env
 .env.backup

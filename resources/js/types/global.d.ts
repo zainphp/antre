@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { QueueState } from '@/types/queue';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -11,7 +12,8 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
-            sidebarOpen: boolean;
+            flash: { success?: string; error?: string };
+            state?: QueueState;
             [key: string]: unknown;
         };
     }
