@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Data\LoginData;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ final class LoginController extends Controller
         if (! Auth::attempt([
             'email' => $data->email,
             'password' => $data->password,
+            'role' => UserRole::Administrator->value,
         ], $data->remember)) {
             return back()->withErrors(['email' => 'Email atau kata sandi tidak sesuai.'])->onlyInput('email');
         }

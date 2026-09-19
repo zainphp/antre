@@ -57,7 +57,7 @@ export default function Welcome({ state }: { state: QueueState }) {
                                 variant="outlined"
                                 color="inherit"
                             >
-                                Masuk operator
+                                Buka terminal operator
                             </InertiaButton>
                         </Stack>
                     </Box>
@@ -159,7 +159,7 @@ export default function Welcome({ state }: { state: QueueState }) {
                             title="Untuk petugas"
                             detail="Kelola panggilan antrian dengan alur yang sederhana."
                             href={operatorTerminal.url()}
-                            action="Masuk operator"
+                            action="Buka terminal operator"
                         />
                     </Box>
                 </Box>

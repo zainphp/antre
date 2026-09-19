@@ -21,6 +21,11 @@ type SharedProps = {
 export function AppShell({ children }: { children: ReactNode }) {
     const { auth, flash } = usePage().props as unknown as SharedProps;
     const currentUrl = usePage().url;
+    const isDedicatedDevicePage = [
+        '/display',
+        '/queue-terminal',
+        '/operator-terminal',
+    ].includes(currentUrl);
 
     return (
         <Box className="app-shell">
@@ -64,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         >
                             Keluar
                         </InertiaButton>
-                    ) : currentUrl !== '/pair' ? (
+                    ) : currentUrl !== '/pair' && !isDedicatedDevicePage ? (
                         <InertiaButton
                             href={pair.url()}
                             color="inherit"

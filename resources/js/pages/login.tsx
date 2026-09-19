@@ -41,8 +41,8 @@ export default function Login() {
                             Masuk ke Antre
                         </Typography>
                         <Typography color="text.secondary" sx={{ mt: 1 }}>
-                            Gunakan akun administrator atau operator untuk
-                            mengelola layanan.
+                            Gunakan akun administrator untuk mengelola perangkat
+                            dan layanan.
                         </Typography>
                         {form.errors.email && (
                             <Alert severity="error" sx={{ mt: 3 }}>

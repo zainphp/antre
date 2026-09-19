@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\DeviceRole;
 use App\Enums\DeviceStatus;
 use App\Enums\QueueStatus;
+use App\Enums\UserRole;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\User;
@@ -18,6 +19,7 @@ test('login data normalizes credentials before authentication', function () {
     $user = User::factory()->create([
         'email' => 'operator@example.com',
         'password' => 'secret',
+        'role' => UserRole::Administrator,
     ]);
 
     $response = $this->post(route('login.store'), [
@@ -84,16 +86,30 @@ test('queue action data authorizes an operator terminal request', function () {
     ]);
     app(QueueService::class)->take(null, (string) Str::uuid(), $device);
 
-    $response = $this->actingAs(User::factory()->create())
-        ->withCookie(
-            DeviceRegistry::COOKIE,
-            $device->id.'.'.$credential,
-        )->post(route('queue.call-next'), [
-            'counter' => 'Loket 1',
-        ]);
+    $response = $this->withCookie(
+        DeviceRegistry::COOKIE,
+        $device->id.'.'.$credential,
+    )->post(route('queue.call-next'), [
+        'counter' => 'Loket 1',
+    ]);
 
     $response->assertRedirect();
     expect(QueueEntry::query()->firstOrFail())
         ->status->toBe(QueueStatus::Called)
         ->counter->name->toBe('Loket 1');
+});
+
+test('operator accounts cannot authenticate through the administrator login', function () {
+    User::factory()->create([
+        'email' => 'operator@example.com',
+        'password' => 'secret',
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'operator@example.com',
+        'password' => 'secret',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+    expect(auth()->check())->toBeFalse();
 });

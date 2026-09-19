@@ -29,12 +29,7 @@ Route::middleware(['device.auth', 'device.role:QUEUE_TERMINAL'])->group(function
     Route::post('/queue-terminal/queue/take', [QueueController::class, 'take'])->name('queue.take');
 });
 
-Route::middleware([
-    'auth',
-    'user.role:ADMINISTRATOR,OPERATOR',
-    'device.auth',
-    'device.role:OPERATOR_TERMINAL',
-])->group(function (): void {
+Route::middleware(['device.auth', 'device.role:OPERATOR_TERMINAL'])->group(function (): void {
     Route::get('/operator-terminal', [PageController::class, 'operatorTerminal'])->name('operator-terminal');
     Route::post('/operator-terminal/queue/call-next', [QueueController::class, 'callNext'])->name('queue.call-next');
     Route::post('/operator-terminal/queue/recall', [QueueController::class, 'recall'])->name('queue.recall');

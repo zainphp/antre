@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Enums\DeviceRole;
 use App\Enums\QueueStatus;
 use App\Events\QueueChanged;
 use App\Exceptions\QueueConflictException;
 use App\Models\Device;
 use App\Models\QueueSession;
-use App\Models\User;
 use App\Services\QueueService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
@@ -34,20 +34,20 @@ test('queue numbers are sequential and taking a number is idempotent', function 
 
 test('call next is serialized by the active queue session', function () {
     Event::fake([QueueChanged::class]);
-    $user = User::factory()->create();
+    $device = Device::factory()->role(DeviceRole::OperatorTerminal)->create();
     $queues = app(QueueService::class);
     $queues->take(null, (string) Str::uuid());
     $queues->take(null, (string) Str::uuid());
 
-    $called = $queues->callNext('Loket 1', $user);
+    $called = $queues->callNext('Loket 1', $device);
 
     expect($called->number)->toBe('A-001')
-        ->and(fn () => $queues->callNext('Loket 1', $user))
+        ->and(fn () => $queues->callNext('Loket 1', $device))
         ->toThrow(QueueConflictException::class, 'Selesaikan nomor');
 
-    $queues->startServing($user);
-    $queues->complete($user);
-    $next = $queues->callNext('Loket 1', $user);
+    $queues->startServing($device);
+    $queues->complete($device);
+    $next = $queues->callNext('Loket 1', $device);
 
     expect($next->number)->toBe('A-002')
         ->and($next->status)->toBe(QueueStatus::Called);
@@ -55,11 +55,11 @@ test('call next is serialized by the active queue session', function () {
 
 test('reset archives the current session and starts numbering again', function () {
     Event::fake([QueueChanged::class]);
-    $user = User::factory()->create();
+    $device = Device::factory()->role(DeviceRole::OperatorTerminal)->create();
     $queues = app(QueueService::class);
     $first = $queues->take(null, (string) Str::uuid());
 
-    $newSession = $queues->reset($user);
+    $newSession = $queues->reset($device);
     $next = $queues->take(null, (string) Str::uuid());
 
     expect($newSession->exists)->toBeTrue()

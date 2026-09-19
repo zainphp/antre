@@ -47,7 +47,7 @@ test('an assigned display cannot use the queue terminal endpoint', function () {
     $response->assertForbidden();
 });
 
-test('operator access requires both an operator user and an operator terminal', function () {
+test('operator access requires a registered operator terminal', function () {
     $credential = 'operator-secret';
     $device = Device::factory()->create([
         'role' => DeviceRole::OperatorTerminal,
@@ -55,8 +55,7 @@ test('operator access requires both an operator user and an operator terminal', 
         'credential_hash' => hash('sha256', $credential),
     ]);
 
-    $response = $this->actingAs(User::factory()->create())
-        ->withCookie(DeviceRegistry::COOKIE, deviceCookie($device, $credential))
+    $response = $this->withCookie(DeviceRegistry::COOKIE, deviceCookie($device, $credential))
         ->get(route('operator-terminal'));
 
     $response->assertOk();
@@ -67,8 +66,7 @@ test('operator access requires both an operator user and an operator terminal', 
         'credential_hash' => hash('sha256', 'display-secret'),
     ]);
 
-    $this->actingAs(User::factory()->create())
-        ->withCookie(DeviceRegistry::COOKIE, deviceCookie($display, 'display-secret'))
+    $this->withCookie(DeviceRegistry::COOKIE, deviceCookie($display, 'display-secret'))
         ->get(route('operator-terminal'))
         ->assertForbidden();
 });

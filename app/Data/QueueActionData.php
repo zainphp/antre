@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Data;
 
-use App\Models\User;
+use App\Enums\DeviceRole;
+use App\Models\Device;
 use Spatie\LaravelData\Data;
 
 final class QueueActionData extends Data
@@ -15,9 +16,11 @@ final class QueueActionData extends Data
 
     public static function authorize(): bool
     {
-        $user = auth()->user();
+        $device = request()->attributes->get('device');
 
-        return $user instanceof User && $user->canOperateQueue();
+        return $device instanceof Device
+            && $device->isAssigned()
+            && $device->role === DeviceRole::OperatorTerminal;
     }
 
     /** @return array<string, array<int, mixed>> */

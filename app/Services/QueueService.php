@@ -12,7 +12,6 @@ use App\Models\Counter;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\QueueSession;
-use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -102,9 +101,9 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function callNext(string $counterName, User $user): QueueEntry
+    public function callNext(string $counterName, Device $device): QueueEntry
     {
-        $entry = DB::transaction(function () use ($counterName, $user): QueueEntry {
+        $entry = DB::transaction(function () use ($counterName, $device): QueueEntry {
             $session = $this->lockCurrentSession();
             if ($session->current_entry_id) {
                 throw new QueueConflictException('Selesaikan nomor yang sedang dilayani sebelum memanggil berikutnya.');
@@ -133,7 +132,7 @@ final readonly class QueueService
                 'current_entry_id' => $entry->id,
                 'current_counter_id' => $counter->id,
             ]);
-            $this->audit->record('queue.called', user: $user, subject: $entry, metadata: ['counter' => $counter->name]);
+            $this->audit->record('queue.called', device: $device, subject: $entry, metadata: ['counter' => $counter->name]);
 
             return $entry->load('counter');
         });
@@ -143,13 +142,13 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function recall(User $user): QueueEntry
+    public function recall(Device $device): QueueEntry
     {
-        $entry = DB::transaction(function () use ($user): QueueEntry {
+        $entry = DB::transaction(function () use ($device): QueueEntry {
             [$session, $entry] = $this->lockCurrentEntry();
             $this->ensureActive($entry);
             $entry->update(['called_at' => now()]);
-            $this->audit->record('queue.recalled', user: $user, subject: $entry);
+            $this->audit->record('queue.recalled', device: $device, subject: $entry);
 
             return $entry->load('counter');
         });
@@ -159,16 +158,16 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function startServing(User $user): QueueEntry
+    public function startServing(Device $device): QueueEntry
     {
-        $entry = DB::transaction(function () use ($user): QueueEntry {
+        $entry = DB::transaction(function () use ($device): QueueEntry {
             [$session, $entry] = $this->lockCurrentEntry();
             if ($entry->status !== QueueStatus::Called) {
                 throw new QueueConflictException('Nomor belum siap untuk dilayani.');
             }
 
             $entry->update(['status' => QueueStatus::Serving]);
-            $this->audit->record('queue.serving', user: $user, subject: $entry);
+            $this->audit->record('queue.serving', device: $device, subject: $entry);
 
             return $entry->load('counter');
         });
@@ -178,19 +177,19 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function complete(User $user): QueueEntry
+    public function complete(Device $device): QueueEntry
     {
-        return $this->finishCurrent(QueueStatus::Completed, 'queue.completed', 'Nomor ini belum dapat diselesaikan.', $user);
+        return $this->finishCurrent(QueueStatus::Completed, 'queue.completed', 'Nomor ini belum dapat diselesaikan.', $device);
     }
 
-    public function skip(User $user): QueueEntry
+    public function skip(Device $device): QueueEntry
     {
-        return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $user);
+        return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $device);
     }
 
-    public function reset(User $user): QueueSession
+    public function reset(Device $device): QueueSession
     {
-        $session = DB::transaction(function () use ($user): QueueSession {
+        $session = DB::transaction(function () use ($device): QueueSession {
             $current = $this->lockCurrentSession();
             $entries = $current->entries()
                 ->whereNotIn('status', [QueueStatus::Completed, QueueStatus::Skipped])
@@ -222,7 +221,7 @@ final readonly class QueueService
                 'status' => QueueSessionStatus::Running,
                 'started_at' => now(),
             ]);
-            $this->audit->record('queue.reset', user: $user, subject: $next, metadata: ['archived_session_id' => $current->id]);
+            $this->audit->record('queue.reset', device: $device, subject: $next, metadata: ['archived_session_id' => $current->id]);
 
             return $next;
         });
@@ -232,9 +231,9 @@ final readonly class QueueService
         return $session;
     }
 
-    private function finishCurrent(QueueStatus $status, string $eventName, string $message, User $user): QueueEntry
+    private function finishCurrent(QueueStatus $status, string $eventName, string $message, Device $device): QueueEntry
     {
-        $entry = DB::transaction(function () use ($status, $eventName, $message, $user): QueueEntry {
+        $entry = DB::transaction(function () use ($status, $eventName, $message, $device): QueueEntry {
             [$session, $entry] = $this->lockCurrentEntry();
             if (! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
                 throw new QueueConflictException($message);
@@ -249,7 +248,7 @@ final readonly class QueueService
                 'photo_path' => null,
             ]);
             $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
-            $this->audit->record($eventName, user: $user, subject: $entry);
+            $this->audit->record($eventName, device: $device, subject: $entry);
 
             return $entry->load('counter');
         });

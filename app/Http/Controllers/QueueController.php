@@ -9,7 +9,6 @@ use App\Data\TakeQueueNumberData;
 use App\Exceptions\QueueConflictException;
 use App\Models\Device;
 use App\Models\QueueEntry;
-use App\Models\User;
 use App\Services\QueueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,12 +18,10 @@ final class QueueController extends Controller
 {
     public function take(TakeQueueNumberData $data, Request $request, QueueService $queues): JsonResponse
     {
-        /** @var Device $device */
-        $device = $request->attributes->get('device');
         $entry = $queues->take(
             $data->photo,
             $data->requestId,
-            $device,
+            $this->device($request),
         );
 
         return response()->json(['data' => $this->entryPayload($entry)], 201);
@@ -33,9 +30,7 @@ final class QueueController extends Controller
     public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->callNext($data->counter ?: '1', $user);
+            $queues->callNext($data->counter ?: '1', $this->device($request));
 
             return back()->with('success', 'Nomor berikutnya dipanggil.');
         } catch (QueueConflictException $exception) {
@@ -46,9 +41,7 @@ final class QueueController extends Controller
     public function recall(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->recall($user);
+            $queues->recall($this->device($request));
 
             return back()->with('success', 'Panggilan diulang.');
         } catch (QueueConflictException $exception) {
@@ -59,9 +52,7 @@ final class QueueController extends Controller
     public function serve(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->startServing($user);
+            $queues->startServing($this->device($request));
 
             return back()->with('success', 'Nomor ditandai sedang dilayani.');
         } catch (QueueConflictException $exception) {
@@ -72,9 +63,7 @@ final class QueueController extends Controller
     public function complete(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->complete($user);
+            $queues->complete($this->device($request));
 
             return back()->with('success', 'Nomor selesai dilayani.');
         } catch (QueueConflictException $exception) {
@@ -85,9 +74,7 @@ final class QueueController extends Controller
     public function skip(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->skip($user);
+            $queues->skip($this->device($request));
 
             return back()->with('success', 'Nomor dilewati.');
         } catch (QueueConflictException $exception) {
@@ -98,9 +85,7 @@ final class QueueController extends Controller
     public function reset(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            /** @var User $user */
-            $user = $request->user();
-            $queues->reset($user);
+            $queues->reset($this->device($request));
 
             return back()->with('success', 'Antrian direset. Nomor baru dimulai dari awal.');
         } catch (QueueConflictException $exception) {
@@ -115,6 +100,14 @@ final class QueueController extends Controller
         }
 
         return back()->withErrors(['queue' => $exception->getMessage()]);
+    }
+
+    private function device(Request $request): Device
+    {
+        $device = $request->attributes->get('device');
+        abort_unless($device instanceof Device, 403);
+
+        return $device;
     }
 
     /** @return array<string, string|null> */
