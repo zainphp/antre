@@ -6,6 +6,7 @@ namespace App\Data;
 
 use App\Enums\DeviceRole;
 use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
 
@@ -16,10 +17,8 @@ final class AssignDeviceData extends Data
         public DeviceRole $role,
     ) {}
 
-    public static function authorize(): bool
+    public static function authorize(#[CurrentUser] ?User $user): bool
     {
-        $user = auth()->user();
-
         return $user instanceof User && $user->isAdministrator();
     }
 

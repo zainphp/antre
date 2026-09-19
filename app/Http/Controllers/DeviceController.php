@@ -10,8 +10,8 @@ use App\Events\DeviceChanged;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\AuditLogger;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,11 +26,8 @@ final class DeviceController extends Controller
         ]);
     }
 
-    public function assign(AssignDeviceData $data, Device $device, Request $request, AuditLogger $audit): RedirectResponse
+    public function assign(AssignDeviceData $data, Device $device, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
     {
-        /** @var User $user */
-        $user = $request->user();
-
         $device->update([
             'name' => $data->name,
             'role' => $data->role,
@@ -44,10 +41,8 @@ final class DeviceController extends Controller
         return back()->with('success', 'Perangkat berhasil didaftarkan.');
     }
 
-    public function revoke(Request $request, Device $device, AuditLogger $audit): RedirectResponse
+    public function revoke(Device $device, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
     {
-        /** @var User $user */
-        $user = $request->user();
         $device->update([
             'role' => null,
             'status' => DeviceStatus::Revoked,
