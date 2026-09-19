@@ -17,9 +17,6 @@ final class RootController extends Controller
     public function __invoke(Request $request, DeviceRegistry $devices, QueueService $queues): Response|RedirectResponse
     {
         $device = $devices->resolve($request);
-        if ($device && ! $device->isAssigned()) {
-            return redirect()->route('pair');
-        }
 
         if ($device?->hasRole(DeviceRole::OperatorTerminal)) {
             return redirect()->route('operator-terminal');

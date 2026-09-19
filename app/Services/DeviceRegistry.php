@@ -48,13 +48,16 @@ final class DeviceRegistry
         }
 
         $credential = Str::random(64);
-        $device = Device::create([
-            'name' => 'Perangkat KBS-'.strtoupper(Str::substr(Str::uuid()->toString(), 0, 4)),
+        $device = new Device([
+            'name' => 'Perangkat',
             'roles' => [],
             'status' => DeviceStatus::Unregistered,
             'credential_hash' => hash('sha256', $credential),
             'last_seen_at' => now(),
         ]);
+        $device->id = Str::uuid()->toString();
+        $device->name = 'Perangkat '.$device->displayId();
+        $device->save();
 
         return [
             'device' => $device,

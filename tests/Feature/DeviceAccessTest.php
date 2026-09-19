@@ -17,8 +17,11 @@ test('a new device gets a persistent pairing identity', function () {
     $response = $this->get('/pair');
 
     $response->assertOk();
+    $label = $response->inertiaProps('device.label');
+
     expect(Device::query()->count())->toBe(1)
-        ->and($response->headers->getCookies())->not->toBeEmpty();
+        ->and($response->headers->getCookies())->not->toBeEmpty()
+        ->and($label)->toMatch('/\A[0-9A-F]{4}\z/');
 });
 
 test('a device role is required before dedicated display access', function () {

@@ -58,9 +58,6 @@ export default function Pair({ device }: { device: Device }) {
                             <Typography className="pairing-code-value">
                                 {device.label}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {device.name}
-                            </Typography>
                         </Box>
                         <Stack
                             direction={{ xs: 'column', sm: 'row' }}

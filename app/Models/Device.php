@@ -85,4 +85,9 @@ class Device extends Model
     {
         return in_array($role, $this->assignedRoles(), true);
     }
+
+    public function displayId(): string
+    {
+        return strtoupper(substr(str_replace('-', '', $this->id), 0, 4));
+    }
 }

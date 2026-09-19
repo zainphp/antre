@@ -43,7 +43,7 @@ class DeviceChanged implements ShouldBroadcastNow
         return [
             'device' => [
                 'id' => $this->device->id,
-                'label' => 'KBS-'.strtoupper(substr(str_replace('-', '', $this->device->id), 0, 4)),
+                'label' => $this->device->displayId(),
                 'name' => $this->device->name,
                 'roles' => array_map(static fn (DeviceRole $role): string => $role->value, $roles),
                 'role_labels' => array_map(static fn (DeviceRole $role): string => $role->label(), $roles),

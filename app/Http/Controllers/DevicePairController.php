@@ -28,8 +28,7 @@ final class DevicePairController extends Controller
         return Inertia::render('pair', [
             'device' => [
                 'id' => $device->id,
-                'label' => 'KBS-'.strtoupper(substr(str_replace('-', '', $device->id), 0, 4)),
-                'name' => $device->name,
+                'label' => $device->displayId(),
                 'roles' => array_map(static fn (DeviceRole $role): string => $role->value, $roles),
                 'role_labels' => array_map(static fn (DeviceRole $role): string => $role->label(), $roles),
                 'status' => $device->status->value,

@@ -82,7 +82,7 @@ final class DeviceController extends Controller
 
         return [
             'id' => $device->id,
-            'label' => 'KBS-'.strtoupper(substr(str_replace('-', '', $device->id), 0, 4)),
+            'label' => $device->displayId(),
             'name' => $device->name,
             'roles' => array_map(static fn (DeviceRole $role): string => $role->value, $roles),
             'role_labels' => array_map(static fn (DeviceRole $role): string => $role->label(), $roles),
