@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
 
 final class DeviceRegistry
 {
-    public const COOKIE = 'antre_device';
+    public const string COOKIE = 'antre_device';
 
     public function resolve(Request $request): ?Device
     {

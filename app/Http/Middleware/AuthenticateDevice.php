@@ -8,9 +8,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class AuthenticateDevice
+final readonly class AuthenticateDevice
 {
-    public function __construct(private readonly DeviceRegistry $registry) {}
+    public function __construct(private DeviceRegistry $registry) {}
 
     /**
      * Handle an incoming request.

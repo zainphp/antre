@@ -63,6 +63,8 @@
         "lint:check": [
             "pint --parallel --test"
         ],
+        "rector": "rector process",
+        "rector:check": "rector process --dry-run",
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "bun run check",
@@ -75,6 +77,7 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
+            "@rector:check",
             "@types:check",
             "@php artisan test"
         ],

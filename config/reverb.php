@@ -86,7 +86,7 @@ return [
                     'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
                 ],
                 'allowed_origins' => array_values(array_filter(array_map(
-                    'trim',
+                    trim(...),
                     explode(',', $configuredAllowedOrigins),
                 ))),
                 'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),

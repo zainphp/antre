@@ -15,9 +15,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-final class QueueService
+final readonly class QueueService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(private AuditLogger $audit) {}
 
     /**
      * @return array<string, mixed>
