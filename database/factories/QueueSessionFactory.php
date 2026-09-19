@@ -23,7 +23,8 @@ class QueueSessionFactory extends Factory
         return [
             'business_date' => today()->toDateString(),
             'active_key' => null,
-            'prefix' => 'A',
+            'prefix' => null,
+            'number_digits' => 3,
             'service_name' => 'Pelayanan TBS',
             'next_sequence' => 1,
             'status' => QueueSessionStatus::Running,

@@ -12,6 +12,7 @@ use App\Models\Counter;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\QueueSession;
+use App\Models\QueueSetting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -77,7 +78,7 @@ final readonly class QueueService
                 $entry = QueueEntry::create([
                     'queue_session_id' => $session->id,
                     'sequence' => $sequence,
-                    'number' => $this->formatNumber($session->prefix, $sequence),
+                    'number' => $this->formatNumber($session->prefix, $session->number_digits, $sequence),
                     'status' => QueueStatus::Waiting,
                     'photo_path' => $photoPath,
                     'request_id' => $requestId,
@@ -191,6 +192,7 @@ final readonly class QueueService
     {
         $session = DB::transaction(function () use ($device): QueueSession {
             $current = $this->lockCurrentSession();
+            $settings = QueueSetting::current();
             $entries = $current->entries()
                 ->whereNotIn('status', [QueueStatus::Completed, QueueStatus::Skipped])
                 ->get();
@@ -215,7 +217,8 @@ final readonly class QueueService
             $next = QueueSession::create([
                 'business_date' => $current->business_date,
                 'active_key' => $current->business_date->format('Y-m-d'),
-                'prefix' => $current->prefix,
+                'prefix' => $settings->default_prefix,
+                'number_digits' => $settings->number_digits,
                 'service_name' => $current->service_name,
                 'next_sequence' => 1,
                 'status' => QueueSessionStatus::Running,
@@ -266,11 +269,14 @@ final readonly class QueueService
             return $session;
         }
 
+        $settings = QueueSetting::current();
+
         return QueueSession::query()->firstOrCreate(
             ['active_key' => $businessDate],
             [
                 'business_date' => $businessDate,
-                'prefix' => 'A',
+                'prefix' => $settings->default_prefix,
+                'number_digits' => $settings->number_digits,
                 'service_name' => 'Pelayanan TBS',
                 'next_sequence' => 1,
                 'status' => QueueSessionStatus::Running,
@@ -306,14 +312,19 @@ final readonly class QueueService
         }
     }
 
-    private function formatNumber(string $prefix, int $sequence): string
+    private function formatNumber(?string $prefix, int $digits, int $sequence): string
     {
-        $prefix = strtoupper(trim($prefix));
-        if (! preg_match('/^[A-Z0-9]{1,4}$/', $prefix)) {
+        $prefix = $prefix === null ? null : strtoupper(trim($prefix));
+        $prefix = $prefix === '' ? null : $prefix;
+        if ($prefix !== null && ! preg_match('/^[A-Z0-9]{1,4}$/', $prefix)) {
             throw new QueueConflictException('Prefix nomor antrian tidak valid.');
         }
 
-        return $prefix.'-'.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+        if ($digits < 1 || $digits > 6) {
+            throw new QueueConflictException('Jumlah digit nomor antrian tidak valid.');
+        }
+
+        return ($prefix ?? '').str_pad((string) $sequence, $digits, '0', STR_PAD_LEFT);
     }
 
     /** @return array<string, mixed> */

@@ -7,6 +7,7 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DevicePairController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QueueController;
+use App\Http\Controllers\QueueSettingsController;
 use App\Http\Controllers\RootController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,4 +44,6 @@ Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('a
     Route::get('/devices', [DeviceController::class, 'index'])->name('devices');
     Route::patch('/devices/{device}/assign', [DeviceController::class, 'assign'])->name('devices.assign');
     Route::patch('/devices/{device}/revoke', [DeviceController::class, 'revoke'])->name('devices.revoke');
+    Route::get('/settings', [QueueSettingsController::class, 'edit'])->name('settings');
+    Route::patch('/settings', [QueueSettingsController::class, 'update'])->name('settings.update');
 });

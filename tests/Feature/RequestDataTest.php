@@ -66,7 +66,7 @@ test('take queue number data validates an authenticated terminal request', funct
         'photo' => $photo,
     ]);
 
-    $response->assertCreated()->assertJsonPath('data.number', 'A-001');
+    $response->assertCreated()->assertJsonPath('data.number', '001');
     $entry = QueueEntry::query()->firstOrFail();
     expect($entry->photo_path)->not->toBeNull();
 

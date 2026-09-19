@@ -24,9 +24,9 @@ test('queue numbers are sequential and taking a number is idempotent', function 
     $same = $queues->take(null, $requestId, $device);
     $second = $queues->take(null, (string) Str::uuid(), $device);
 
-    expect($first->number)->toBe('A-001')
+    expect($first->number)->toBe('001')
         ->and($same->id)->toBe($first->id)
-        ->and($second->number)->toBe('A-002')
+        ->and($second->number)->toBe('002')
         ->and($first->fresh()->status)->toBe(QueueStatus::Waiting);
 
     Event::assertDispatched(QueueChanged::class);
@@ -41,7 +41,7 @@ test('call next is serialized by the active queue session', function () {
 
     $called = $queues->callNext('Loket 1', $device);
 
-    expect($called->number)->toBe('A-001')
+    expect($called->number)->toBe('001')
         ->and(fn () => $queues->callNext('Loket 1', $device))
         ->toThrow(QueueConflictException::class, 'Selesaikan nomor');
 
@@ -49,7 +49,7 @@ test('call next is serialized by the active queue session', function () {
     $queues->complete($device);
     $next = $queues->callNext('Loket 1', $device);
 
-    expect($next->number)->toBe('A-002')
+    expect($next->number)->toBe('002')
         ->and($next->status)->toBe(QueueStatus::Called);
 });
 
@@ -63,6 +63,6 @@ test('reset archives the current session and starts numbering again', function (
     $next = $queues->take(null, (string) Str::uuid());
 
     expect($newSession->exists)->toBeTrue()
-        ->and($next->number)->toBe('A-001')
+        ->and($next->number)->toBe('001')
         ->and(QueueSession::findOrFail($first->queue_session_id)->entries()->where('status', QueueStatus::Skipped)->count())->toBe(1);
 });

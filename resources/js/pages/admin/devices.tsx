@@ -2,6 +2,7 @@ import CheckRounded from '@mui/icons-material/CheckRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
+import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -16,6 +17,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 
 import { AppShell } from '@/components/app-shell';
+import { InertiaButton } from '@/components/inertia-button';
 import admin from '@/routes/admin';
 import echo from '@/services/echo';
 import type { Device, DeviceRole } from '@/types/device';
@@ -68,10 +70,19 @@ export default function Devices({ devices }: { devices: Device[] }) {
                             riwayat identitasnya.
                         </Typography>
                     </Box>
-                    <Chip
-                        icon={<DevicesOtherRounded />}
-                        label={`${devices.length} perangkat`}
-                    />
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                        <InertiaButton
+                            href={admin.settings.url()}
+                            variant="outlined"
+                            startIcon={<SettingsRounded />}
+                        >
+                            Pengaturan
+                        </InertiaButton>
+                        <Chip
+                            icon={<DevicesOtherRounded />}
+                            label={`${devices.length} perangkat`}
+                        />
+                    </Stack>
                 </Box>
                 {devices.length ? (
                     <Card>

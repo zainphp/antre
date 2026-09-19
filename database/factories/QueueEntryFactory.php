@@ -35,7 +35,7 @@ class QueueEntryFactory extends Factory
                     throw new \LogicException('Queue sequence must be a string or integer.');
                 }
 
-                return 'A-'.str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                return str_pad($sequence, 3, '0', STR_PAD_LEFT);
             },
             'status' => QueueStatus::Waiting,
             'photo_path' => null,

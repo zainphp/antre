@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->date('business_date');
             $table->string('active_key')->nullable()->unique();
-            $table->string('prefix', 4)->default('A');
+            $table->string('prefix', 4)->nullable();
             $table->string('service_name')->default('Pelayanan TBS');
             $table->unsignedInteger('next_sequence')->default(1);
             $table->string('status')->default('RUNNING');
