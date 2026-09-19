@@ -2,24 +2,32 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Data;
 
 use App\Enums\DeviceRole;
 use App\Models\Device;
-use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rules\File;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Data;
 
-final class TakeQueueNumberRequest extends FormRequest
+final class TakeQueueNumberData extends Data
 {
-    public function authorize(): bool
+    public function __construct(
+        #[MapInputName('request_id')]
+        public string $requestId,
+        public ?UploadedFile $photo = null,
+    ) {}
+
+    public static function authorize(): bool
     {
-        $device = $this->attributes->get('device');
+        $device = request()->attributes->get('device');
 
         return $device instanceof Device && $device->role === DeviceRole::QueueTerminal;
     }
 
     /** @return array<string, array<int, mixed>> */
-    public function rules(): array
+    public static function rules(): array
     {
         return [
             'request_id' => ['required', 'uuid'],

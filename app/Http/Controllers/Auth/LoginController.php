@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Data\LoginData;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,9 +19,12 @@ final class LoginController extends Controller
         return Inertia::render('login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginData $data, Request $request): RedirectResponse
     {
-        if (! Auth::attempt($request->safe()->only(['email', 'password']), $request->boolean('remember'))) {
+        if (! Auth::attempt([
+            'email' => $data->email,
+            'password' => $data->password,
+        ], $data->remember)) {
             return back()->withErrors(['email' => 'Email atau kata sandi tidak sesuai.'])->onlyInput('email');
         }
 

@@ -4,39 +4,38 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Data\QueueActionData;
+use App\Data\TakeQueueNumberData;
 use App\Exceptions\QueueConflictException;
-use App\Http\Requests\QueueActionRequest;
-use App\Http\Requests\TakeQueueNumberRequest;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\User;
 use App\Services\QueueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 final class QueueController extends Controller
 {
-    public function take(TakeQueueNumberRequest $request, QueueService $queues): JsonResponse
+    public function take(TakeQueueNumberData $data, Request $request, QueueService $queues): JsonResponse
     {
         /** @var Device $device */
         $device = $request->attributes->get('device');
         $entry = $queues->take(
-            $request->file('photo'),
-            $request->string('request_id')->toString(),
+            $data->photo,
+            $data->requestId,
             $device,
         );
 
         return response()->json(['data' => $this->entryPayload($entry)], 201);
     }
 
-    public function callNext(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
             $user = $request->user();
-            $counter = $request->validated('counter');
-            $counter = is_string($counter) && $counter !== '' ? $counter : '1';
-            $queues->callNext($counter, $user);
+            $queues->callNext($data->counter ?: '1', $user);
 
             return back()->with('success', 'Nomor berikutnya dipanggil.');
         } catch (QueueConflictException $exception) {
@@ -44,7 +43,7 @@ final class QueueController extends Controller
         }
     }
 
-    public function recall(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function recall(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
@@ -57,7 +56,7 @@ final class QueueController extends Controller
         }
     }
 
-    public function serve(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function serve(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
@@ -70,7 +69,7 @@ final class QueueController extends Controller
         }
     }
 
-    public function complete(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function complete(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
@@ -83,7 +82,7 @@ final class QueueController extends Controller
         }
     }
 
-    public function skip(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function skip(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
@@ -96,7 +95,7 @@ final class QueueController extends Controller
         }
     }
 
-    public function reset(QueueActionRequest $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function reset(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
             /** @var User $user */
@@ -109,7 +108,7 @@ final class QueueController extends Controller
         }
     }
 
-    private function conflict(QueueActionRequest $request, QueueConflictException $exception): RedirectResponse|JsonResponse
+    private function conflict(Request $request, QueueConflictException $exception): RedirectResponse|JsonResponse
     {
         if ($request->expectsJson()) {
             return response()->json(['message' => $exception->getMessage()], 409);

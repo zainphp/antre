@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\DeviceRole;
+use App\Data\AssignDeviceData;
 use App\Enums\DeviceStatus;
 use App\Events\DeviceChanged;
-use App\Http\Requests\AssignDeviceRequest;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -27,20 +26,19 @@ final class DeviceController extends Controller
         ]);
     }
 
-    public function assign(AssignDeviceRequest $request, Device $device, AuditLogger $audit): RedirectResponse
+    public function assign(AssignDeviceData $data, Device $device, Request $request, AuditLogger $audit): RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
-        $role = DeviceRole::from($request->string('role')->toString());
 
         $device->update([
-            'name' => $request->string('name')->toString(),
-            'role' => $role,
+            'name' => $data->name,
+            'role' => $data->role,
             'status' => DeviceStatus::Registered,
             'registered_at' => $device->registered_at ?? now(),
             'revoked_at' => null,
         ]);
-        $audit->record('device.registered', user: $user, device: $device, subject: $device, metadata: ['role' => $role->value]);
+        $audit->record('device.registered', user: $user, device: $device, subject: $device, metadata: ['role' => $data->role->value]);
         event(new DeviceChanged($device));
 
         return back()->with('success', 'Perangkat berhasil didaftarkan.');
