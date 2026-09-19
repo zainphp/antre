@@ -44,6 +44,7 @@ Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('a
     Route::get('/devices', [DeviceController::class, 'index'])->name('devices');
     Route::patch('/devices/{device}/assign', [DeviceController::class, 'assign'])->name('devices.assign');
     Route::patch('/devices/{device}/revoke', [DeviceController::class, 'revoke'])->name('devices.revoke');
+    Route::delete('/devices/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
     Route::get('/settings', [QueueSettingsController::class, 'edit'])->name('settings');
     Route::patch('/settings', [QueueSettingsController::class, 'update'])->name('settings.update');
 });

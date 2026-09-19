@@ -60,6 +60,21 @@ final class DeviceController extends Controller
         return back()->with('success', 'Akses perangkat telah dicabut.');
     }
 
+    public function destroy(Device $device, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
+    {
+        if ($device->status === DeviceStatus::Registered) {
+            return back()->withErrors([
+                'device' => 'Cabut akses perangkat sebelum menghapusnya.',
+            ]);
+        }
+
+        $device->delete();
+        $audit->record('device.deleted', user: $user, device: $device, subject: $device);
+        event(new DeviceChanged($device));
+
+        return back()->with('success', 'Perangkat dihapus dari daftar aktif.');
+    }
+
     /** @return array<string, mixed> */
     private function payload(Device $device): array
     {

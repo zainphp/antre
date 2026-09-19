@@ -1,4 +1,5 @@
 import CheckRounded from '@mui/icons-material/CheckRounded';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
@@ -67,7 +68,8 @@ export default function Devices({ devices }: { devices: Device[] }) {
                         </Typography>
                         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
                             Tetapkan satu atau beberapa peran tanpa menghapus
-                            riwayat identitas perangkat.
+                            riwayat identitas perangkat. Cabut akses sebelum
+                            menghapus perangkat lama.
                         </Typography>
                     </Box>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -245,6 +247,31 @@ function DeviceRow({ device }: { device: Device }) {
                             }
                         >
                             Cabut
+                        </Button>
+                    )}
+                    {!assigned && (
+                        <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            startIcon={<DeleteOutlineRounded />}
+                            disabled={form.processing}
+                            onClick={() => {
+                                if (
+                                    window.confirm(
+                                        'Hapus ' +
+                                            device.name +
+                                            ' dari daftar perangkat?',
+                                    )
+                                ) {
+                                    form.delete(
+                                        admin.devices.destroy.url(device.id),
+                                        { preserveScroll: true },
+                                    );
+                                }
+                            }}
+                        >
+                            Hapus
                         </Button>
                     )}
                 </Stack>

@@ -109,6 +109,29 @@ test('revoking a device retains its identity and removes its roles', function ()
         ->and(Device::query()->whereKey($device->id)->exists())->toBeTrue();
 });
 
+test('only inactive devices can be deleted from the active list', function () {
+    $admin = User::factory()->administrator()->create();
+    $registered = Device::factory()->create();
+
+    $this->actingAs($admin)
+        ->delete(route('admin.devices.destroy', $registered))
+        ->assertSessionHasErrors('device');
+
+    expect(Device::withTrashed()->find($registered->id)?->deleted_at)->toBeNull();
+
+    $revoked = Device::factory()->create([
+        'status' => DeviceStatus::Revoked,
+        'roles' => [],
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.devices.destroy', $revoked))
+        ->assertRedirect();
+
+    expect(Device::query()->find($revoked->id))->toBeNull()
+        ->and(Device::withTrashed()->find($revoked->id)?->deleted_at)->not->toBeNull();
+});
+
 test('a device with multiple roles can access each assigned experience', function () {
     $credential = 'operator-display-secret';
     $device = Device::factory()->roles(
