@@ -5,20 +5,18 @@ import EventBusyRounded from '@mui/icons-material/EventBusyRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
 import SkipNextRounded from '@mui/icons-material/SkipNextRounded';
-import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    List,
-    ListItem,
-    MenuItem,
-    Stack,
-    TextField,
-    Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import MenuItem from '@mui/material/MenuItem';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { useForm, usePage } from '@inertiajs/react';
 
 import { ConnectionBadge } from '@/components/connection-badge';

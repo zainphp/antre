@@ -1,16 +1,14 @@
 import LockRounded from '@mui/icons-material/LockRounded';
-import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Checkbox,
-    Container,
-    FormControlLabel,
-    TextField,
-    Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
+import Container from '@mui/material/Container';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 

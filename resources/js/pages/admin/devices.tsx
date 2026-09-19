@@ -2,18 +2,16 @@ import CheckRounded from '@mui/icons-material/CheckRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
-import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    Container,
-    MenuItem,
-    Stack,
-    TextField,
-    Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import MenuItem from '@mui/material/MenuItem';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 

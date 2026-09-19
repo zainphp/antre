@@ -1,5 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
 import { createRoot } from 'react-dom/client';
 import type { ComponentType } from 'react';
 

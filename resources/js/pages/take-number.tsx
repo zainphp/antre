@@ -6,17 +6,15 @@ import LinkRounded from '@mui/icons-material/LinkRounded';
 import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import PrintRounded from '@mui/icons-material/PrintRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
-import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Container,
-    LinearProgress,
-    Stack,
-    Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Container from '@mui/material/Container';
+import LinearProgress from '@mui/material/LinearProgress';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';

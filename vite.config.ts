@@ -53,6 +53,20 @@ export default defineConfig({
             denyWarnings: true,
             typeAware: true,
         },
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            message:
+                                'Import MUI components from their subpath, for example @mui/material/Button.',
+                            regex: '^@mui/[^/]+$',
+                        },
+                    ],
+                },
+            ],
+        },
     },
     fmt: {
         printWidth: 80,

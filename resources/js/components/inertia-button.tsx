@@ -1,4 +1,5 @@
-import { Button, type ButtonProps } from '@mui/material';
+import Button from '@mui/material/Button';
+import type { ButtonProps } from '@mui/material/Button';
 import { router } from '@inertiajs/react';
 
 export function InertiaButton({

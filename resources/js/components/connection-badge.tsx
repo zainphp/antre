@@ -1,7 +1,7 @@
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import SyncRounded from '@mui/icons-material/SyncRounded';
-import { Chip } from '@mui/material';
+import Chip from '@mui/material/Chip';
 
 export type ConnectionState =
     | 'CONNECTED'

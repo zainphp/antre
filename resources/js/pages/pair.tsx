@@ -1,14 +1,12 @@
 import AdminPanelSettingsRounded from '@mui/icons-material/AdminPanelSettingsRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import SyncRounded from '@mui/icons-material/SyncRounded';
-import {
-    Box,
-    Card,
-    CardContent,
-    Container,
-    Stack,
-    Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { router, usePoll } from '@inertiajs/react';
 import { useEffect } from 'react';
 

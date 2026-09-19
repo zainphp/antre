@@ -1,14 +1,12 @@
 import HomeRounded from '@mui/icons-material/HomeRounded';
 import LinkRounded from '@mui/icons-material/LinkRounded';
 import QueueRounded from '@mui/icons-material/QueueRounded';
-import {
-    Alert,
-    AppBar,
-    Box,
-    Container,
-    Toolbar,
-    Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 

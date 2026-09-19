@@ -1,6 +1,10 @@
 import FullscreenRounded from '@mui/icons-material/FullscreenRounded';
 import VolumeUpRounded from '@mui/icons-material/VolumeUpRounded';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';

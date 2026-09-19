@@ -3,15 +3,13 @@ import DisplaySettingsRounded from '@mui/icons-material/DisplaySettingsRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import PointOfSaleRounded from '@mui/icons-material/PointOfSaleRounded';
 import VerifiedUserRounded from '@mui/icons-material/VerifiedUserRounded';
-import {
-    Box,
-    Card,
-    CardContent,
-    Chip,
-    Container,
-    Stack,
-    Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
 import { AppShell } from '@/components/app-shell';
 import { ConnectionBadge } from '@/components/connection-badge';
