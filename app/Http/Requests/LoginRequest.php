@@ -23,6 +23,8 @@ final class LoginRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => strtolower(trim((string) $this->input('email')))]);
+        $email = $this->input('email');
+
+        $this->merge(['email' => is_string($email) ? strtolower(trim($email)) : '']);
     }
 }

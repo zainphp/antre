@@ -57,7 +57,7 @@ final class DeviceRegistry
             'device' => $device,
             'cookie' => Cookie::make(
                 self::COOKIE,
-                $device->getKey().'.'.$credential,
+                $device->id.'.'.$credential,
                 60 * 24 * 365 * 5,
                 '/',
                 null,

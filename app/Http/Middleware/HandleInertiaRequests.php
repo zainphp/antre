@@ -47,9 +47,16 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'flash' => [
-                'success' => fn (): ?string => $request->session()->get('success'),
-                'error' => fn (): ?string => $request->session()->get('error'),
+                'success' => fn (): ?string => $this->flashMessage($request, 'success'),
+                'error' => fn (): ?string => $this->flashMessage($request, 'error'),
             ],
         ];
+    }
+
+    private function flashMessage(Request $request, string $key): ?string
+    {
+        $value = $request->session()->get($key);
+
+        return is_string($value) ? $value : null;
     }
 }

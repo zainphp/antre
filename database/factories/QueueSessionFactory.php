@@ -34,8 +34,13 @@ class QueueSessionFactory extends Factory
 
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'active_key' => (string) $attributes['business_date'],
-        ]);
+        return $this->state(function (array $attributes): array {
+            $businessDate = $attributes['business_date'] ?? null;
+            if (! is_string($businessDate)) {
+                throw new \LogicException('Business date must be a string.');
+            }
+
+            return ['active_key' => $businessDate];
+        });
     }
 }

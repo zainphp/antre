@@ -23,7 +23,18 @@ class QueueEntryFactory extends Factory
         return [
             'queue_session_id' => QueueSession::factory(),
             'sequence' => fake()->unique()->numberBetween(1, 999),
-            'number' => fn (array $attributes) => 'A-'.str_pad((string) $attributes['sequence'], 3, '0', STR_PAD_LEFT),
+            'number' => function (array $attributes): string {
+                $sequence = $attributes['sequence'] ?? null;
+                if (is_int($sequence)) {
+                    $sequence = (string) $sequence;
+                }
+
+                if (! is_string($sequence)) {
+                    throw new \LogicException('Queue sequence must be a string or integer.');
+                }
+
+                return 'A-'.str_pad($sequence, 3, '0', STR_PAD_LEFT);
+            },
             'status' => QueueStatus::Waiting,
             'photo_path' => null,
             'request_id' => Str::uuid()->toString(),

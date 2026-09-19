@@ -29,10 +29,10 @@ final class DeviceController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $role = DeviceRole::from((string) $request->validated('role'));
+        $role = DeviceRole::from($request->string('role')->toString());
 
         $device->update([
-            'name' => $request->validated('name'),
+            'name' => $request->string('name')->toString(),
             'role' => $role,
             'status' => DeviceStatus::Registered,
             'registered_at' => $device->registered_at ?? now(),

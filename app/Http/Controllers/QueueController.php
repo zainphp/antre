@@ -20,7 +20,7 @@ final class QueueController extends Controller
         $device = $request->attributes->get('device');
         $entry = $queues->take(
             $request->file('photo'),
-            (string) $request->validated('request_id'),
+            $request->string('request_id')->toString(),
             $device,
         );
 
@@ -32,7 +32,9 @@ final class QueueController extends Controller
         try {
             /** @var User $user */
             $user = $request->user();
-            $queues->callNext((string) ($request->validated('counter') ?: '1'), $user);
+            $counter = $request->validated('counter');
+            $counter = is_string($counter) && $counter !== '' ? $counter : '1';
+            $queues->callNext($counter, $user);
 
             return back()->with('success', 'Nomor berikutnya dipanggil.');
         } catch (QueueConflictException $exception) {
