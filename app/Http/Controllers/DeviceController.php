@@ -11,20 +11,54 @@ use App\Events\DeviceChanged;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\PairingSession;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final class DeviceController extends Controller
 {
-    public function index(): Response
+    public function index(PairingSession $pairing): Response
     {
         return Inertia::render('admin/devices', [
             'devices' => Device::query()->latest('created_at')->get()->map(
                 fn (Device $device): array => $this->payload($device),
             )->values(),
+            'pairing' => $pairing->state(),
         ]);
+    }
+
+    public function openPairingSession(
+        #[CurrentUser] User $user,
+        PairingSession $pairing,
+        AuditLogger $audit,
+    ): RedirectResponse {
+        $expiresAt = $pairing->open();
+        $audit->record(
+            'device.pairing_session.opened',
+            user: $user,
+            metadata: ['expires_at' => $expiresAt->toISOString()],
+        );
+
+        return back()->with('success', 'Sesi pairing dibuka selama 60 detik.');
+    }
+
+    public function closePairingSession(
+        #[CurrentUser] User $user,
+        PairingSession $pairing,
+        AuditLogger $audit,
+    ): RedirectResponse {
+        $wasOpen = $pairing->isOpen();
+        $pairing->close();
+
+        if ($wasOpen) {
+            $audit->record('device.pairing_session.closed', user: $user);
+        }
+
+        return back()->with('success', 'Sesi pairing ditutup.');
     }
 
     public function assign(AssignDeviceData $data, Device $device, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
@@ -68,11 +102,40 @@ final class DeviceController extends Controller
             ]);
         }
 
-        $device->delete();
-        $audit->record('device.deleted', user: $user, device: $device, subject: $device);
+        DB::transaction(function () use ($audit, $device, $user): void {
+            $hardDeleted = false;
+
+            if (! $device->auditEvents()->exists() && ! $device->queueEntries()->exists()) {
+                try {
+                    $device->forceDelete();
+                    $hardDeleted = true;
+                } catch (QueryException $exception) {
+                    if (! $this->isForeignKeyViolation($exception)) {
+                        throw $exception;
+                    }
+                }
+            }
+
+            if (! $hardDeleted) {
+                $device->delete();
+            }
+
+            $audit->record(
+                'device.deleted',
+                user: $user,
+                device: $hardDeleted ? null : $device,
+                subject: $device,
+                metadata: ['hard_deleted' => $hardDeleted],
+            );
+        });
         event(new DeviceChanged($device));
 
         return back()->with('success', 'Perangkat dihapus dari daftar aktif.');
+    }
+
+    private function isForeignKeyViolation(QueryException $exception): bool
+    {
+        return in_array((string) $exception->getCode(), ['23000', '23503'], true);
     }
 
     /** @return array<string, mixed> */

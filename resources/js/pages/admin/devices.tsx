@@ -4,6 +4,8 @@ import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
+import StopCircleRounded from '@mui/icons-material/StopCircleRounded';
+import TimerRounded from '@mui/icons-material/TimerRounded';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,7 +17,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { router, useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AppShell } from '@/components/app-shell';
 import { InertiaButton } from '@/components/inertia-button';
@@ -30,7 +32,45 @@ const roles: { value: DeviceRole; label: string }[] = [
     { value: 'OPERATOR_TERMINAL', label: 'Terminal operator' },
 ];
 
-export default function Devices({ devices }: { devices: Device[] }) {
+type PairingState = {
+    open: boolean;
+    expires_at: string | null;
+    remaining_seconds: number;
+};
+
+export default function Devices({
+    devices,
+    pairing,
+}: {
+    devices: Device[];
+    pairing: PairingState;
+}) {
+    const pairingForm = useForm({});
+    const [secondsRemaining, setSecondsRemaining] = useState(
+        pairing.remaining_seconds,
+    );
+
+    useEffect(() => {
+        const updateRemaining = () => {
+            const expiresAt = pairing.expires_at
+                ? Date.parse(pairing.expires_at)
+                : NaN;
+
+            setSecondsRemaining(
+                Number.isNaN(expiresAt)
+                    ? 0
+                    : Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)),
+            );
+        };
+
+        updateRemaining();
+        const timer = window.setInterval(updateRemaining, 1000);
+
+        return () => window.clearInterval(timer);
+    }, [pairing.expires_at]);
+
+    const pairingOpen = pairing.open && secondsRemaining > 0;
+
     useEffect(() => {
         const channel = echo.private('admin.devices');
         channel.listen('.device.changed', () =>
@@ -80,6 +120,30 @@ export default function Devices({ devices }: { devices: Device[] }) {
                         >
                             Pengaturan
                         </InertiaButton>
+                        <Button
+                            variant={pairingOpen ? 'contained' : 'outlined'}
+                            startIcon={
+                                pairingOpen ? (
+                                    <StopCircleRounded />
+                                ) : (
+                                    <TimerRounded />
+                                )
+                            }
+                            disabled={pairingForm.processing}
+                            onClick={() =>
+                                pairingForm.post(
+                                    (pairingOpen
+                                        ? admin.devices.pairingSession.close
+                                        : admin.devices.pairingSession
+                                    ).url(),
+                                    { preserveScroll: true },
+                                )
+                            }
+                        >
+                            {pairingOpen
+                                ? `Tutup pairing · ${secondsRemaining} dtk`
+                                : 'Buka pairing 60 detik'}
+                        </Button>
                         <Chip
                             icon={<DevicesOtherRounded />}
                             label={`${devices.length} perangkat`}
@@ -125,8 +189,8 @@ export default function Devices({ devices }: { devices: Device[] }) {
                                 Belum ada perangkat
                             </Typography>
                             <Typography color="text.secondary">
-                                Buka halaman /pair pada terminal baru untuk
-                                mendaftarkannya.
+                                Buka sesi pairing selama 60 detik, lalu buka
+                                halaman /pair pada terminal baru.
                             </Typography>
                         </CardContent>
                     </Card>

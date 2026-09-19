@@ -42,6 +42,8 @@ Route::middleware(['device.auth', 'device.role:OPERATOR_TERMINAL'])->group(funct
 
 Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/devices', [DeviceController::class, 'index'])->name('devices');
+    Route::post('/devices/pairing-session', [DeviceController::class, 'openPairingSession'])->name('devices.pairing-session');
+    Route::post('/devices/pairing-session/close', [DeviceController::class, 'closePairingSession'])->name('devices.pairing-session.close');
     Route::patch('/devices/{device}/assign', [DeviceController::class, 'assign'])->name('devices.assign');
     Route::patch('/devices/{device}/revoke', [DeviceController::class, 'revoke'])->name('devices.revoke');
     Route::delete('/devices/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');

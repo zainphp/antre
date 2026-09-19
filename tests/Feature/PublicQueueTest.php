@@ -29,10 +29,10 @@ test('public queue state excludes private entry data', function () {
     $response->assertOk()->assertJsonMissingPath('data.waiting.0.photo_path')->assertJsonMissingPath('data.waiting.0.device_id');
 });
 
-test('an unregistered device identity returns to pairing instead of public content', function () {
+test('an unregistered device identity can view public content', function () {
     $device = Device::factory()->unregistered()->create(['credential_hash' => hash('sha256', 'pending-secret')]);
 
     $response = $this->withCookie(DeviceRegistry::COOKIE, $device->id.'.pending-secret')->get('/');
 
-    $response->assertRedirect(route('pair'));
+    $response->assertOk();
 });

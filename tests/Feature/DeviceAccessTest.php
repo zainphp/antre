@@ -4,16 +4,74 @@ declare(strict_types=1);
 
 use App\Enums\DeviceRole;
 use App\Enums\DeviceStatus;
+use App\Models\AuditEvent;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\DeviceRegistry;
+use App\Services\PairingSession;
 
 function deviceCookie(Device $device, string $credential): string
 {
     return $device->getKey().'.'.$credential;
 }
 
-test('a new device gets a persistent pairing identity', function () {
+test('pairing is closed by default', function () {
+    $this->get('/pair')->assertForbidden();
+
+    expect(Device::query()->count())->toBe(0);
+});
+
+test('only an administrator can open pairing', function () {
+    $operator = User::factory()->create();
+
+    $this->actingAs($operator)
+        ->post(route('admin.devices.pairing-session'))
+        ->assertForbidden();
+
+    $this->actingAs($operator)
+        ->post(route('admin.devices.pairing-session.close'))
+        ->assertForbidden();
+
+    $admin = User::factory()->administrator()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.devices.pairing-session'))
+        ->assertRedirect();
+
+    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+});
+
+test('an administrator can close pairing before it expires', function () {
+    $admin = User::factory()->administrator()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.devices.pairing-session'))
+        ->assertRedirect();
+
+    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+
+    $this->actingAs($admin)
+        ->post(route('admin.devices.pairing-session.close'))
+        ->assertRedirect();
+
+    expect(app(PairingSession::class)->isOpen())->toBeFalse();
+    $this->get('/pair')->assertForbidden();
+});
+
+test('an administrator pairing session closes after sixty seconds', function () {
+    app(PairingSession::class)->open();
+
+    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+
+    $this->travel(61)->seconds();
+
+    expect(app(PairingSession::class)->isOpen())->toBeFalse();
+    $this->get('/pair')->assertForbidden();
+});
+
+test('a new device gets a persistent pairing identity during an open session', function () {
+    app(PairingSession::class)->open();
+
     $response = $this->get('/pair');
 
     $response->assertOk();
@@ -21,7 +79,8 @@ test('a new device gets a persistent pairing identity', function () {
 
     expect(Device::query()->count())->toBe(1)
         ->and($response->headers->getCookies())->not->toBeEmpty()
-        ->and($label)->toMatch('/\A[0-9A-F]{4}\z/');
+        ->and($label)->toMatch('/\A[0-9A-F]{4}\z/')
+        ->and(Device::query()->firstOrFail()->auditEvents()->exists())->toBeFalse();
 });
 
 test('a device role is required before dedicated display access', function () {
@@ -120,7 +179,7 @@ test('only inactive devices can be deleted from the active list', function () {
         ->delete(route('admin.devices.destroy', $registered))
         ->assertSessionHasErrors('device');
 
-    expect(Device::withTrashed()->find($registered->id)?->deleted_at)->toBeNull();
+    expect(Device::withTrashed()->find($registered->id))->not->toBeNull();
 
     $revoked = Device::factory()->create([
         'status' => DeviceStatus::Revoked,
@@ -131,8 +190,23 @@ test('only inactive devices can be deleted from the active list', function () {
         ->delete(route('admin.devices.destroy', $revoked))
         ->assertRedirect();
 
-    expect(Device::query()->find($revoked->id))->toBeNull()
-        ->and(Device::withTrashed()->find($revoked->id)?->deleted_at)->not->toBeNull();
+    expect(Device::withTrashed()->find($revoked->id))->toBeNull();
+});
+
+test('a device with history is soft deleted', function () {
+    $admin = User::factory()->administrator()->create();
+    $device = Device::factory()->create([
+        'status' => DeviceStatus::Revoked,
+        'roles' => [],
+    ]);
+    AuditEvent::factory()->create(['device_id' => $device->id]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.devices.destroy', $device))
+        ->assertRedirect();
+
+    expect(Device::find($device->id))->toBeNull()
+        ->and(Device::withTrashed()->find($device->id)?->deleted_at)->not->toBeNull();
 });
 
 test('a device with multiple roles can access each assigned experience', function () {
