@@ -34,7 +34,7 @@ test('queue numbers are sequential and taking a number is idempotent', function 
 
 test('call next is serialized by the active queue session', function () {
     Event::fake([QueueChanged::class]);
-    $device = Device::factory()->role(DeviceRole::OperatorTerminal)->create();
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
     $queues = app(QueueService::class);
     $queues->take(null, (string) Str::uuid());
     $queues->take(null, (string) Str::uuid());
@@ -55,7 +55,7 @@ test('call next is serialized by the active queue session', function () {
 
 test('reset archives the current session and starts numbering again', function () {
     Event::fake([QueueChanged::class]);
-    $device = Device::factory()->role(DeviceRole::OperatorTerminal)->create();
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
     $queues = app(QueueService::class);
     $first = $queues->take(null, (string) Str::uuid());
 

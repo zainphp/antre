@@ -23,7 +23,9 @@ final class TakeQueueNumberData extends Data
     {
         $device = request()->attributes->get('device');
 
-        return $device instanceof Device && $device->role === DeviceRole::QueueTerminal;
+        return $device instanceof Device
+            && $device->isAssigned()
+            && $device->hasRole(DeviceRole::QueueTerminal);
     }
 
     /** @return array<string, array<int, mixed>> */

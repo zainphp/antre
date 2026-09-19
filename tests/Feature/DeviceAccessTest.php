@@ -24,7 +24,7 @@ test('a new device gets a persistent pairing identity', function () {
 test('a device role is required before dedicated display access', function () {
     $credential = 'display-secret';
     $device = Device::factory()->create([
-        'role' => DeviceRole::Display,
+        'roles' => [DeviceRole::Display->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
@@ -37,7 +37,7 @@ test('a device role is required before dedicated display access', function () {
 test('an assigned display cannot use the queue terminal endpoint', function () {
     $credential = 'display-secret';
     $device = Device::factory()->create([
-        'role' => DeviceRole::Display,
+        'roles' => [DeviceRole::Display->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
@@ -50,7 +50,7 @@ test('an assigned display cannot use the queue terminal endpoint', function () {
 test('operator access requires a registered operator terminal', function () {
     $credential = 'operator-secret';
     $device = Device::factory()->create([
-        'role' => DeviceRole::OperatorTerminal,
+        'roles' => [DeviceRole::OperatorTerminal->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
@@ -61,7 +61,7 @@ test('operator access requires a registered operator terminal', function () {
     $response->assertOk();
 
     $display = Device::factory()->create([
-        'role' => DeviceRole::Display,
+        'roles' => [DeviceRole::Display->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', 'display-secret'),
     ]);
@@ -77,14 +77,27 @@ test('only administrators can assign devices', function () {
 
     $response = $this->actingAs($operator)->patch(route('admin.devices.assign', $device), [
         'name' => 'Layar depan',
-        'role' => DeviceRole::Display->value,
+        'roles' => [DeviceRole::Display->value],
     ]);
 
     $response->assertForbidden();
     expect($device->fresh()->status)->toBe(DeviceStatus::Unregistered);
 });
 
-test('revoking a device retains its identity and removes its role', function () {
+test('device assignment requires at least one role', function () {
+    $device = Device::factory()->unregistered()->create();
+    $admin = User::factory()->administrator()->create();
+
+    $response = $this->actingAs($admin)->patch(route('admin.devices.assign', $device), [
+        'name' => 'Perangkat tanpa peran',
+        'roles' => [],
+    ]);
+
+    $response->assertSessionHasErrors('roles');
+    expect($device->fresh()->status)->toBe(DeviceStatus::Unregistered);
+});
+
+test('revoking a device retains its identity and removes its roles', function () {
     $device = Device::factory()->create();
     $admin = User::factory()->administrator()->create();
 
@@ -92,6 +105,29 @@ test('revoking a device retains its identity and removes its role', function () 
 
     $response->assertRedirect();
     expect($device->fresh()->status)->toBe(DeviceStatus::Revoked)
-        ->and($device->fresh()->role)->toBeNull()
+        ->and($device->fresh()->roles)->toBe([])
         ->and(Device::query()->whereKey($device->id)->exists())->toBeTrue();
+});
+
+test('a device with multiple roles can access each assigned experience', function () {
+    $credential = 'operator-display-secret';
+    $device = Device::factory()->roles(
+        DeviceRole::OperatorTerminal,
+        DeviceRole::Display,
+    )->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+    $cookie = deviceCookie($device, $credential);
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->get(route('operator-terminal'))
+        ->assertOk();
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->get(route('display'))
+        ->assertOk();
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->get(route('home'))
+        ->assertRedirect(route('operator-terminal'));
 });

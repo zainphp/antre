@@ -3,13 +3,13 @@ import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -66,8 +66,8 @@ export default function Devices({ devices }: { devices: Device[] }) {
                             Perangkat
                         </Typography>
                         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                            Tetapkan peran perangkat fisik tanpa menghapus
-                            riwayat identitasnya.
+                            Tetapkan satu atau beberapa peran tanpa menghapus
+                            riwayat identitas perangkat.
                         </Typography>
                     </Box>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -137,7 +137,9 @@ export default function Devices({ devices }: { devices: Device[] }) {
 function DeviceRow({ device }: { device: Device }) {
     const form = useForm({
         name: device.name,
-        role: device.role ?? ('DISPLAY' as DeviceRole),
+        roles: device.roles.length
+            ? device.roles
+            : (['DISPLAY'] as DeviceRole[]),
     });
     const assigned = device.status === 'REGISTERED';
 
@@ -178,24 +180,32 @@ function DeviceRow({ device }: { device: Device }) {
                         }
                         sx={{ minWidth: 150 }}
                     />
-                    <TextField
-                        select
-                        label={`Peran ${device.label}`}
-                        value={form.data.role}
-                        onChange={(event) =>
+                    <Autocomplete
+                        multiple
+                        options={roles}
+                        value={roles.filter((role) =>
+                            form.data.roles.includes(role.value),
+                        )}
+                        isOptionEqualToValue={(option, value) =>
+                            option.value === value.value
+                        }
+                        getOptionLabel={(option) => option.label}
+                        onChange={(_, values) =>
                             form.setData(
-                                'role',
-                                event.target.value as DeviceRole,
+                                'roles',
+                                values.map((role) => role.value),
                             )
                         }
-                        sx={{ minWidth: 180 }}
-                    >
-                        {roles.map((role) => (
-                            <MenuItem key={role.value} value={role.value}>
-                                {role.label}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label={`Peran ${device.label}`}
+                                error={Boolean(form.errors.roles)}
+                                helperText={form.errors.roles}
+                            />
+                        )}
+                        sx={{ minWidth: 250 }}
+                    />
                 </Stack>
             </td>
             <td>

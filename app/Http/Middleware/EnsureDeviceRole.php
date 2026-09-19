@@ -22,7 +22,7 @@ final class EnsureDeviceRole
         $device = $request->attributes->get('device');
         $requiredRole = DeviceRole::tryFrom($role);
 
-        if (! $device instanceof Device || ! $requiredRole || $device->role !== $requiredRole || ! $device->isAssigned()) {
+        if (! $device instanceof Device || ! $requiredRole || ! $device->isAssigned() || ! $device->hasRole($requiredRole)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Peran perangkat tidak diizinkan.'], 403);
             }

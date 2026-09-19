@@ -38,13 +38,17 @@ test('assign device data authorizes and persists a device assignment', function 
     $response = $this->actingAs(User::factory()->administrator()->create())
         ->patch(route('admin.devices.assign', $device), [
             'name' => 'Layar depan',
-            'role' => DeviceRole::Display->value,
+            'roles' => [
+                DeviceRole::Display->value,
+                DeviceRole::OperatorTerminal->value,
+            ],
         ]);
 
     $response->assertRedirect();
     expect($device->fresh())
         ->status->toBe(DeviceStatus::Registered)
-        ->role->toBe(DeviceRole::Display)
+        ->hasRole(DeviceRole::Display)->toBeTrue()
+        ->hasRole(DeviceRole::OperatorTerminal)->toBeTrue()
         ->name->toBe('Layar depan');
 });
 
@@ -52,7 +56,7 @@ test('take queue number data validates an authenticated terminal request', funct
     Storage::fake('local');
     $credential = 'queue-secret';
     $device = Device::factory()->create([
-        'role' => DeviceRole::QueueTerminal,
+        'roles' => [DeviceRole::QueueTerminal->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
@@ -80,7 +84,7 @@ test('take queue number data validates an authenticated terminal request', funct
 test('queue action data authorizes an operator terminal request', function () {
     $credential = 'operator-secret';
     $device = Device::factory()->create([
-        'role' => DeviceRole::OperatorTerminal,
+        'roles' => [DeviceRole::OperatorTerminal->value],
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);

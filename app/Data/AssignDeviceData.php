@@ -14,7 +14,8 @@ final class AssignDeviceData extends Data
 {
     public function __construct(
         public string $name,
-        public DeviceRole $role,
+        /** @var list<DeviceRole|string> */
+        public array $roles,
     ) {}
 
     public static function authorize(#[CurrentUser] ?User $user): bool
@@ -27,7 +28,8 @@ final class AssignDeviceData extends Data
     {
         return [
             'name' => ['required', 'string', 'max:120'],
-            'role' => ['required', Rule::enum(DeviceRole::class)],
+            'roles' => ['required', 'array', 'min:1', 'max:3'],
+            'roles.*' => ['required', 'distinct', Rule::enum(DeviceRole::class)],
         ];
     }
 }

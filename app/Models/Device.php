@@ -18,14 +18,14 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $name
- * @property DeviceRole|null $role
+ * @property list<string>|null $roles
  * @property DeviceStatus $status
  * @property string $credential_hash
  * @property Carbon|null $registered_at
  * @property Carbon|null $last_seen_at
  * @property Carbon|null $revoked_at
  */
-#[Fillable(['name', 'role', 'status', 'credential_hash', 'registered_at', 'last_seen_at', 'revoked_at'])]
+#[Fillable(['name', 'roles', 'status', 'credential_hash', 'registered_at', 'last_seen_at', 'revoked_at'])]
 #[Hidden(['credential_hash'])]
 class Device extends Model
 {
@@ -41,7 +41,7 @@ class Device extends Model
     protected function casts(): array
     {
         return [
-            'role' => DeviceRole::class,
+            'roles' => 'array',
             'status' => DeviceStatus::class,
             'registered_at' => 'immutable_datetime',
             'last_seen_at' => 'immutable_datetime',
@@ -63,6 +63,25 @@ class Device extends Model
 
     public function isAssigned(): bool
     {
-        return $this->status === DeviceStatus::Registered && $this->role !== null;
+        return $this->status === DeviceStatus::Registered && $this->assignedRoles() !== [];
+    }
+
+    /** @return list<DeviceRole> */
+    public function assignedRoles(): array
+    {
+        $roles = [];
+
+        foreach ($this->roles ?? [] as $value) {
+            if ($role = DeviceRole::tryFrom($value)) {
+                $roles[] = $role;
+            }
+        }
+
+        return $roles;
+    }
+
+    public function hasRole(DeviceRole $role): bool
+    {
+        return in_array($role, $this->assignedRoles(), true);
     }
 }

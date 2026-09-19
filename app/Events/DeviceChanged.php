@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Events;
 
+use App\Enums\DeviceRole;
 use App\Models\Device;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -37,13 +38,15 @@ class DeviceChanged implements ShouldBroadcastNow
     /** @return array<string, mixed> */
     public function broadcastWith(): array
     {
+        $roles = $this->device->assignedRoles();
+
         return [
             'device' => [
                 'id' => $this->device->id,
                 'label' => 'KBS-'.strtoupper(substr(str_replace('-', '', $this->device->id), 0, 4)),
                 'name' => $this->device->name,
-                'role' => $this->device->role?->value,
-                'role_label' => $this->device->role?->label(),
+                'roles' => array_map(static fn (DeviceRole $role): string => $role->value, $roles),
+                'role_labels' => array_map(static fn (DeviceRole $role): string => $role->label(), $roles),
                 'status' => $this->device->status->value,
                 'registered_at' => $this->device->registered_at?->toISOString(),
                 'last_seen_at' => $this->device->last_seen_at?->toISOString(),

@@ -6,8 +6,8 @@ export type Device = {
     id: string;
     label: string;
     name: string;
-    role: DeviceRole | null;
-    role_label: string | null;
+    roles: DeviceRole[];
+    role_labels: string[];
     status: DeviceStatus;
     registered_at: string | null;
     last_seen_at: string | null;

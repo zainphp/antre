@@ -31,7 +31,7 @@ test('only administrators can view and update queue settings', function () {
 
 test('a nullable default prefix formats new queue numbers without a separator', function () {
     $admin = User::factory()->administrator()->create();
-    $device = Device::factory()->role(DeviceRole::OperatorTerminal)->create();
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
     $queues = app(QueueService::class);
 
     expect($queues->take(null, (string) Str::uuid())->number)->toBe('001');

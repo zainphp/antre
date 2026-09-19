@@ -20,7 +20,7 @@ final class QueueActionData extends Data
 
         return $device instanceof Device
             && $device->isAssigned()
-            && $device->role === DeviceRole::OperatorTerminal;
+            && $device->hasRole(DeviceRole::OperatorTerminal);
     }
 
     /** @return array<string, array<int, mixed>> */

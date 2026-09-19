@@ -20,15 +20,16 @@ export default function Pair({ device }: { device: Device }) {
     usePoll(2500, { only: ['device'] }, { keepAlive: true });
 
     useEffect(() => {
-        if (device.status === 'REGISTERED' && device.role) {
-            const destinations = {
-                DISPLAY: display.url(),
-                QUEUE_TERMINAL: queueTerminal.url(),
-                OPERATOR_TERMINAL: operatorTerminal.url(),
-            } as const;
-            router.visit(destinations[device.role]);
+        if (device.status === 'REGISTERED' && device.roles.length > 0) {
+            if (device.roles.includes('OPERATOR_TERMINAL')) {
+                router.visit(operatorTerminal.url());
+            } else if (device.roles.includes('QUEUE_TERMINAL')) {
+                router.visit(queueTerminal.url());
+            } else {
+                router.visit(display.url());
+            }
         }
-    }, [device.role, device.status]);
+    }, [device.roles, device.status]);
 
     return (
         <AppShell>

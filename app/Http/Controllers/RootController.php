@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\DeviceRole;
-use App\Enums\DeviceStatus;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
 use Illuminate\Http\RedirectResponse;
@@ -18,20 +17,20 @@ final class RootController extends Controller
     public function __invoke(Request $request, DeviceRegistry $devices, QueueService $queues): Response|RedirectResponse
     {
         $device = $devices->resolve($request);
-        if ($device && $device->status !== DeviceStatus::Registered) {
+        if ($device && ! $device->isAssigned()) {
             return redirect()->route('pair');
         }
 
-        if ($device?->role === DeviceRole::Display) {
-            return redirect()->route('display');
+        if ($device?->hasRole(DeviceRole::OperatorTerminal)) {
+            return redirect()->route('operator-terminal');
         }
 
-        if ($device?->role === DeviceRole::QueueTerminal) {
+        if ($device?->hasRole(DeviceRole::QueueTerminal)) {
             return redirect()->route('queue-terminal');
         }
 
-        if ($device?->role === DeviceRole::OperatorTerminal) {
-            return redirect()->route('operator-terminal');
+        if ($device?->hasRole(DeviceRole::Display)) {
+            return redirect()->route('display');
         }
 
         return Inertia::render('welcome', ['state' => $queues->state()]);

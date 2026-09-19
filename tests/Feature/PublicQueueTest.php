@@ -20,7 +20,7 @@ test('the public home page and queue API do not require login', function () {
 
 test('public queue state excludes private entry data', function () {
     Event::fake();
-    $device = Device::factory()->role(DeviceRole::QueueTerminal)->create();
+    $device = Device::factory()->roles(DeviceRole::QueueTerminal)->create();
     app(QueueService::class)->take(null, (string) Str::uuid(), $device);
     QueueEntry::query()->firstOrFail()->update(['photo_path' => 'queue-photos/private.jpg']);
 

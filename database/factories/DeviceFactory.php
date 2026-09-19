@@ -24,7 +24,7 @@ class DeviceFactory extends Factory
     {
         return [
             'name' => 'Perangkat '.fake()->unique()->numerify('####'),
-            'role' => DeviceRole::Display,
+            'roles' => [DeviceRole::Display->value],
             'status' => DeviceStatus::Registered,
             'credential_hash' => hash('sha256', Str::random(64)),
             'registered_at' => now(),
@@ -36,15 +36,20 @@ class DeviceFactory extends Factory
     public function unregistered(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => null,
+            'roles' => [],
             'status' => DeviceStatus::Unregistered,
             'registered_at' => null,
             'revoked_at' => null,
         ]);
     }
 
-    public function role(DeviceRole $role): static
+    public function roles(DeviceRole ...$roles): static
     {
-        return $this->state(fn (array $attributes) => ['role' => $role]);
+        return $this->state(fn (array $attributes): array => [
+            'roles' => array_map(
+                static fn (DeviceRole $role): string => $role->value,
+                $roles,
+            ),
+        ]);
     }
 }
