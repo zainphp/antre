@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\AuthenticateDevice;
 use App\Http\Middleware\EnsureDeviceRole;
 use App\Http\Middleware\EnsureUserRole;

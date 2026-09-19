@@ -1,3 +1,19 @@
 {
-    "preset": "laravel"
+    "preset": "laravel",
+    "exclude": ["storage", "vendor"],
+    "rules": {
+        "declare_strict_types": true,
+        "phpdoc_summary": false,
+        "ordered_imports": {
+            "sort_algorithm": "alpha"
+        },
+        "single_quote": true,
+        "no_empty_comment": true,
+        "no_trailing_whitespace_in_comment": true,
+        "no_superfluous_phpdoc_tags": {
+            "allow_mixed": true,
+            "allow_unused_params": false,
+            "remove_inheritdoc": true
+        }
+    }
 }

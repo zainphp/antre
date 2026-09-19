@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\DeviceRole;
 use App\Models\Device;
 use App\Models\QueueEntry;

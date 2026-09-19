@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\DeviceRole;
 use App\Enums\DeviceStatus;
 use App\Models\Device;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\QueueStatus;
 use App\Events\QueueChanged;
 use App\Exceptions\QueueConflictException;

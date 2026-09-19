@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $configuredAllowedOrigins = env('REVERB_ALLOWED_ORIGINS', '*');
 $configuredAllowedOrigins = is_string($configuredAllowedOrigins) ? $configuredAllowedOrigins : '*';
 
