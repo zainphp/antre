@@ -25,11 +25,11 @@ final class RootController extends Controller
         }
 
         if ($device?->role === DeviceRole::QueueTerminal) {
-            return redirect()->route('take-number');
+            return redirect()->route('queue-terminal');
         }
 
         if ($device?->role === DeviceRole::OperatorTerminal) {
-            return redirect()->route('operator');
+            return redirect()->route('operator-terminal');
         }
 
         return Inertia::render('welcome', ['state' => $queues->state()]);

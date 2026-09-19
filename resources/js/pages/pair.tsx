@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 
 import { AppShell } from '@/components/app-shell';
 import { InertiaButton } from '@/components/inertia-button';
-import { display, home, operator, takeNumber } from '@/routes';
+import { display, home, operatorTerminal, queueTerminal } from '@/routes';
 import admin from '@/routes/admin';
 import type { Device } from '@/types/device';
 
@@ -23,8 +23,8 @@ export default function Pair({ device }: { device: Device }) {
         if (device.status === 'REGISTERED' && device.role) {
             const destinations = {
                 DISPLAY: display.url(),
-                QUEUE_TERMINAL: takeNumber.url(),
-                OPERATOR_TERMINAL: operator.url(),
+                QUEUE_TERMINAL: queueTerminal.url(),
+                OPERATOR_TERMINAL: operatorTerminal.url(),
             } as const;
             router.visit(destinations[device.role]);
         }

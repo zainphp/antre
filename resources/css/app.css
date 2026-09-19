@@ -267,7 +267,7 @@ select:focus-visible {
     background: #edf4ed;
 }
 
-.operator-page {
+.operator-terminal-page {
     max-width: 1400px;
     padding: 42px max(20px, 4vw) 64px;
     margin: auto;
@@ -281,7 +281,7 @@ select:focus-visible {
     margin-bottom: 32px;
 }
 
-.operator-grid {
+.operator-terminal-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
     gap: 18px;
@@ -389,7 +389,7 @@ select:focus-visible {
     margin-bottom: 8px;
 }
 
-.operator-lower-grid {
+.operator-terminal-lower-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 18px;
@@ -774,8 +774,8 @@ select:focus-visible {
     }
 
     .public-monitor,
-    .operator-grid,
-    .operator-lower-grid {
+    .operator-terminal-grid,
+    .operator-terminal-lower-grid {
         grid-template-columns: 1fr;
     }
 
@@ -798,7 +798,7 @@ select:focus-visible {
         display: none;
     }
 
-    .operator-page {
+    .operator-terminal-page {
         padding-top: 30px;
     }
 

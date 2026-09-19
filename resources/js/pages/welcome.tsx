@@ -15,7 +15,7 @@ import { AppShell } from '@/components/app-shell';
 import { ConnectionBadge } from '@/components/connection-badge';
 import { InertiaButton } from '@/components/inertia-button';
 import { SectionHeading } from '@/components/section-heading';
-import { display, home, operator, pair, takeNumber } from '@/routes';
+import { display, home, operatorTerminal, pair, queueTerminal } from '@/routes';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
 import type { QueueState } from '@/types/queue';
 
@@ -53,7 +53,7 @@ export default function Welcome({ state }: { state: QueueState }) {
                                 Hubungkan perangkat
                             </InertiaButton>
                             <InertiaButton
-                                href={operator.url()}
+                                href={operatorTerminal.url()}
                                 variant="outlined"
                                 color="inherit"
                             >
@@ -158,7 +158,7 @@ export default function Welcome({ state }: { state: QueueState }) {
                             icon={<PointOfSaleRounded />}
                             title="Untuk petugas"
                             detail="Kelola panggilan antrian dengan alur yang sederhana."
-                            href={operator.url()}
+                            href={operatorTerminal.url()}
                             action="Masuk operator"
                         />
                     </Box>
@@ -177,7 +177,7 @@ export default function Welcome({ state }: { state: QueueState }) {
                     </Box>
                 </Box>
                 <InertiaButton
-                    href={takeNumber.url()}
+                    href={queueTerminal.url()}
                     variant="text"
                     endIcon={<ArrowForwardRounded />}
                     sx={{ mt: 3 }}

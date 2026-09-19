@@ -31,7 +31,11 @@ import type { QueueEntry, QueueState } from '@/types/queue';
 
 type Step = 'ready' | 'camera' | 'review' | 'assigned';
 
-export default function TakeNumber({ state: _state }: { state: QueueState }) {
+export default function QueueTerminal({
+    state: _state,
+}: {
+    state: QueueState;
+}) {
     const online = useOnlineState();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [step, setStep] = useState<Step>('ready');

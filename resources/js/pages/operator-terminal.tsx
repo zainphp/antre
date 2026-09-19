@@ -33,7 +33,7 @@ const statusLabels: Record<QueueStatus, string> = {
     SKIPPED: 'Dilewati',
 };
 
-export default function Operator({
+export default function OperatorTerminal({
     state,
     counters,
 }: {
@@ -50,7 +50,7 @@ export default function Operator({
     const post = (url: string) => action.post(url, { preserveScroll: true });
 
     return (
-        <Box component="main" className="operator-page">
+        <Box component="main" className="operator-terminal-page">
             <Box className="page-topline">
                 <Box>
                     <Typography className="eyebrow">Ruang operator</Typography>
@@ -69,7 +69,7 @@ export default function Operator({
                     {errors.queue}
                 </Alert>
             )}
-            <Box className="operator-grid">
+            <Box className="operator-terminal-grid">
                 <Card className="current-card">
                     <CardContent sx={{ p: { xs: 3, md: 4 } }}>
                         <Box className="current-card-head">
@@ -224,7 +224,7 @@ export default function Operator({
                     </CardContent>
                 </Card>
             </Box>
-            <Box className="operator-lower-grid">
+            <Box className="operator-terminal-lower-grid">
                 <Card>
                     <CardContent sx={{ p: { xs: 3, md: 4 } }}>
                         <SectionHeading

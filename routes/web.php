@@ -23,8 +23,8 @@ Route::get('/display', [PageController::class, 'display'])
     ->name('display');
 
 Route::middleware(['device.auth', 'device.role:QUEUE_TERMINAL'])->group(function (): void {
-    Route::get('/take-number', [PageController::class, 'takeNumber'])->name('take-number');
-    Route::post('/device/queue/take', [QueueController::class, 'take'])->name('queue.take');
+    Route::get('/queue-terminal', [PageController::class, 'queueTerminal'])->name('queue-terminal');
+    Route::post('/queue-terminal/queue/take', [QueueController::class, 'take'])->name('queue.take');
 });
 
 Route::middleware([
@@ -33,13 +33,13 @@ Route::middleware([
     'device.auth',
     'device.role:OPERATOR_TERMINAL',
 ])->group(function (): void {
-    Route::get('/operator', [PageController::class, 'operator'])->name('operator');
-    Route::post('/operator/queue/call-next', [QueueController::class, 'callNext'])->name('queue.call-next');
-    Route::post('/operator/queue/recall', [QueueController::class, 'recall'])->name('queue.recall');
-    Route::post('/operator/queue/serve', [QueueController::class, 'serve'])->name('queue.serve');
-    Route::post('/operator/queue/complete', [QueueController::class, 'complete'])->name('queue.complete');
-    Route::post('/operator/queue/skip', [QueueController::class, 'skip'])->name('queue.skip');
-    Route::post('/operator/queue/reset', [QueueController::class, 'reset'])->name('queue.reset');
+    Route::get('/operator-terminal', [PageController::class, 'operatorTerminal'])->name('operator-terminal');
+    Route::post('/operator-terminal/queue/call-next', [QueueController::class, 'callNext'])->name('queue.call-next');
+    Route::post('/operator-terminal/queue/recall', [QueueController::class, 'recall'])->name('queue.recall');
+    Route::post('/operator-terminal/queue/serve', [QueueController::class, 'serve'])->name('queue.serve');
+    Route::post('/operator-terminal/queue/complete', [QueueController::class, 'complete'])->name('queue.complete');
+    Route::post('/operator-terminal/queue/skip', [QueueController::class, 'skip'])->name('queue.skip');
+    Route::post('/operator-terminal/queue/reset', [QueueController::class, 'reset'])->name('queue.reset');
 });
 
 Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('admin.')->group(function (): void {

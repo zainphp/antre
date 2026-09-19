@@ -14,14 +14,14 @@ final class PageController extends Controller
         return Inertia::render('display', ['state' => $queues->state()]);
     }
 
-    public function takeNumber(QueueService $queues): Response
+    public function queueTerminal(QueueService $queues): Response
     {
-        return Inertia::render('take-number', ['state' => $queues->state()]);
+        return Inertia::render('queue-terminal', ['state' => $queues->state()]);
     }
 
-    public function operator(QueueService $queues): Response
+    public function operatorTerminal(QueueService $queues): Response
     {
-        return Inertia::render('operator', [
+        return Inertia::render('operator-terminal', [
             'state' => $queues->state(),
             'counters' => Counter::query()->where('active', true)->orderBy('name')->pluck('name')->values(),
         ]);
