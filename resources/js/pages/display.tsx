@@ -1,15 +1,12 @@
-import FullscreenRounded from '@mui/icons-material/FullscreenRounded';
-import VolumeUpRounded from '@mui/icons-material/VolumeUpRounded';
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Head } from '@inertiajs/react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
+import { home } from '@/routes';
 import { announceQueue } from '@/services/speech';
 import { formatDate } from '@/utils/format';
 import type { QueueState } from '@/types/queue';
@@ -23,6 +20,7 @@ export default function Display({
 }) {
     const realtime = useQueueRealtime(state);
     state = realtime.state;
+    const publicMonitorUrl = new URL(home.url(), window.location.origin).href;
     const [lastAnnouncement, setLastAnnouncement] = useState<string | null>(
         null,
     );
@@ -38,10 +36,6 @@ export default function Display({
         }
     }, [lastAnnouncement, state.current]);
 
-    const enterFullscreen = () => {
-        void document.documentElement.requestFullscreen?.();
-    };
-
     return (
         <Box className="display-page">
             <Head title="Display Antrian" />
@@ -54,29 +48,7 @@ export default function Display({
                         {state.session.service_name}
                     </Typography>
                 </Box>
-                <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{ alignItems: 'center' }}
-                >
-                    <ConnectionBadge state={realtime.connection} />
-                    <Button
-                        className="display-control"
-                        variant="outlined"
-                        startIcon={<VolumeUpRounded />}
-                        onClick={() => announceQueue(state.current)}
-                    >
-                        Panggil ulang
-                    </Button>
-                    <Button
-                        className="display-control"
-                        variant="outlined"
-                        startIcon={<FullscreenRounded />}
-                        onClick={enterFullscreen}
-                    >
-                        Layar penuh
-                    </Button>
-                </Stack>
+                <ConnectionBadge state={realtime.connection} />
             </Box>
             <Box component="main" className="display-center" aria-live="polite">
                 <Typography className="display-label">
@@ -100,7 +72,20 @@ export default function Display({
             </Box>
             <Box component="footer" className="display-footer">
                 <Typography>{formatDate(state.session.date)}</Typography>
-                <Alert severity="info">Status diperbarui otomatis</Alert>
+                <Box
+                    className="display-public-monitor"
+                    role="img"
+                    aria-label="Pindai QR code untuk memantau antrean dari ponsel"
+                >
+                    <QRCodeSVG
+                        value={publicMonitorUrl}
+                        size={112}
+                        level="M"
+                        marginSize={2}
+                        title="Pantau antrean dari ponsel"
+                    />
+                    <Typography>Pantau dari ponsel</Typography>
+                </Box>
             </Box>
         </Box>
     );

@@ -628,12 +628,6 @@ select:focus-visible {
     margin-top: 3px !important;
 }
 
-.display-control {
-    color: rgba(255, 255, 255, 0.82) !important;
-    border-color: rgba(255, 255, 255, 0.24) !important;
-    min-height: 44px !important;
-}
-
 .display-center {
     flex: 1;
     display: flex;
@@ -689,10 +683,20 @@ select:focus-visible {
     font-size: 0.85rem;
 }
 
-.display-footer .MuiAlert-root {
-    color: inherit;
-    background: rgba(212, 168, 84, 0.12);
-    border: 1px solid rgba(212, 168, 84, 0.28);
+.display-public-monitor {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.display-public-monitor svg {
+    display: block;
+    width: clamp(88px, 8vw, 112px);
+    height: auto;
+    padding: 8px;
+    background: #fff;
+    border-radius: 12px;
 }
 
 .login-page,
@@ -855,15 +859,6 @@ select:focus-visible {
     .display-footer {
         align-items: flex-start;
         flex-direction: column;
-    }
-
-    .display-header .MuiStack-root {
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .display-control {
-        flex: 1;
     }
 
     .display-center {
