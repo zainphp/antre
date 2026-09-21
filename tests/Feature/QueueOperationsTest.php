@@ -10,6 +10,7 @@ use App\Models\Device;
 use App\Models\QueueSession;
 use App\Models\Setting;
 use App\Services\QueueService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -112,4 +113,38 @@ test('reset archives the current session and starts numbering again', function (
     expect($newSession->exists)->toBeTrue()
         ->and($next->number)->toBe('001')
         ->and(QueueSession::findOrFail($first->queue_session_id)->entries()->where('status', QueueStatus::Skipped)->count())->toBe(1);
+});
+
+test('queue photos remain until the operator resets the session', function () {
+    Event::fake([QueueChanged::class]);
+    Storage::fake('local');
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
+    $queues = app(QueueService::class);
+    $completed = $queues->take(UploadedFile::fake()->image('completed.jpg'), (string) Str::uuid());
+    $skipped = $queues->take(UploadedFile::fake()->image('skipped.jpg'), (string) Str::uuid());
+
+    $queues->callNext('Loket 1', $device);
+    $queues->complete($device);
+    $queues->callNext('Loket 1', $device);
+    $queues->skip($device);
+
+    $completedPath = $completed->fresh()->photo_path;
+    $skippedPath = $skipped->fresh()->photo_path;
+
+    expect($completedPath)->not->toBeNull()
+        ->and($skippedPath)->not->toBeNull();
+
+    if ($completedPath === null || $skippedPath === null) {
+        return;
+    }
+
+    Storage::disk('local')->assertExists($completedPath);
+    Storage::disk('local')->assertExists($skippedPath);
+
+    $queues->reset($device);
+
+    expect($completed->fresh()->photo_path)->toBeNull()
+        ->and($skipped->fresh()->photo_path)->toBeNull();
+    Storage::disk('local')->assertMissing($completedPath);
+    Storage::disk('local')->assertMissing($skippedPath);
 });

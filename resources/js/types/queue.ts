@@ -12,6 +12,7 @@ export type QueueEntry = {
     counter: string | null;
     created_at: string | null;
     called_at: string | null;
+    photo_url?: string;
 };
 
 export type QueueState = {

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Data\QueueActionData;
 use App\Data\TakeQueueNumberData;
+use App\Enums\QueueStatus;
 use App\Exceptions\QueueConflictException;
 use App\Models\Device;
 use App\Models\QueueEntry;
@@ -13,6 +14,8 @@ use App\Services\QueueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class QueueController extends Controller
 {
@@ -25,6 +28,27 @@ final class QueueController extends Controller
         );
 
         return response()->json(['data' => $this->entryPayload($entry)], 201);
+    }
+
+    public function photo(QueueEntry $entry): StreamedResponse
+    {
+        $session = $entry->session()->firstOrFail();
+        $photoPath = $entry->photo_path;
+
+        if (
+            $photoPath === null
+            || $session->active_key !== now()->toDateString()
+            || $session->current_entry_id !== $entry->id
+            || ! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)
+            || ! Storage::disk('local')->exists($photoPath)
+        ) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($photoPath, null, [
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse

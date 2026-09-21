@@ -152,12 +152,29 @@ export default function OperatorTerminal({
                                 />
                             )}
                         </Box>
-                        <Typography className="current-number">
-                            {displayedEntry?.number ?? '— — —'}
-                        </Typography>
-                        <Typography className="current-counter">
-                            {state.current?.counter ?? 'Belum ada nomor aktif'}
-                        </Typography>
+                        <Box
+                            className={`current-queue-focus ${displayedEntry?.photo_url ? 'has-photo' : ''}`}
+                        >
+                            {displayedEntry?.photo_url && (
+                                <Box className="operator-photo-frame">
+                                    <Box
+                                        component="img"
+                                        className="operator-customer-photo"
+                                        src={displayedEntry.photo_url}
+                                        alt={`Foto pelanggan nomor ${displayedEntry.number}`}
+                                    />
+                                </Box>
+                            )}
+                            <Box className="current-queue-copy">
+                                <Typography className="current-number">
+                                    {displayedEntry?.number ?? '— — —'}
+                                </Typography>
+                                <Typography className="current-counter">
+                                    {state.current?.counter ??
+                                        'Belum ada nomor aktif'}
+                                </Typography>
+                            </Box>
+                        </Box>
                         {canRecall && (
                             <Button
                                 className="display-control current-recall"

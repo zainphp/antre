@@ -24,8 +24,10 @@ final readonly class QueueService
     /**
      * @return array<string, mixed>
      */
-    public function state(bool $includeCallable = false): array
-    {
+    public function state(
+        bool $includeCallable = false,
+        bool $includePhoto = false,
+    ): array {
         $session = $this->currentSession();
         $settings = Setting::current();
         $session->load(['currentEntry.counter']);
@@ -44,7 +46,7 @@ final readonly class QueueService
                 $session->currentEntry->status,
                 [QueueStatus::Called, QueueStatus::Serving],
                 true,
-            ) ? $this->entryPayload($session->currentEntry) : null,
+            ) ? $this->entryPayload($session->currentEntry, includePhoto: $includePhoto) : null,
             'waiting' => $waiting->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))->values()->all(),
             'stats' => [
                 'total' => $session->entries()->count(),
@@ -268,18 +270,18 @@ final readonly class QueueService
         $session = DB::transaction(function () use ($device): QueueSession {
             $current = $this->lockCurrentSession();
             $settings = Setting::current();
-            $entries = $current->entries()
-                ->whereNotIn('status', [QueueStatus::Completed, QueueStatus::Skipped])
-                ->get();
+            $entries = $current->entries()->get();
             foreach ($entries as $entry) {
                 if ($entry->photo_path) {
                     Storage::disk('local')->delete($entry->photo_path);
                 }
-                $entry->update([
-                    'status' => QueueStatus::Skipped,
-                    'completed_at' => now(),
-                    'photo_path' => null,
-                ]);
+
+                $updates = ['photo_path' => null];
+                if (! in_array($entry->status, [QueueStatus::Completed, QueueStatus::Skipped], true)) {
+                    $updates['status'] = QueueStatus::Skipped;
+                    $updates['completed_at'] = now();
+                }
+                $entry->update($updates);
             }
 
             $current->update([
@@ -319,13 +321,9 @@ final readonly class QueueService
             if ($status === QueueStatus::Skipped) {
                 $this->skipEntry($entry, $device);
             } else {
-                if ($entry->photo_path) {
-                    Storage::disk('local')->delete($entry->photo_path);
-                }
                 $entry->update([
                     'status' => $status,
                     'completed_at' => now(),
-                    'photo_path' => null,
                 ]);
                 $this->audit->record($eventName, device: $device, subject: $entry);
             }
@@ -341,13 +339,9 @@ final readonly class QueueService
 
     private function skipEntry(QueueEntry $entry, Device $device): void
     {
-        if ($entry->photo_path) {
-            Storage::disk('local')->delete($entry->photo_path);
-        }
         $entry->update([
             'status' => QueueStatus::Skipped,
             'completed_at' => now(),
-            'photo_path' => null,
         ]);
         $this->audit->record('queue.skipped', device: $device, subject: $entry);
     }
@@ -435,9 +429,9 @@ final readonly class QueueService
     }
 
     /** @return array<string, mixed> */
-    private function entryPayload(QueueEntry $entry): array
+    private function entryPayload(QueueEntry $entry, bool $includePhoto = false): array
     {
-        return [
+        $payload = [
             'id' => $entry->id,
             'number' => $entry->number,
             'status' => $entry->status->value,
@@ -445,5 +439,15 @@ final readonly class QueueService
             'created_at' => $entry->created_at?->toISOString(),
             'called_at' => $entry->called_at?->toISOString(),
         ];
+
+        if ($includePhoto && $entry->photo_path !== null) {
+            $payload['photo_url'] = route(
+                'operator.queue.photo',
+                ['entry' => $entry->getKey()],
+                false,
+            );
+        }
+
+        return $payload;
     }
 }
