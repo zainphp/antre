@@ -4,7 +4,6 @@
     "type": "module",
     "scripts": {
         "build": "vp build",
-        "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "check": "bun run check:filenames && vp check",
         "check:filenames": "bun scripts/check-frontend-filenames.ts",

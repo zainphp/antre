@@ -17,7 +17,7 @@ export default defineConfig({
                 }),
             ],
         }),
-        inertia(),
+        inertia({ ssr: false }),
         react(),
         babel({
             presets: [reactCompilerPreset()],
@@ -42,7 +42,6 @@ export default defineConfig({
             'vendor/**',
             'node_modules/**',
             'public/**',
-            'bootstrap/ssr/**',
             'tailwind.config.js',
             'resources/js/actions/**',
             'resources/js/components/ui/*',
