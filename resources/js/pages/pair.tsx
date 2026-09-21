@@ -17,7 +17,7 @@ import admin from '@/routes/admin';
 import type { Device } from '@/types/device';
 
 export default function Pair({ device }: { device: Device }) {
-    usePoll(2500, { only: ['device'] }, { keepAlive: true });
+    usePoll(2500, { only: ['device'] }, { mode: 'rest' });
 
     useEffect(() => {
         if (device.status === 'REGISTERED' && device.roles.length > 0) {

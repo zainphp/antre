@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { ConnectionState } from '@/components/connection-badge';
 import { useQueuePolling } from '@/hooks/use-queue-polling';
@@ -15,13 +15,29 @@ export function useQueueRealtime(
     state: QueueState;
     connection: ConnectionState;
 } {
-    useQueuePolling();
     const [state, setState] = useState(initialState);
     const [connection, setConnection] = useState<ConnectionState>(() =>
         mapConnection(echo.connectionStatus()),
     );
+    const previousConnection = useRef<ConnectionState | null>(null);
+
+    useQueuePolling(connection !== 'CONNECTED');
 
     useEffect(() => setState(initialState), [initialState]);
+
+    useEffect(() => {
+        const wasDisconnected =
+            previousConnection.current !== null &&
+            previousConnection.current !== 'CONNECTED';
+
+        if (connection === 'CONNECTED' && wasDisconnected) {
+            router.reload({
+                only: ['state'],
+            });
+        }
+
+        previousConnection.current = connection;
+    }, [connection]);
 
     useEffect(() => {
         const channel = echo.channel('queue');
