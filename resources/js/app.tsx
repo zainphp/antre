@@ -18,7 +18,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 }
 
 void createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) => (title ? `${title} — ${appName}` : appName),
     progress: { color: '#d4a854' },
     resolve: async (name) => {
         const page = pages[`./pages/${name}.tsx`];

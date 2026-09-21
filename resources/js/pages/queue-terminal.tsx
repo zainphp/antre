@@ -15,6 +15,7 @@ import Container from '@mui/material/Container';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { Head } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
@@ -126,6 +127,7 @@ export default function QueueTerminal({
 
     return (
         <Box className="self-service-kiosk">
+            <Head title="Ambil Nomor" />
             <Container
                 component="main"
                 maxWidth="sm"

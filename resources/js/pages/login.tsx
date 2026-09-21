@@ -9,7 +9,7 @@ import Container from '@mui/material/Container';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
 import { AppShell } from '@/components/app-shell';
@@ -28,6 +28,7 @@ export default function Login() {
 
     return (
         <AppShell>
+            <Head title="Masuk Administrator" />
             <Container maxWidth="sm" className="login-page">
                 <Card>
                     <CardContent sx={{ p: { xs: 3, md: 5 } }}>

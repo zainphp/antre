@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
@@ -43,6 +44,7 @@ export default function Display({
 
     return (
         <Box className="display-page">
+            <Head title="Display Antrian" />
             <Box component="header" className="display-header">
                 <Box>
                     <Typography component="h1" className="display-brand">

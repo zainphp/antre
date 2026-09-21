@@ -23,7 +23,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
@@ -73,6 +73,7 @@ export default function OperatorTerminal({
 
     return (
         <Box component="main" className="operator-terminal-page">
+            <Head title="Operator" />
             <Box className="page-topline">
                 <Box>
                     <Typography className="eyebrow">Ruang operator</Typography>

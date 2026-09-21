@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import { Head } from '@inertiajs/react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
@@ -24,6 +25,7 @@ export default function Welcome({
 
     return (
         <Box component="main" className="public-queue-page">
+            <Head title="Pantauan Antrian" />
             <Container maxWidth="md" className="public-queue-content">
                 <Box component="header" className="public-queue-header">
                     <Box>

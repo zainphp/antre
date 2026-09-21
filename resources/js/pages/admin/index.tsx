@@ -4,12 +4,14 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import { Head } from '@inertiajs/react';
 
 import { AdminLayout } from '@/components/admin-layout';
 
 export default function Admin() {
     return (
         <AdminLayout>
+            <Head title="Panel Administrator" />
             <Container maxWidth="lg" className="admin-page">
                 <Typography className="eyebrow">Administrator</Typography>
                 <Typography variant="h3" component="h1" sx={{ mt: 0.75 }}>

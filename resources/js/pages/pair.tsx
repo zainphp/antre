@@ -7,7 +7,7 @@ import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { router, usePoll } from '@inertiajs/react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import { useEffect } from 'react';
 
 import { AppShell } from '@/components/app-shell';
@@ -33,6 +33,7 @@ export default function Pair({ device }: { device: Device }) {
 
     return (
         <AppShell>
+            <Head title="Pendaftaran Perangkat" />
             <Container maxWidth="sm" sx={{ py: { xs: 6, md: 10 } }}>
                 <Card>
                     <CardContent

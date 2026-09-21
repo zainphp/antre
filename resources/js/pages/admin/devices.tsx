@@ -15,7 +15,7 @@ import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import { AdminLayout } from '@/components/admin-layout';
@@ -83,6 +83,7 @@ export default function Devices({
 
     return (
         <AdminLayout>
+            <Head title="Perangkat" />
             <Container maxWidth="lg" className="admin-page">
                 <Box
                     sx={{

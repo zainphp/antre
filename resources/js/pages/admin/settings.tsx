@@ -11,7 +11,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
 import { AdminLayout } from '@/components/admin-layout';
@@ -75,6 +75,7 @@ export default function Settings({
 
     return (
         <AdminLayout>
+            <Head title="Pengaturan" />
             <Container maxWidth="md" className="admin-page">
                 <Box
                     sx={{
