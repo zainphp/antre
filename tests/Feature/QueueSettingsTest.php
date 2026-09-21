@@ -32,6 +32,7 @@ test('only administrators can view and update queue settings', function () {
             'default_prefix' => 'B',
             'number_digits' => 4,
             'number_counters' => 1,
+            'photo_required' => false,
         ])
         ->assertRedirect();
 
@@ -56,6 +57,7 @@ test('administrators can configure public footer links', function () {
             'default_prefix' => null,
             'number_digits' => 3,
             'number_counters' => 1,
+            'photo_required' => false,
             'footer_links' => $links,
         ])
         ->assertRedirect();
@@ -79,6 +81,7 @@ test('administrators can configure the public brand and session name', function 
             'default_prefix' => null,
             'number_digits' => 3,
             'number_counters' => 1,
+            'photo_required' => false,
             'footer_links' => [],
         ])
         ->assertRedirect();
@@ -104,6 +107,7 @@ test('administrators can configure the number of operator counters', function ()
             'default_prefix' => null,
             'number_digits' => 3,
             'number_counters' => 3,
+            'photo_required' => false,
             'footer_links' => [],
         ])
         ->assertRedirect();
@@ -124,6 +128,47 @@ test('administrators can configure the number of operator counters', function ()
         );
 });
 
+test('administrators can require customer photos', function () {
+    $admin = User::factory()->administrator()->create();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
+            'default_prefix' => null,
+            'number_digits' => 3,
+            'number_counters' => 1,
+            'photo_required' => true,
+            'footer_links' => [],
+        ])
+        ->assertRedirect();
+
+    expect(Setting::current()->photo_required)->toBeTrue();
+});
+
+test('queue terminals receive the configured brand, session, and photo requirement', function () {
+    User::factory()->administrator()->create();
+    Setting::current()->update([
+        'brand_name' => 'Koperasi Kita',
+        'session_name' => 'Pelayanan Warga',
+        'photo_required' => true,
+    ]);
+    $credential = 'queue-terminal-settings-secret';
+    $device = Device::factory()->roles(DeviceRole::QueueTerminal)->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+
+    $this->withCookie(DeviceRegistry::COOKIE, $device->id.'.'.$credential)
+        ->get(route('queue-terminal'))
+        ->assertInertia(
+            fn (Assert $page): Assert => $page
+                ->component('queue-terminal')
+                ->where('brandName', 'Koperasi Kita')
+                ->where('sessionName', 'Pelayanan Warga')
+                ->where('photoRequired', true),
+        );
+});
+
 test('brand and session names cannot be empty', function () {
     $admin = User::factory()->administrator()->create();
 
@@ -133,6 +178,7 @@ test('brand and session names cannot be empty', function () {
         'default_prefix' => null,
         'number_digits' => 3,
         'number_counters' => 1,
+        'photo_required' => false,
         'footer_links' => [],
     ]);
 
@@ -154,6 +200,7 @@ test('a nullable default prefix formats new queue numbers without a separator', 
             'default_prefix' => 'B',
             'number_digits' => 4,
             'number_counters' => 1,
+            'photo_required' => false,
         ])
         ->assertRedirect();
     $queues->reset($device);
@@ -167,6 +214,7 @@ test('a nullable default prefix formats new queue numbers without a separator', 
             'default_prefix' => '',
             'number_digits' => 2,
             'number_counters' => 1,
+            'photo_required' => false,
         ])
         ->assertRedirect();
     $queues->reset($device);
@@ -184,6 +232,7 @@ test('a default prefix rejects separators and unsupported characters', function 
         'default_prefix' => 'A-',
         'number_digits' => 3,
         'number_counters' => 1,
+        'photo_required' => false,
     ]);
 
     $response->assertSessionHasErrors('default_prefix');
@@ -199,6 +248,7 @@ test('number digits must be between one and six', function () {
         'default_prefix' => null,
         'number_digits' => 7,
         'number_counters' => 1,
+        'photo_required' => false,
     ]);
 
     $response->assertSessionHasErrors('number_digits');
@@ -214,6 +264,7 @@ test('footer links only accept external http urls', function () {
         'default_prefix' => null,
         'number_digits' => 3,
         'number_counters' => 1,
+        'photo_required' => false,
         'footer_links' => [
             ['label' => 'Unsafe', 'url' => 'javascript:alert(1)'],
         ],

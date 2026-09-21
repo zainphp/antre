@@ -7,8 +7,10 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { Head, useForm } from '@inertiajs/react';
@@ -26,6 +28,7 @@ export default function Settings({
     defaultPrefix,
     numberDigits,
     numberCounters,
+    photoRequired,
     footerLinks,
 }: {
     brandName: string;
@@ -33,6 +36,7 @@ export default function Settings({
     defaultPrefix: string | null;
     numberDigits: number;
     numberCounters: number;
+    photoRequired: boolean;
     footerLinks: FooterLink[];
 }) {
     const form = useForm({
@@ -41,6 +45,7 @@ export default function Settings({
         default_prefix: defaultPrefix ?? '',
         number_digits: numberDigits,
         number_counters: numberCounters,
+        photo_required: photoRequired,
         footer_links: footerLinks,
     });
     const footerErrors = form.errors as Record<string, string | undefined>;
@@ -237,6 +242,46 @@ export default function Settings({
                                         sx={{ width: { sm: 180 } }}
                                     />
                                 </Stack>
+                            </Box>
+                            <Box
+                                sx={{
+                                    mt: 5,
+                                    pt: 4,
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Typography component="h2" variant="h6">
+                                    Foto pelanggan
+                                </Typography>
+                                <Typography color="text.secondary">
+                                    Tentukan apakah pelanggan wajib mengambil
+                                    foto sebelum menerima nomor antrian.
+                                </Typography>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={form.data.photo_required}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'photo_required',
+                                                    event.target.checked,
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label={
+                                        form.data.photo_required
+                                            ? 'Foto wajib diambil'
+                                            : 'Foto boleh dilewati'
+                                    }
+                                    sx={{ mt: 2 }}
+                                />
+                                {form.errors.photo_required && (
+                                    <Typography color="error" variant="body2">
+                                        {form.errors.photo_required}
+                                    </Typography>
+                                )}
                             </Box>
                             <Box
                                 sx={{

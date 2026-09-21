@@ -6,6 +6,7 @@ namespace App\Data;
 
 use App\Enums\DeviceRole;
 use App\Models\Device;
+use App\Models\Setting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rules\File;
 use Spatie\LaravelData\Attributes\MapInputName;
@@ -31,10 +32,14 @@ final class TakeQueueNumberData extends Data
     /** @return array<string, array<int, mixed>> */
     public static function rules(): array
     {
+        $photoRequirement = Setting::current()->photo_required
+            ? 'required'
+            : 'nullable';
+
         return [
             'request_id' => ['required', 'uuid'],
             'photo' => [
-                'nullable',
+                $photoRequirement,
                 File::image()->types(['jpg', 'jpeg', 'png', 'webp'])->max(2048),
             ],
         ];

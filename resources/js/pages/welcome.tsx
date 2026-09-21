@@ -111,9 +111,9 @@ export default function Welcome({
                 <Box component="footer" className="public-queue-footer">
                     {footerLinks.length > 0 && (
                         <Box className="public-queue-footer-links">
-                            {footerLinks.map((link) => (
+                            {footerLinks.map((link, index) => (
                                 <a
-                                    key={link.url}
+                                    key={`${link.url}-${link.label}-${index}`}
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
