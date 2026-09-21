@@ -1,225 +1,126 @@
-import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
-import DisplaySettingsRounded from '@mui/icons-material/DisplaySettingsRounded';
-import GroupsRounded from '@mui/icons-material/GroupsRounded';
-import PointOfSaleRounded from '@mui/icons-material/PointOfSaleRounded';
-import VerifiedUserRounded from '@mui/icons-material/VerifiedUserRounded';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { AppShell } from '@/components/app-shell';
 import { ConnectionBadge } from '@/components/connection-badge';
-import { InertiaButton } from '@/components/inertia-button';
-import { SectionHeading } from '@/components/section-heading';
-import { display, home, operatorTerminal, pair, queueTerminal } from '@/routes';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
+import type { FooterLink } from '@/types/footer-link';
 import type { QueueState } from '@/types/queue';
+import { formatDate } from '@/utils/format';
 
-export default function Welcome({ state }: { state: QueueState }) {
+export default function Welcome({
+    state,
+    footerLinks,
+}: {
+    state: QueueState;
+    footerLinks: FooterLink[];
+}) {
     const realtime = useQueueRealtime(state);
-    state = realtime.state;
+    const queue = realtime.state;
+    const visibleWaiting = queue.waiting.slice(0, 8);
+    const remainingWaiting = queue.waiting.length - visibleWaiting.length;
 
     return (
-        <AppShell>
-            <Box component="section" className="home-hero">
-                <Container maxWidth="lg" className="home-hero-inner">
-                    <Box className="hero-copy">
-                        <Typography className="eyebrow hero-eyebrow">
-                            Antrean layanan, lebih tertata
-                        </Typography>
-                        <Typography component="h1" className="hero-title">
-                            Tunggu dengan tenang. Kami yang memanggil.
-                        </Typography>
-                        <Typography className="hero-detail">
-                            Pantau antrian dari mana saja dan datang saat nomor
-                            Anda mendekat. Satu sumber informasi untuk setiap
-                            layar di lokasi layanan.
-                        </Typography>
-                        <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={1.25}
-                            sx={{ mt: 4 }}
-                        >
-                            <InertiaButton
-                                href={pair.url()}
-                                variant="contained"
-                                color="secondary"
-                                endIcon={<ArrowForwardRounded />}
-                            >
-                                Hubungkan perangkat
-                            </InertiaButton>
-                            <InertiaButton
-                                href={operatorTerminal.url()}
-                                variant="outlined"
-                                color="inherit"
-                            >
-                                Buka terminal operator
-                            </InertiaButton>
-                        </Stack>
-                    </Box>
-                    <Box className="hero-number" aria-live="polite">
-                        <Typography className="hero-number-label">
-                            Sedang dipanggil
-                        </Typography>
-                        <Typography className="hero-number-value">
-                            {state.current?.number ?? '— — —'}
-                        </Typography>
-                        <Box className="hero-number-rule" />
-                        <Typography className="hero-number-note">
-                            {state.current?.counter
-                                ? `${state.current.counter}. Silakan menuju loket.`
-                                : 'Belum ada nomor yang dipanggil.'}
-                        </Typography>
-                    </Box>
-                </Container>
-            </Box>
-
-            <Container maxWidth="lg" sx={{ py: { xs: 5, md: 8 } }}>
-                <SectionHeading
-                    eyebrow="Monitor publik"
-                    title="Status antrian hari ini"
-                    detail="Informasi ringkas yang aman dibuka dari ponsel, tanpa akses ke data pribadi."
-                />
-                <ConnectionBadge state={realtime.connection} />
-                <Box className="public-monitor">
-                    <Card className="public-current">
-                        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                            <Typography className="eyebrow hero-eyebrow">
-                                Nomor saat ini
-                            </Typography>
-                            <Typography className="public-current-number">
-                                {state.current?.number ?? '— — —'}
-                            </Typography>
-                            <Typography className="public-current-counter">
-                                {state.current?.counter ??
-                                    'Menunggu panggilan berikutnya'}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                            <Typography className="eyebrow">
-                                Menunggu
-                            </Typography>
-                            <Typography variant="h3" sx={{ mt: 1 }}>
-                                {state.stats.waiting}
-                            </Typography>
-                            <Box className="public-waiting-list" sx={{ mt: 2 }}>
-                                {state.waiting.slice(0, 8).map((entry) => (
-                                    <Chip key={entry.id} label={entry.number} />
-                                ))}
-                            </Box>
-                            {!state.waiting.length && (
-                                <Typography
-                                    color="text.secondary"
-                                    sx={{ mt: 2 }}
-                                >
-                                    Belum ada nomor yang menunggu.
-                                </Typography>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Box>
-
-                <Box sx={{ mt: 8 }}>
-                    <SectionHeading
-                        eyebrow="Sesuai kebutuhan"
-                        title="Tiga pengalaman, satu antrian"
-                    />
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: {
-                                xs: '1fr',
-                                md: 'repeat(3, 1fr)',
-                            },
-                            gap: 2,
-                        }}
-                    >
-                        <RoleCard
-                            icon={<GroupsRounded />}
-                            title="Untuk pelanggan"
-                            detail="Pantau nomor yang sedang dipanggil dari ponsel."
-                            href={home.url()}
-                            action="Pantau antrian"
-                        />
-                        <RoleCard
-                            icon={<DisplaySettingsRounded />}
-                            title="Untuk lokasi"
-                            detail="Gunakan layar besar untuk informasi yang mudah dilihat."
-                            href={display.url()}
-                            action="Buka display"
-                        />
-                        <RoleCard
-                            icon={<PointOfSaleRounded />}
-                            title="Untuk petugas"
-                            detail="Kelola panggilan antrian dengan alur yang sederhana."
-                            href={operatorTerminal.url()}
-                            action="Buka terminal operator"
-                        />
-                    </Box>
-                </Box>
-
-                <Box className="principle-strip" sx={{ mt: 7 }}>
-                    <VerifiedUserRounded />
+        <Box component="main" className="public-queue-page">
+            <Container maxWidth="md" className="public-queue-content">
+                <Box component="header" className="public-queue-header">
                     <Box>
-                        <Typography sx={{ fontWeight: 700 }}>
-                            Satu sumber kebenaran
+                        <Typography
+                            component="h1"
+                            className="public-queue-brand"
+                        >
+                            ANTRE
+                        </Typography>
+                        <Typography className="public-queue-service">
+                            {queue.session.service_name}
+                        </Typography>
+                        <Typography className="public-queue-date">
+                            {formatDate(queue.session.date)}
+                        </Typography>
+                    </Box>
+                    <ConnectionBadge state={realtime.connection} />
+                </Box>
+
+                <Box className="public-queue-current" aria-live="polite">
+                    <Typography className="public-queue-label">
+                        Sedang dipanggil
+                    </Typography>
+                    <Typography
+                        className={`public-queue-number ${queue.current ? 'is-current' : 'is-empty'}`}
+                        key={queue.current?.id ?? 'empty'}
+                    >
+                        {queue.current?.number ?? '—'}
+                    </Typography>
+                    <Typography className="public-queue-counter">
+                        {queue.current?.counter ?? 'Menunggu panggilan'}
+                    </Typography>
+                </Box>
+
+                <Box
+                    component="section"
+                    className="public-queue-waiting"
+                    aria-labelledby="public-queue-waiting-title"
+                >
+                    <Box className="public-queue-section-heading">
+                        <Typography
+                            component="h2"
+                            id="public-queue-waiting-title"
+                        >
+                            Nomor berikutnya
                         </Typography>
                         <Typography color="text.secondary">
-                            Nomor ditetapkan oleh server, lalu dibagikan ke
-                            semua layar secara konsisten.
+                            {queue.stats.waiting} menunggu
                         </Typography>
                     </Box>
-                </Box>
-                <InertiaButton
-                    href={queueTerminal.url()}
-                    variant="text"
-                    endIcon={<ArrowForwardRounded />}
-                    sx={{ mt: 3 }}
-                >
-                    Ambil nomor di terminal
-                </InertiaButton>
-            </Container>
-        </AppShell>
-    );
-}
 
-function RoleCard({
-    icon,
-    title,
-    detail,
-    href,
-    action,
-}: {
-    icon: React.ReactNode;
-    title: string;
-    detail: string;
-    href: string;
-    action: string;
-}) {
-    return (
-        <Card className="role-card">
-            <CardContent sx={{ p: 3 }}>
-                <Box className="role-icon">{icon}</Box>
-                <Typography component="h3" variant="h6" sx={{ mt: 2 }}>
-                    {title}
-                </Typography>
-                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                    {detail}
-                </Typography>
-                <InertiaButton
-                    href={href}
-                    className="role-link"
-                    endIcon={<ArrowForwardRounded />}
-                >
-                    {action}
-                </InertiaButton>
-            </CardContent>
-        </Card>
+                    {visibleWaiting.length ? (
+                        <Box className="public-queue-list">
+                            {visibleWaiting.map((entry) => (
+                                <Typography
+                                    component="span"
+                                    className="public-queue-entry"
+                                    key={entry.id}
+                                >
+                                    {entry.number}
+                                </Typography>
+                            ))}
+                        </Box>
+                    ) : (
+                        <Typography className="public-queue-empty">
+                            Tidak ada nomor yang menunggu.
+                        </Typography>
+                    )}
+
+                    {remainingWaiting > 0 && (
+                        <Typography
+                            className="public-queue-more"
+                            color="text.secondary"
+                        >
+                            +{remainingWaiting} nomor berikutnya
+                        </Typography>
+                    )}
+                </Box>
+
+                <Box component="footer" className="public-queue-footer">
+                    {footerLinks.length > 0 && (
+                        <Box className="public-queue-footer-links">
+                            {footerLinks.map((link) => (
+                                <a
+                                    key={link.url}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
+                        </Box>
+                    )}
+                    <Typography component="p">
+                        © {new Date().getFullYear()} Antre by zainphp
+                    </Typography>
+                </Box>
+            </Container>
+        </Box>
     );
 }

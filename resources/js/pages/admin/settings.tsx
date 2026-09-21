@@ -1,3 +1,5 @@
+import AddRounded from '@mui/icons-material/AddRounded';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import SaveRounded from '@mui/icons-material/SaveRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import Box from '@mui/material/Box';
@@ -5,6 +7,7 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -13,19 +16,48 @@ import { type FormEvent } from 'react';
 
 import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
+import type { FooterLink } from '@/types/footer-link';
+
+const emptyFooterLink = (): FooterLink => ({ label: '', url: '' });
 
 export default function Settings({
     defaultPrefix,
     numberDigits,
+    footerLinks,
 }: {
     defaultPrefix: string | null;
     numberDigits: number;
+    footerLinks: FooterLink[];
 }) {
     const form = useForm({
         default_prefix: defaultPrefix ?? '',
         number_digits: numberDigits,
+        footer_links: footerLinks,
     });
+    const footerErrors = form.errors as Record<string, string | undefined>;
     const preview = `${form.data.default_prefix}${String(1).padStart(form.data.number_digits, '0')}`;
+
+    const updateFooterLink = (
+        index: number,
+        field: keyof FooterLink,
+        value: string,
+    ): void => {
+        form.setData(
+            'footer_links',
+            form.data.footer_links.map((link, linkIndex) =>
+                linkIndex === index ? { ...link, [field]: value } : link,
+            ),
+        );
+    };
+
+    const removeFooterLink = (index: number): void => {
+        form.setData(
+            'footer_links',
+            form.data.footer_links.filter(
+                (_, linkIndex) => linkIndex !== index,
+            ),
+        );
+    };
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -81,7 +113,7 @@ export default function Settings({
                         <Box
                             component="form"
                             onSubmit={submit}
-                            sx={{ maxWidth: 520 }}
+                            sx={{ maxWidth: 720 }}
                         >
                             <Stack
                                 direction={{ xs: 'column', sm: 'row' }}
@@ -130,6 +162,131 @@ export default function Settings({
                                     sx={{ width: { sm: 180 } }}
                                 />
                             </Stack>
+                            <Box
+                                sx={{
+                                    mt: 5,
+                                    pt: 4,
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Typography component="h2" variant="h6">
+                                    Tautan footer
+                                </Typography>
+                                <Typography color="text.secondary">
+                                    Tautan ini tampil untuk pengunjung publik.
+                                </Typography>
+
+                                <Stack spacing={1.5} sx={{ mt: 2 }}>
+                                    {form.data.footer_links.map(
+                                        (link, index) => {
+                                            const labelError =
+                                                footerErrors[
+                                                    'footer_links.' +
+                                                        index +
+                                                        '.label'
+                                                ];
+                                            const urlError =
+                                                footerErrors[
+                                                    'footer_links.' +
+                                                        index +
+                                                        '.url'
+                                                ];
+
+                                            return (
+                                                <Stack
+                                                    key={index}
+                                                    direction={{
+                                                        xs: 'column',
+                                                        sm: 'row',
+                                                    }}
+                                                    spacing={1.5}
+                                                    sx={{
+                                                        alignItems: {
+                                                            sm: 'flex-start',
+                                                        },
+                                                    }}
+                                                >
+                                                    <TextField
+                                                        fullWidth
+                                                        label="Nama link"
+                                                        value={link.label}
+                                                        onChange={(event) =>
+                                                            updateFooterLink(
+                                                                index,
+                                                                'label',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        error={Boolean(
+                                                            labelError,
+                                                        )}
+                                                        helperText={labelError}
+                                                    />
+                                                    <TextField
+                                                        fullWidth
+                                                        label="URL"
+                                                        placeholder="https://"
+                                                        value={link.url}
+                                                        onChange={(event) =>
+                                                            updateFooterLink(
+                                                                index,
+                                                                'url',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        error={Boolean(
+                                                            urlError,
+                                                        )}
+                                                        helperText={urlError}
+                                                    />
+                                                    <IconButton
+                                                        type="button"
+                                                        aria-label={
+                                                            'Hapus link ' +
+                                                            (index + 1)
+                                                        }
+                                                        onClick={() =>
+                                                            removeFooterLink(
+                                                                index,
+                                                            )
+                                                        }
+                                                        color="error"
+                                                        sx={{
+                                                            mt: {
+                                                                sm: 0.5,
+                                                            },
+                                                        }}
+                                                    >
+                                                        <DeleteOutlineRounded />
+                                                    </IconButton>
+                                                </Stack>
+                                            );
+                                        },
+                                    )}
+                                </Stack>
+
+                                <Button
+                                    type="button"
+                                    variant="outlined"
+                                    startIcon={<AddRounded />}
+                                    disabled={
+                                        form.data.footer_links.length >= 5
+                                    }
+                                    onClick={() =>
+                                        form.setData('footer_links', [
+                                            ...form.data.footer_links,
+                                            emptyFooterLink(),
+                                        ])
+                                    }
+                                    sx={{ mt: 2 }}
+                                >
+                                    Tambah link
+                                </Button>
+                            </Box>
+
                             <Button
                                 type="submit"
                                 variant="contained"

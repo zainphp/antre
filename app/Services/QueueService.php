@@ -12,7 +12,7 @@ use App\Models\Counter;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\QueueSession;
-use App\Models\QueueSetting;
+use App\Models\Setting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -192,7 +192,7 @@ final readonly class QueueService
     {
         $session = DB::transaction(function () use ($device): QueueSession {
             $current = $this->lockCurrentSession();
-            $settings = QueueSetting::current();
+            $settings = Setting::current();
             $entries = $current->entries()
                 ->whereNotIn('status', [QueueStatus::Completed, QueueStatus::Skipped])
                 ->get();
@@ -269,7 +269,7 @@ final readonly class QueueService
             return $session;
         }
 
-        $settings = QueueSetting::current();
+        $settings = Setting::current();
 
         return QueueSession::query()->firstOrCreate(
             ['active_key' => $businessDate],

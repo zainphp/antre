@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\DeviceRole;
+use App\Models\Setting;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,9 @@ final class RootController extends Controller
             }
         }
 
-        return Inertia::render('welcome', ['state' => $queues->state()]);
+        return Inertia::render('welcome', [
+            'state' => $queues->state(),
+            'footerLinks' => Setting::current()->footerLinks(),
+        ]);
     }
 }

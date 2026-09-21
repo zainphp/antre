@@ -74,7 +74,7 @@ export default function OperatorTerminal({
                     <CardContent sx={{ p: { xs: 3, md: 4 } }}>
                         <Box className="current-card-head">
                             <Box>
-                                <Typography className="eyebrow hero-eyebrow">
+                                <Typography className="eyebrow">
                                     Sedang dilayani
                                 </Typography>
                                 <Typography

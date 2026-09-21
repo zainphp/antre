@@ -4,24 +4,21 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\QueueSetting;
+use App\Models\Setting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<QueueSetting>
+ * @extends Factory<Setting>
  */
-class QueueSettingFactory extends Factory
+class SettingFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
             'default_prefix' => null,
             'number_digits' => 3,
+            'footer_links' => null,
         ];
     }
 }
