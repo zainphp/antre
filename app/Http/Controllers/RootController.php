@@ -16,18 +16,20 @@ final class RootController extends Controller
 {
     public function __invoke(Request $request, DeviceRegistry $devices, QueueService $queues): Response|RedirectResponse
     {
-        $device = $devices->resolve($request);
+        if (app()->environment('production')) {
+            $device = $devices->resolve($request);
 
-        if ($device?->hasRole(DeviceRole::OperatorTerminal)) {
-            return redirect()->route('operator-terminal');
-        }
+            if ($device?->hasRole(DeviceRole::OperatorTerminal)) {
+                return redirect()->route('operator-terminal');
+            }
 
-        if ($device?->hasRole(DeviceRole::QueueTerminal)) {
-            return redirect()->route('queue-terminal');
-        }
+            if ($device?->hasRole(DeviceRole::QueueTerminal)) {
+                return redirect()->route('queue-terminal');
+            }
 
-        if ($device?->hasRole(DeviceRole::Display)) {
-            return redirect()->route('display');
+            if ($device?->hasRole(DeviceRole::Display)) {
+                return redirect()->route('display');
+            }
         }
 
         return Inertia::render('welcome', ['state' => $queues->state()]);
