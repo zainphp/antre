@@ -203,7 +203,14 @@ function DeviceRow({ device }: { device: Device }) {
     return (
         <tr>
             <td>
-                <Typography sx={{ fontWeight: 700 }}>{device.name}</Typography>
+                <TextField
+                    label="Nama perangkat"
+                    value={form.data.name}
+                    onChange={(event) =>
+                        form.setData('name', event.target.value)
+                    }
+                    sx={{ minWidth: 180 }}
+                />
                 <Typography component="code" variant="body2">
                     {device.label}
                 </Typography>
@@ -228,42 +235,32 @@ function DeviceRow({ device }: { device: Device }) {
                 />
             </td>
             <td>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-                    <TextField
-                        label={`Nama ${device.label}`}
-                        value={form.data.name}
-                        onChange={(event) =>
-                            form.setData('name', event.target.value)
-                        }
-                        sx={{ minWidth: 150 }}
-                    />
-                    <Autocomplete
-                        multiple
-                        options={roles}
-                        value={roles.filter((role) =>
-                            form.data.roles.includes(role.value),
-                        )}
-                        isOptionEqualToValue={(option, value) =>
-                            option.value === value.value
-                        }
-                        getOptionLabel={(option) => option.label}
-                        onChange={(_, values) =>
-                            form.setData(
-                                'roles',
-                                values.map((role) => role.value),
-                            )
-                        }
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label={`Peran ${device.label}`}
-                                error={Boolean(form.errors.roles)}
-                                helperText={form.errors.roles}
-                            />
-                        )}
-                        sx={{ minWidth: 250 }}
-                    />
-                </Stack>
+                <Autocomplete
+                    multiple
+                    options={roles}
+                    value={roles.filter((role) =>
+                        form.data.roles.includes(role.value),
+                    )}
+                    isOptionEqualToValue={(option, value) =>
+                        option.value === value.value
+                    }
+                    getOptionLabel={(option) => option.label}
+                    onChange={(_, values) =>
+                        form.setData(
+                            'roles',
+                            values.map((role) => role.value),
+                        )
+                    }
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Peran"
+                            error={Boolean(form.errors.roles)}
+                            helperText={form.errors.roles}
+                        />
+                    )}
+                    sx={{ minWidth: 250 }}
+                />
             </td>
             <td>
                 <Typography variant="body2">
