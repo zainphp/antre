@@ -17,12 +17,15 @@ function deviceCookie(Device $device, string $credential): string
 }
 
 test('pairing is closed by default', function () {
+    User::factory()->administrator()->create();
+
     $this->get('/pair')->assertForbidden();
 
     expect(Device::query()->count())->toBe(0);
 });
 
 test('only an administrator can open pairing', function () {
+    $admin = User::factory()->administrator()->create();
     $operator = User::factory()->create();
 
     $this->actingAs($operator)
@@ -32,8 +35,6 @@ test('only an administrator can open pairing', function () {
     $this->actingAs($operator)
         ->post(route('admin.devices.pairing-session.close'))
         ->assertForbidden();
-
-    $admin = User::factory()->administrator()->create();
 
     $this->actingAs($admin)
         ->post(route('admin.devices.pairing-session'))
@@ -60,6 +61,7 @@ test('an administrator can close pairing before it expires', function () {
 });
 
 test('an administrator pairing session closes after sixty seconds', function () {
+    User::factory()->administrator()->create();
     app(PairingSession::class)->open();
 
     expect(app(PairingSession::class)->isOpen())->toBeTrue();
@@ -71,6 +73,7 @@ test('an administrator pairing session closes after sixty seconds', function () 
 });
 
 test('a new device gets a persistent pairing identity during an open session', function () {
+    User::factory()->administrator()->create();
     app(PairingSession::class)->open();
 
     $response = $this->get('/pair');
@@ -85,6 +88,7 @@ test('a new device gets a persistent pairing identity during an open session', f
 });
 
 test('a device role is required before dedicated display access', function () {
+    User::factory()->administrator()->create();
     $credential = 'display-secret';
     $device = Device::factory()->create([
         'roles' => [DeviceRole::Display->value],
@@ -98,6 +102,7 @@ test('a device role is required before dedicated display access', function () {
 });
 
 test('an assigned display cannot use the queue terminal endpoint', function () {
+    User::factory()->administrator()->create();
     $credential = 'display-secret';
     $device = Device::factory()->create([
         'roles' => [DeviceRole::Display->value],
@@ -111,6 +116,7 @@ test('an assigned display cannot use the queue terminal endpoint', function () {
 });
 
 test('operator access requires a registered operator terminal', function () {
+    User::factory()->administrator()->create();
     $credential = 'operator-secret';
     $device = Device::factory()->create([
         'roles' => [DeviceRole::OperatorTerminal->value],
@@ -140,6 +146,7 @@ test('operator access requires a registered operator terminal', function () {
 });
 
 test('only administrators can assign devices', function () {
+    User::factory()->administrator()->create();
     $device = Device::factory()->unregistered()->create();
     $operator = User::factory()->create();
 
@@ -216,6 +223,7 @@ test('a device with history is soft deleted', function () {
 });
 
 test('a device with multiple roles can access each assigned experience', function () {
+    User::factory()->administrator()->create();
     $credential = 'operator-display-secret';
     $device = Device::factory()->roles(
         DeviceRole::OperatorTerminal,

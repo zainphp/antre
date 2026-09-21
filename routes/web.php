@@ -6,11 +6,17 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DevicePairController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\QueueSettingsController;
 use App\Http\Controllers\RootController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/onboarding', [OnboardingController::class, 'create'])->name('onboarding');
+Route::post('/onboarding', [OnboardingController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('onboarding.store');
 
 Route::get('/', RootController::class)->name('home');
 Route::get('/pair', [DevicePairController::class, 'show'])->name('pair');

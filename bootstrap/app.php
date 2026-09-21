@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\AuthenticateDevice;
+use App\Http\Middleware\EnsureAdministratorExists;
 use App\Http\Middleware\EnsureDeviceRole;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -21,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(EnsureAdministratorExists::class);
+
         $middleware->alias([
             'device.auth' => AuthenticateDevice::class,
             'device.role' => EnsureDeviceRole::class,

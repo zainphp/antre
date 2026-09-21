@@ -53,6 +53,7 @@ test('assign device data authorizes and persists a device assignment', function 
 });
 
 test('take queue number data validates an authenticated terminal request', function () {
+    User::factory()->administrator()->create();
     Storage::fake('local');
     $credential = 'queue-secret';
     $device = Device::factory()->create([
@@ -82,6 +83,7 @@ test('take queue number data validates an authenticated terminal request', funct
 });
 
 test('queue action data authorizes an operator terminal request', function () {
+    User::factory()->administrator()->create();
     $credential = 'operator-secret';
     $device = Device::factory()->create([
         'roles' => [DeviceRole::OperatorTerminal->value],
@@ -104,6 +106,7 @@ test('queue action data authorizes an operator terminal request', function () {
 });
 
 test('operator terminals can recall a selected unfinished number', function () {
+    User::factory()->administrator()->create();
     $credential = 'operator-recall-secret';
     $device = Device::factory()->create([
         'roles' => [DeviceRole::OperatorTerminal->value],
@@ -134,6 +137,7 @@ test('operator terminals can recall a selected unfinished number', function () {
 });
 
 test('operator accounts cannot authenticate through the administrator login', function () {
+    User::factory()->administrator()->create();
     User::factory()->create([
         'email' => 'operator@example.com',
         'password' => 'secret',

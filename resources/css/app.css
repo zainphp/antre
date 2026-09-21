@@ -706,6 +706,7 @@ select:focus-visible {
 }
 
 .login-page,
+.onboarding-page,
 .admin-page {
     max-width: 1000px;
     margin: auto;
@@ -714,6 +715,10 @@ select:focus-visible {
 
 .login-page {
     max-width: 560px;
+}
+
+.onboarding-page {
+    max-width: 920px;
 }
 
 .admin-layout {

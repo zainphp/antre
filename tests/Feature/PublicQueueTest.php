@@ -6,6 +6,7 @@ use App\Enums\DeviceRole;
 use App\Events\QueueChanged;
 use App\Models\Device;
 use App\Models\QueueEntry;
+use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
 use Illuminate\Http\UploadedFile;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('the public home page and queue API do not require login', function () {
+    User::factory()->administrator()->create();
+
     $this->get('/')->assertOk();
 
     $response = $this->getJson('/api/queue/state');
@@ -44,6 +47,8 @@ test('public queue state excludes private entry data', function () {
 });
 
 test('a registered operator can privately load the current customer photo', function () {
+    User::factory()->administrator()->create();
+
     Event::fake();
     Storage::fake('local');
     $operatorCredential = 'operator-secret';
@@ -96,6 +101,8 @@ test('a registered operator can privately load the current customer photo', func
 });
 
 test('an unregistered device identity can view public content', function () {
+    User::factory()->administrator()->create();
+
     $device = Device::factory()->unregistered()->create(['credential_hash' => hash('sha256', 'pending-secret')]);
 
     $response = $this->withCookie(DeviceRegistry::COOKIE, $device->id.'.pending-secret')->get('/');

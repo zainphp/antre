@@ -14,7 +14,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 test('only administrators can view and update queue settings', function () {
     $settings = route('admin.settings');
 
-    $this->get($settings)->assertRedirect(route('login'));
+    $this->get($settings)->assertRedirect(route('onboarding'));
+
+    User::factory()->administrator()->create();
     $this->actingAs(User::factory()->create())->get($settings)->assertForbidden();
 
     $admin = User::factory()->administrator()->create();
