@@ -3,7 +3,6 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import RemoveCircleOutlineRounded from '@mui/icons-material/RemoveCircleOutlineRounded';
-import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import StopCircleRounded from '@mui/icons-material/StopCircleRounded';
 import TimerRounded from '@mui/icons-material/TimerRounded';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -19,8 +18,7 @@ import Typography from '@mui/material/Typography';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
-import { AppShell } from '@/components/app-shell';
-import { InertiaButton } from '@/components/inertia-button';
+import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
 import echo from '@/services/echo';
 import type { Device, DeviceRole } from '@/types/device';
@@ -84,7 +82,7 @@ export default function Devices({
     }, []);
 
     return (
-        <AppShell>
+        <AdminLayout>
             <Container maxWidth="lg" className="admin-page">
                 <Box
                     sx={{
@@ -113,13 +111,6 @@ export default function Devices({
                         </Typography>
                     </Box>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                        <InertiaButton
-                            href={admin.settings.url()}
-                            variant="outlined"
-                            startIcon={<SettingsRounded />}
-                        >
-                            Pengaturan
-                        </InertiaButton>
                         <Button
                             variant={pairingOpen ? 'contained' : 'outlined'}
                             startIcon={
@@ -196,7 +187,7 @@ export default function Devices({
                     </Card>
                 )}
             </Container>
-        </AppShell>
+        </AdminLayout>
     );
 }
 

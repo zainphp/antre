@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DevicePairController;
@@ -41,6 +42,7 @@ Route::middleware(['device.auth', 'device.role:OPERATOR_TERMINAL'])->group(funct
 });
 
 Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/', AdminController::class)->name('index');
     Route::get('/devices', [DeviceController::class, 'index'])->name('devices');
     Route::post('/devices/pairing-session', [DeviceController::class, 'openPairingSession'])->name('devices.pairing-session');
     Route::post('/devices/pairing-session/close', [DeviceController::class, 'closePairingSession'])->name('devices.pairing-session.close');

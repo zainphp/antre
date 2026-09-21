@@ -1,4 +1,3 @@
-import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import SaveRounded from '@mui/icons-material/SaveRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import Box from '@mui/material/Box';
@@ -12,8 +11,7 @@ import Typography from '@mui/material/Typography';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
-import { AppShell } from '@/components/app-shell';
-import { InertiaButton } from '@/components/inertia-button';
+import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
 
 export default function Settings({
@@ -35,7 +33,7 @@ export default function Settings({
     };
 
     return (
-        <AppShell>
+        <AdminLayout>
             <Container maxWidth="md" className="admin-page">
                 <Box
                     sx={{
@@ -63,13 +61,6 @@ export default function Settings({
                             berikutnya.
                         </Typography>
                     </Box>
-                    <InertiaButton
-                        href={admin.devices.url()}
-                        variant="outlined"
-                        startIcon={<DevicesOtherRounded />}
-                    >
-                        Perangkat
-                    </InertiaButton>
                 </Box>
 
                 <Card>
@@ -154,6 +145,6 @@ export default function Settings({
                     </CardContent>
                 </Card>
             </Container>
-        </AppShell>
+        </AdminLayout>
     );
 }
