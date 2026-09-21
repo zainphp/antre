@@ -6,14 +6,17 @@ import EventBusyRounded from '@mui/icons-material/EventBusyRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
-import SkipNextRounded from '@mui/icons-material/SkipNextRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import MenuItem from '@mui/material/MenuItem';
@@ -21,6 +24,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { SectionHeading } from '@/components/section-heading';
@@ -48,14 +52,24 @@ export default function OperatorTerminal({
     canOpenQueueTerminal: boolean;
     canOpenDisplay: boolean;
 }) {
-    const realtime = useQueueRealtime(state);
+    const realtime = useQueueRealtime(state, { refreshOnEvent: true });
     state = realtime.state;
-    const action = useForm({ counter: counters[0] ?? 'Loket 1' });
+    const action = useForm({
+        counter: counters[0] ?? 'Loket 1',
+        entry_id: null as string | null,
+    });
+    const callableEntries = state.callable ?? [];
+    const displayedEntry = state.current;
+    const canRecall = Boolean(state.current);
+    const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
     const { errors } = usePage().props as unknown as {
         errors: { queue?: string };
     };
 
-    const post = (url: string) => action.post(url, { preserveScroll: true });
+    const post = (url: string, entryId: string | null = null) => {
+        action.transform((data) => ({ ...data, entry_id: entryId }));
+        action.post(url, { preserveScroll: true });
+    };
 
     return (
         <Box component="main" className="operator-terminal-page">
@@ -66,8 +80,8 @@ export default function OperatorTerminal({
                         Kelola antrian
                     </Typography>
                     <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                        Panggil nomor berikutnya dan pastikan pelanggan mendapat
-                        informasi yang jelas.
+                        Pilih nomor yang akan dipanggil dan pastikan pelanggan
+                        mendapat informasi yang jelas.
                     </Typography>
                 </Box>
                 <Stack
@@ -129,21 +143,44 @@ export default function OperatorTerminal({
                                     Nomor saat ini
                                 </Typography>
                             </Box>
-                            {state.current && (
+                            {displayedEntry && (
                                 <Chip
                                     className="current-status-chip"
-                                    label={statusLabels[state.current.status]}
+                                    label={statusLabels[displayedEntry.status]}
                                     variant="outlined"
                                 />
                             )}
                         </Box>
                         <Typography className="current-number">
-                            {state.current?.number ?? '— — —'}
+                            {displayedEntry?.number ?? '— — —'}
                         </Typography>
                         <Typography className="current-counter">
                             {state.current?.counter ?? 'Belum ada nomor aktif'}
                         </Typography>
-                        <Box className="call-row">
+                        {canRecall && (
+                            <Button
+                                className="display-control current-recall"
+                                variant="outlined"
+                                startIcon={<ReplayRounded />}
+                                disabled={action.processing}
+                                onClick={() => post(queue.recall.url())}
+                            >
+                                Panggil ulang
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="waiting-card">
+                    <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                        <Box className="section-title-row">
+                            <SectionHeading
+                                eyebrow="Belum selesai"
+                                title="Nomor yang dapat dipanggil"
+                                detail="Pilih nomor untuk memanggilnya."
+                            />
+                            <Chip label={`${callableEntries.length} nomor`} />
+                        </Box>
+                        <Box className="queue-counter-row">
                             <TextField
                                 select
                                 label="Loket"
@@ -162,99 +199,107 @@ export default function OperatorTerminal({
                                     </MenuItem>
                                 ))}
                             </TextField>
-                            <Button
-                                className="call-button"
-                                variant="contained"
-                                color="secondary"
-                                startIcon={
-                                    action.processing ? (
-                                        <CircularProgress
-                                            color="inherit"
-                                            size={18}
-                                        />
-                                    ) : (
-                                        <CallRounded />
-                                    )
-                                }
-                                disabled={
-                                    action.processing || Boolean(state.current)
-                                }
-                                onClick={() => post(queue.callNext.url())}
-                            >
-                                {action.processing
-                                    ? 'Memproses…'
-                                    : 'Panggil berikutnya'}
-                            </Button>
+                            <Typography variant="body2" color="text.secondary">
+                                Pilih nomor pada daftar untuk memanggilnya.
+                            </Typography>
                         </Box>
-                        <Box className="current-actions">
-                            <Button
-                                variant="outlined"
-                                className="display-control"
-                                startIcon={<ReplayRounded />}
-                                disabled={action.processing || !state.current}
-                                onClick={() => post(queue.recall.url())}
-                            >
-                                Panggil ulang
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                className="display-control"
-                                startIcon={<CheckRounded />}
-                                disabled={
-                                    action.processing ||
-                                    state.current?.status !== 'CALLED'
-                                }
-                                onClick={() => post(queue.serve.url())}
-                            >
-                                Mulai layani
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                className="display-control"
-                                startIcon={<DoneAllRounded />}
-                                disabled={action.processing || !state.current}
-                                onClick={() => post(queue.complete.url())}
-                            >
-                                Selesai
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                color="warning"
-                                className="display-control"
-                                startIcon={<SkipNextRounded />}
-                                disabled={action.processing || !state.current}
-                                onClick={() => post(queue.skip.url())}
-                            >
-                                Lewati
-                            </Button>
-                        </Box>
-                    </CardContent>
-                </Card>
-                <Card className="waiting-card">
-                    <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                        <Box className="section-title-row">
-                            <SectionHeading
-                                eyebrow="Berikutnya"
-                                title="Menunggu dipanggil"
-                                detail="Urutan ditentukan server."
-                            />
-                            <Chip label={`${state.stats.waiting} nomor`} />
-                        </Box>
-                        {state.waiting.length ? (
+                        {callableEntries.length ? (
                             <List className="waiting-list">
-                                {state.waiting.map((entry, index) => (
+                                {callableEntries.map((entry) => (
                                     <ListItem
                                         key={entry.id}
                                         divider
+                                        aria-current={
+                                            state.current?.id === entry.id
+                                                ? 'true'
+                                                : undefined
+                                        }
                                         secondaryAction={
-                                            <Typography color="text.secondary">
-                                                #{index + 1}
-                                            </Typography>
+                                            state.current?.id === entry.id ? (
+                                                <Stack
+                                                    direction={{
+                                                        xs: 'column',
+                                                        sm: 'row',
+                                                    }}
+                                                    spacing={1}
+                                                    sx={{
+                                                        alignItems: 'flex-end',
+                                                    }}
+                                                >
+                                                    <Chip
+                                                        label="Saat ini"
+                                                        color="secondary"
+                                                        size="small"
+                                                    />
+                                                    {entry.status ===
+                                                        'CALLED' && (
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            startIcon={
+                                                                <CheckRounded />
+                                                            }
+                                                            disabled={
+                                                                action.processing
+                                                            }
+                                                            onClick={() =>
+                                                                post(
+                                                                    queue.serve.url(),
+                                                                )
+                                                            }
+                                                        >
+                                                            Mulai layani
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        startIcon={
+                                                            <DoneAllRounded />
+                                                        }
+                                                        disabled={
+                                                            action.processing
+                                                        }
+                                                        onClick={() =>
+                                                            setCompleteDialogOpen(
+                                                                true,
+                                                            )
+                                                        }
+                                                    >
+                                                        Selesai
+                                                    </Button>
+                                                </Stack>
+                                            ) : (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<CallRounded />}
+                                                    disabled={action.processing}
+                                                    onClick={() =>
+                                                        post(
+                                                            queue.recall.url(),
+                                                            entry.id,
+                                                        )
+                                                    }
+                                                >
+                                                    Panggil
+                                                </Button>
+                                            )
                                         }
                                     >
-                                        <Typography sx={{ fontWeight: 700 }}>
-                                            {entry.number}
-                                        </Typography>
+                                        <Stack spacing={0.25}>
+                                            <Typography
+                                                sx={{ fontWeight: 700 }}
+                                            >
+                                                {entry.number}
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                            >
+                                                {statusLabels[entry.status]}
+                                            </Typography>
+                                        </Stack>
                                     </ListItem>
                                 ))}
                             </List>
@@ -262,10 +307,10 @@ export default function OperatorTerminal({
                             <Box className="empty-state">
                                 <GroupsRounded />
                                 <Typography sx={{ fontWeight: 700 }}>
-                                    Antrian kosong
+                                    Tidak ada nomor terbuka
                                 </Typography>
                                 <Typography color="text.secondary">
-                                    Nomor baru akan muncul di sini.
+                                    Semua nomor sudah selesai dilayani.
                                 </Typography>
                             </Box>
                         )}
@@ -329,6 +374,36 @@ export default function OperatorTerminal({
                     </CardContent>
                 </Card>
             </Box>
+            <Dialog
+                open={completeDialogOpen}
+                onClose={() => setCompleteDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Selesaikan nomor ini?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Nomor {state.current?.number ?? 'ini'} akan ditandai
+                        selesai dan tidak dapat dipanggil kembali.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCompleteDialogOpen(false)}>
+                        Batal
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<DoneAllRounded />}
+                        disabled={action.processing}
+                        onClick={() => {
+                            setCompleteDialogOpen(false);
+                            post(queue.complete.url());
+                        }}
+                    >
+                        Selesaikan
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

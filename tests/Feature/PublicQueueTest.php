@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\DeviceRole;
+use App\Events\QueueChanged;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Services\DeviceRegistry;
@@ -26,7 +27,15 @@ test('public queue state excludes private entry data', function () {
 
     $response = $this->getJson('/api/queue/state');
 
-    $response->assertOk()->assertJsonMissingPath('data.waiting.0.photo_path')->assertJsonMissingPath('data.waiting.0.device_id');
+    $response->assertOk()
+        ->assertJsonMissingPath('data.callable')
+        ->assertJsonMissingPath('data.waiting.0.photo_path')
+        ->assertJsonMissingPath('data.waiting.0.device_id');
+
+    Event::assertDispatched(
+        QueueChanged::class,
+        fn (QueueChanged $event): bool => ! array_key_exists('callable', $event->state),
+    );
 });
 
 test('an unregistered device identity can view public content', function () {

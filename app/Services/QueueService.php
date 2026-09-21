@@ -24,7 +24,7 @@ final readonly class QueueService
     /**
      * @return array<string, mixed>
      */
-    public function state(): array
+    public function state(bool $includeCallable = false): array
     {
         $session = $this->currentSession();
         $settings = Setting::current();
@@ -35,8 +35,7 @@ final readonly class QueueService
             ->where('status', QueueStatus::Waiting)
             ->orderBy('sequence')
             ->get();
-
-        return [
+        $state = [
             'session' => [
                 'date' => $session->business_date->format('Y-m-d'),
                 'service_name' => $settings->session_name,
@@ -54,6 +53,21 @@ final readonly class QueueService
                 'skipped' => $session->entries()->where('status', QueueStatus::Skipped)->count(),
             ],
         ];
+
+        if ($includeCallable) {
+            $callable = $session->entries()
+                ->with('counter')
+                ->where('status', '!=', QueueStatus::Completed)
+                ->orderBy('sequence')
+                ->get();
+
+            $state['callable'] = $callable
+                ->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))
+                ->values()
+                ->all();
+        }
+
+        return $state;
     }
 
     public function take(
@@ -120,19 +134,7 @@ final readonly class QueueService
                 throw new QueueConflictException('Belum ada nomor yang menunggu.');
             }
 
-            $counterNames = Setting::current()->counterNames();
-            $selectedCounter = trim($counterName ?? '');
-            if ($selectedCounter === '') {
-                $selectedCounter = $counterNames[0];
-            }
-            if (! in_array($selectedCounter, $counterNames, true)) {
-                throw new QueueConflictException('Loket yang dipilih tidak tersedia.');
-            }
-
-            $counter = Counter::firstOrCreate(['name' => $selectedCounter], ['active' => true]);
-            if (! $counter->active) {
-                throw new QueueConflictException('Loket yang dipilih tidak aktif.');
-            }
+            $counter = $this->configuredCounter($counterName);
 
             $entry->update([
                 'status' => QueueStatus::Called,
@@ -153,13 +155,76 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function recall(Device $device): QueueEntry
+    public function recall(?string $counterName, ?string $entryId, Device $device): QueueEntry
     {
-        $entry = DB::transaction(function () use ($device): QueueEntry {
-            [$session, $entry] = $this->lockCurrentEntry();
-            $this->ensureActive($entry);
-            $entry->update(['called_at' => now()]);
-            $this->audit->record('queue.recalled', device: $device, subject: $entry);
+        $entry = DB::transaction(function () use ($counterName, $entryId, $device): QueueEntry {
+            $session = $this->lockCurrentSession();
+            $entry = $entryId
+                ? $session->entries()->whereKey($entryId)->lockForUpdate()->first()
+                : ($session->current_entry_id
+                    ? $session->entries()->whereKey($session->current_entry_id)->lockForUpdate()->first()
+                    : $session->entries()
+                        ->where('status', QueueStatus::Skipped)
+                        ->orderByDesc('completed_at')
+                        ->orderByDesc('sequence')
+                        ->lockForUpdate()
+                        ->first());
+
+            if (! $entry) {
+                throw new QueueConflictException('Belum ada nomor yang dapat dipanggil ulang.');
+            }
+
+            if ($entry->status === QueueStatus::Completed) {
+                throw new QueueConflictException('Nomor yang sudah selesai tidak dapat dipanggil kembali.');
+            }
+
+            if ($session->current_entry_id && $session->current_entry_id !== $entry->id) {
+                $current = $session->entries()
+                    ->whereKey($session->current_entry_id)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $current || ! in_array($current->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+                    throw new QueueConflictException('Nomor aktif tidak dapat dilewati saat ini.');
+                }
+
+                $this->skipEntry($current, $device);
+                $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
+            }
+
+            if (in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+                if ($session->current_entry_id !== $entry->id) {
+                    throw new QueueConflictException('Nomor ini sedang tidak aktif.');
+                }
+
+                $this->ensureActive($entry);
+                $entry->update(['called_at' => now()]);
+                $this->audit->record('queue.recalled', device: $device, subject: $entry);
+
+                return $entry->load('counter');
+            }
+
+            if (! in_array($entry->status, [QueueStatus::Waiting, QueueStatus::Skipped], true)) {
+                throw new QueueConflictException('Nomor ini belum dapat dipanggil kembali.');
+            }
+
+            $counter = $this->configuredCounter($counterName);
+            $fromStatus = $entry->status->value;
+            $entry->update([
+                'status' => QueueStatus::Called,
+                'counter_id' => $counter->id,
+                'called_at' => now(),
+                'completed_at' => null,
+            ]);
+            $session->update([
+                'current_entry_id' => $entry->id,
+                'current_counter_id' => $counter->id,
+            ]);
+            $this->audit->record(
+                'queue.recalled',
+                device: $device,
+                subject: $entry,
+                metadata: ['from_status' => $fromStatus, 'counter' => $counter->name],
+            );
 
             return $entry->load('counter');
         });
@@ -251,16 +316,20 @@ final readonly class QueueService
                 throw new QueueConflictException($message);
             }
 
-            if ($entry->photo_path) {
-                Storage::disk('local')->delete($entry->photo_path);
+            if ($status === QueueStatus::Skipped) {
+                $this->skipEntry($entry, $device);
+            } else {
+                if ($entry->photo_path) {
+                    Storage::disk('local')->delete($entry->photo_path);
+                }
+                $entry->update([
+                    'status' => $status,
+                    'completed_at' => now(),
+                    'photo_path' => null,
+                ]);
+                $this->audit->record($eventName, device: $device, subject: $entry);
             }
-            $entry->update([
-                'status' => $status,
-                'completed_at' => now(),
-                'photo_path' => null,
-            ]);
             $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
-            $this->audit->record($eventName, device: $device, subject: $entry);
 
             return $entry->load('counter');
         });
@@ -268,6 +337,19 @@ final readonly class QueueService
         event(new QueueChanged($this->state()));
 
         return $entry;
+    }
+
+    private function skipEntry(QueueEntry $entry, Device $device): void
+    {
+        if ($entry->photo_path) {
+            Storage::disk('local')->delete($entry->photo_path);
+        }
+        $entry->update([
+            'status' => QueueStatus::Skipped,
+            'completed_at' => now(),
+            'photo_path' => null,
+        ]);
+        $this->audit->record('queue.skipped', device: $device, subject: $entry);
     }
 
     private function currentSession(): QueueSession
@@ -318,6 +400,23 @@ final readonly class QueueService
         if (! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
             throw new QueueConflictException('Nomor ini belum dapat dipanggil ulang.');
         }
+    }
+
+    private function configuredCounter(?string $counterName): Counter
+    {
+        $counterNames = Setting::current()->counterNames();
+        $selectedCounter = trim($counterName ?? '');
+        $selectedCounter = $selectedCounter === '' ? $counterNames[0] : $selectedCounter;
+        if (! in_array($selectedCounter, $counterNames, true)) {
+            throw new QueueConflictException('Loket yang dipilih tidak tersedia.');
+        }
+
+        $counter = Counter::firstOrCreate(['name' => $selectedCounter], ['active' => true]);
+        if (! $counter->active) {
+            throw new QueueConflictException('Loket yang dipilih tidak aktif.');
+        }
+
+        return $counter;
     }
 
     private function formatNumber(?string $prefix, int $digits, int $sequence): string

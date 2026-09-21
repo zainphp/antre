@@ -69,6 +69,37 @@ test('call next only accepts configured counters', function () {
     expect($called->counter?->name)->toBe('Loket 2');
 });
 
+test('operators can recall any unfinished number', function () {
+    Event::fake([QueueChanged::class]);
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
+    $queues = app(QueueService::class);
+    $first = $queues->take(null, (string) Str::uuid());
+    $second = $queues->take(null, (string) Str::uuid());
+    $waiting = $queues->take(null, (string) Str::uuid());
+    $queues->callNext('Loket 1', $device);
+
+    expect($queues->state(includeCallable: true)['callable'])->toHaveCount(3);
+
+    $recalled = $queues->recall('Loket 1', $second->id, $device);
+
+    expect($recalled->id)->toBe($second->id)
+        ->and($recalled->status)->toBe(QueueStatus::Called)
+        ->and($recalled->completed_at)->toBeNull()
+        ->and($first->fresh()->status)->toBe(QueueStatus::Skipped)
+        ->and($queues->state()['current']['number'])->toBe($second->number)
+        ->and($queues->state(includeCallable: true)['callable'])->toHaveCount(3);
+
+    $queues->startServing($device);
+    $queues->complete($device);
+    Setting::current()->update(['number_counters' => 2]);
+    $recalledWaiting = $queues->recall('Loket 2', $waiting->id, $device);
+
+    expect($recalledWaiting->id)->toBe($waiting->id)
+        ->and($recalledWaiting->counter?->name)->toBe('Loket 2')
+        ->and($first->fresh()->status)->toBe(QueueStatus::Skipped)
+        ->and($second->fresh()->status)->toBe(QueueStatus::Completed);
+});
+
 test('reset archives the current session and starts numbering again', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();

@@ -41,9 +41,9 @@ final class QueueController extends Controller
     public function recall(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            $queues->recall($this->device($request));
+            $queues->recall($data->counter, $data->entryId, $this->device($request));
 
-            return back()->with('success', 'Panggilan diulang.');
+            return back()->with('success', 'Nomor dipanggil kembali.');
         } catch (QueueConflictException $exception) {
             return $this->conflict($request, $exception);
         }

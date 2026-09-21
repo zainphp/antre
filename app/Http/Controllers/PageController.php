@@ -36,7 +36,7 @@ final class PageController extends Controller
         $device = $request->attributes->get('device');
 
         return Inertia::render('operator-terminal', [
-            'state' => $queues->state(),
+            'state' => $queues->state(includeCallable: true),
             'counters' => $settings->counterNames(),
             'canOpenQueueTerminal' => $device instanceof Device && $device->hasRole(DeviceRole::QueueTerminal),
             'canOpenDisplay' => $device instanceof Device && $device->hasRole(DeviceRole::Display),

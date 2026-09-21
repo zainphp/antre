@@ -103,6 +103,36 @@ test('queue action data authorizes an operator terminal request', function () {
         ->counter->name->toBe('Loket 1');
 });
 
+test('operator terminals can recall a selected unfinished number', function () {
+    $credential = 'operator-recall-secret';
+    $device = Device::factory()->create([
+        'roles' => [DeviceRole::OperatorTerminal->value],
+        'status' => DeviceStatus::Registered,
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+    $queues = app(QueueService::class);
+    $entry = $queues->take(null, (string) Str::uuid(), $device);
+    $cookie = $device->id.'.'.$credential;
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->post(route('queue.call-next'), ['counter' => 'Loket 1'])
+        ->assertRedirect();
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->post(route('queue.skip'))
+        ->assertRedirect();
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->post(route('queue.recall'), [
+            'counter' => 'Loket 1',
+            'entry_id' => $entry->id,
+        ])
+        ->assertRedirect();
+
+    expect(QueueEntry::query()->firstOrFail())
+        ->status->toBe(QueueStatus::Called)
+        ->counter->name->toBe('Loket 1');
+});
+
 test('operator accounts cannot authenticate through the administrator login', function () {
     User::factory()->create([
         'email' => 'operator@example.com',

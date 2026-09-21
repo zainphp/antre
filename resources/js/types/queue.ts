@@ -21,6 +21,7 @@ export type QueueState = {
     };
     current: QueueEntry | null;
     waiting: QueueEntry[];
+    callable?: QueueEntry[];
     stats: {
         total: number;
         waiting: number;
