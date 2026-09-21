@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
 
                 return response;
             } catch {
-                return cache.match(request);
+                return (await cache.match(request)) ?? Response.error();
             }
         }),
     );
