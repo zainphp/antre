@@ -8,6 +8,7 @@ use App\Enums\QueueStatus;
 use App\Enums\UserRole;
 use App\Models\Device;
 use App\Models\QueueEntry;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
@@ -80,6 +81,43 @@ test('take queue number data validates an authenticated terminal request', funct
     }
 
     Storage::disk('local')->assertExists($entry->photo_path);
+});
+
+test('queue terminals can take a number without a photo when photos are optional', function () {
+    User::factory()->administrator()->create();
+    $credential = 'queue-optional-photo-secret';
+    $device = Device::factory()->roles(DeviceRole::QueueTerminal)->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+
+    $response = $this->withCookie(
+        DeviceRegistry::COOKIE,
+        $device->id.'.'.$credential,
+    )->post(route('queue.take'), [
+        'request_id' => (string) Str::uuid(),
+    ]);
+
+    $response->assertCreated()->assertJsonPath('data.number', '001');
+    expect(QueueEntry::query()->firstOrFail()->photo_path)->toBeNull();
+});
+
+test('queue terminals cannot take a number without a photo when photos are required', function () {
+    User::factory()->administrator()->create();
+    Setting::current()->update(['photo_required' => true]);
+    $credential = 'queue-required-photo-secret';
+    $device = Device::factory()->roles(DeviceRole::QueueTerminal)->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+
+    $response = $this->withCookie(
+        DeviceRegistry::COOKIE,
+        $device->id.'.'.$credential,
+    )->withHeaders(['Accept' => 'application/json'])->post(route('queue.take'), [
+        'request_id' => (string) Str::uuid(),
+    ]);
+
+    $response->assertUnprocessable()->assertJsonValidationErrors('photo');
+    expect(QueueEntry::query()->count())->toBe(0);
 });
 
 test('queue action data authorizes an operator terminal request', function () {

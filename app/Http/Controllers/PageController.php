@@ -22,11 +22,14 @@ final class PageController extends Controller
         ]);
     }
 
-    public function queueTerminal(QueueService $queues): Response
+    public function queueTerminal(): Response
     {
+        $settings = Setting::current();
+
         return Inertia::render('queue-terminal', [
-            'state' => $queues->state(),
-            'brandName' => Setting::current()->brand_name,
+            'brandName' => $settings->brand_name,
+            'sessionName' => $settings->session_name,
+            'photoRequired' => $settings->photo_required,
         ]);
     }
 

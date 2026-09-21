@@ -25,6 +25,8 @@ final class UpdateQueueSettingsData extends Data
         public int $numberDigits = 3,
         #[MapInputName('number_counters')]
         public int $numberCounters = 1,
+        #[MapInputName('photo_required')]
+        public bool $photoRequired = false,
         #[MapInputName('footer_links')]
         public array $footerLinks = [],
     ) {}
@@ -66,6 +68,7 @@ final class UpdateQueueSettingsData extends Data
             ],
             'number_digits' => ['required', 'integer', 'min:1', 'max:6'],
             'number_counters' => ['required', 'integer', 'min:1', 'max:20'],
+            'photo_required' => ['required', 'boolean'],
             'footer_links' => ['array', 'max:5'],
             'footer_links.*.label' => ['required', 'string', 'max:40'],
             'footer_links.*.url' => [

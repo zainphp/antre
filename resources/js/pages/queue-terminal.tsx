@@ -28,17 +28,21 @@ import {
 } from '@/services/camera';
 import { printQueueTicket } from '@/services/print-queue-ticket';
 import { useOnlineState } from '@/hooks/use-online-state';
-import type { QueueEntry, QueueState } from '@/types/queue';
+import type { QueueEntry } from '@/types/queue';
 
 type Step = 'ready' | 'camera' | 'review' | 'assigned';
 
-export default function QueueTerminal({
-    state: _state,
-    brandName,
-}: {
-    state: QueueState;
+type QueueTerminalProps = {
     brandName: string;
-}) {
+    sessionName: string;
+    photoRequired: boolean;
+};
+
+export default function QueueTerminal({
+    brandName,
+    sessionName,
+    photoRequired,
+}: QueueTerminalProps) {
     const online = useOnlineState();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [step, setStep] = useState<Step>('ready');
@@ -65,7 +69,9 @@ export default function QueueTerminal({
             })
             .catch(() =>
                 setError(
-                    'Kamera belum dapat digunakan. Anda dapat lanjut tanpa foto.',
+                    photoRequired
+                        ? 'Kamera diperlukan untuk mengambil nomor. Izinkan akses kamera, lalu coba lagi.'
+                        : 'Kamera belum dapat digunakan. Anda tetap dapat mengambil nomor tanpa foto.',
                 ),
             );
 
@@ -73,7 +79,7 @@ export default function QueueTerminal({
             active = false;
             stopCamera(stream);
         };
-    }, [step]);
+    }, [photoRequired, step]);
 
     const reset = () => {
         setStep('ready');
@@ -106,10 +112,14 @@ export default function QueueTerminal({
             const payload = (await response.json()) as {
                 data?: QueueEntry;
                 message?: string;
+                errors?: { photo?: string[] };
             };
             if (!response.ok || !payload.data) {
                 throw new Error(
-                    payload.message ?? 'Nomor belum dapat diambil. Coba lagi.',
+                    payload.errors?.photo
+                        ? 'Foto wajib diambil sebelum nomor dapat diberikan.'
+                        : (payload.message ??
+                              'Nomor belum dapat diambil. Coba lagi.'),
                 );
             }
             setAssigned(payload.data);
@@ -135,7 +145,12 @@ export default function QueueTerminal({
             >
                 <Box className="self-service-header">
                     <Box>
-                        <Typography className="eyebrow">Pintu masuk</Typography>
+                        <Typography className="self-service-brand">
+                            {brandName}
+                        </Typography>
+                        <Typography className="self-service-session">
+                            {sessionName}
+                        </Typography>
                         <Typography
                             variant="h1"
                             sx={{
@@ -152,6 +167,7 @@ export default function QueueTerminal({
                 </Box>
                 {!online && (
                     <Alert
+                        className="kiosk-alert"
                         severity="warning"
                         icon={<LinkRounded />}
                         sx={{ mb: 2.5 }}
@@ -162,6 +178,7 @@ export default function QueueTerminal({
                 )}
                 {error && (
                     <Alert
+                        className="kiosk-alert"
                         severity="error"
                         sx={{ mb: 2.5 }}
                         onClose={() => setError(null)}
@@ -174,6 +191,7 @@ export default function QueueTerminal({
                         {step === 'ready' && (
                             <ReadyStep
                                 disabled={!online}
+                                photoRequired={photoRequired}
                                 onStart={() => {
                                     setError(null);
                                     setStep('camera');
@@ -184,6 +202,7 @@ export default function QueueTerminal({
                             <CameraStep
                                 videoRef={videoRef}
                                 photoError={Boolean(error)}
+                                photoRequired={photoRequired}
                                 onCapture={() => {
                                     if (!videoRef.current) return;
                                     setPhoto(captureCamera(videoRef.current));
@@ -200,9 +219,14 @@ export default function QueueTerminal({
                         {step === 'review' && (
                             <ReviewStep
                                 photo={photo}
+                                photoRequired={photoRequired}
                                 busy={busy}
                                 onConfirm={() => void requestNumber()}
-                                onBack={() => setStep('ready')}
+                                onBack={() => {
+                                    setPhoto(null);
+                                    setError(null);
+                                    setStep('camera');
+                                }}
                             />
                         )}
                         {step === 'assigned' && assigned && (
@@ -220,10 +244,8 @@ export default function QueueTerminal({
                         )}
                     </CardContent>
                 </Card>
-                <Typography className="privacy-note">
-                    Foto dikirim secara aman ke server untuk membantu
-                    identifikasi antrian dan tidak ditampilkan di monitor
-                    publik.
+                <Typography component="p" className="self-service-copyright">
+                    © {new Date().getFullYear()} Antre by zainphp
                 </Typography>
             </Container>
         </Box>
@@ -232,9 +254,11 @@ export default function QueueTerminal({
 
 function ReadyStep({
     disabled,
+    photoRequired,
     onStart,
 }: {
     disabled: boolean;
+    photoRequired: boolean;
     onStart: () => void;
 }) {
     return (
@@ -246,14 +270,17 @@ function ReadyStep({
                 Selamat datang
             </Typography>
             <Typography
+                className="kiosk-help"
                 color="text.secondary"
                 align="center"
                 sx={{ maxWidth: 360, mt: 1 }}
             >
-                Ambil foto singkat, lalu kami berikan nomor untuk menunggu
-                giliran Anda.
+                {photoRequired
+                    ? 'Ambil foto singkat terlebih dahulu. Foto diperlukan agar petugas dapat mengenali Anda saat dipanggil.'
+                    : 'Ambil foto singkat jika berkenan, lalu kami berikan nomor untuk menunggu giliran Anda.'}
             </Typography>
             <Button
+                className="kiosk-button"
                 variant="contained"
                 size="large"
                 fullWidth
@@ -266,6 +293,7 @@ function ReadyStep({
             </Button>
             {disabled && (
                 <Typography
+                    className="kiosk-help kiosk-help-muted"
                     variant="body2"
                     color="text.secondary"
                     align="center"
@@ -281,23 +309,31 @@ function ReadyStep({
 function CameraStep({
     videoRef,
     photoError,
+    photoRequired,
     onCapture,
     onWithoutPhoto,
     onBack,
 }: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     photoError: boolean;
+    photoRequired: boolean;
     onCapture: () => void;
     onWithoutPhoto: () => void;
     onBack: () => void;
 }) {
     return (
         <Box className="self-step">
-            <Typography className="eyebrow">Langkah 1 dari 2</Typography>
+            <Typography className="kiosk-step-label">
+                Langkah 1 dari 2
+            </Typography>
             <Typography variant="h4" component="h2" sx={{ mt: 1 }}>
                 Ambil foto
             </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75, mb: 2.5 }}>
+            <Typography
+                className="kiosk-help"
+                color="text.secondary"
+                sx={{ mt: 0.75, mb: 2.5 }}
+            >
                 Pastikan wajah terlihat jelas dan pencahayaan cukup.
             </Typography>
             <Box className="camera-frame">
@@ -307,8 +343,13 @@ function CameraStep({
                         <Typography sx={{ fontWeight: 700 }}>
                             Kamera tidak tersedia
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Anda tetap dapat mengambil nomor tanpa foto.
+                        <Typography
+                            className="kiosk-help"
+                            color="text.secondary"
+                        >
+                            {photoRequired
+                                ? 'Foto wajib diambil. Izinkan akses kamera pada browser, lalu coba lagi.'
+                                : 'Anda tetap dapat mengambil nomor tanpa foto.'}
                         </Typography>
                     </Box>
                 ) : (
@@ -322,6 +363,7 @@ function CameraStep({
             </Box>
             <Stack spacing={1.25} sx={{ mt: 2.5 }}>
                 <Button
+                    className="kiosk-button"
                     variant="contained"
                     size="large"
                     onClick={onCapture}
@@ -330,14 +372,18 @@ function CameraStep({
                 >
                     Ambil foto
                 </Button>
+                {!photoRequired && (
+                    <Button
+                        className="kiosk-button"
+                        variant="outlined"
+                        size="large"
+                        onClick={onWithoutPhoto}
+                    >
+                        Lanjut tanpa foto
+                    </Button>
+                )}
                 <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={onWithoutPhoto}
-                >
-                    Lanjut tanpa foto
-                </Button>
-                <Button
+                    className="kiosk-button"
                     variant="text"
                     onClick={onBack}
                     startIcon={<ArrowBackRounded />}
@@ -351,20 +397,28 @@ function CameraStep({
 
 function ReviewStep({
     photo,
+    photoRequired,
     busy,
     onConfirm,
     onBack,
 }: {
     photo: string | null;
+    photoRequired: boolean;
     busy: boolean;
     onConfirm: () => void;
     onBack: () => void;
 }) {
     return (
         <Box className="self-step">
-            <Typography className="eyebrow">Langkah 2 dari 2</Typography>
+            <Typography className="kiosk-step-label">
+                Langkah 2 dari 2
+            </Typography>
             <Typography variant="h4" component="h2" sx={{ mt: 1 }}>
-                {photo ? 'Foto sudah siap' : 'Lanjut tanpa foto'}
+                {photo
+                    ? 'Foto sudah siap'
+                    : photoRequired
+                      ? 'Foto diperlukan'
+                      : 'Lanjut tanpa foto'}
             </Typography>
             {photo ? (
                 <Box className="photo-preview">
@@ -373,14 +427,16 @@ function ReviewStep({
             ) : (
                 <Box className="no-photo-note">
                     <CameraAltRounded />
-                    <Typography color="text.secondary">
-                        Tidak masalah. Petugas akan memanggil berdasarkan nomor
-                        Anda.
+                    <Typography className="kiosk-help" color="text.secondary">
+                        {photoRequired
+                            ? 'Ambil foto terlebih dahulu sebelum melanjutkan.'
+                            : 'Tidak masalah. Petugas akan memanggil berdasarkan nomor Anda.'}
                     </Typography>
                 </Box>
             )}
             <Stack spacing={1.25} sx={{ mt: 2.5 }}>
                 <Button
+                    className="kiosk-button"
                     variant="contained"
                     size="large"
                     onClick={onConfirm}
@@ -390,6 +446,7 @@ function ReviewStep({
                     {busy ? 'Meminta nomor…' : 'Ambil nomor antrian'}
                 </Button>
                 <Button
+                    className="kiosk-button"
                     variant="text"
                     onClick={onBack}
                     startIcon={<ReplayRounded />}
@@ -412,15 +469,24 @@ function AssignedStep({
     onDone: () => void;
 }) {
     return (
-        <Box className="self-step assigned-step">
+        <Box
+            className="self-step assigned-step"
+            role="status"
+            aria-live="polite"
+        >
             <CheckCircleRounded className="assigned-icon" />
-            <Typography className="eyebrow">Nomor Anda</Typography>
+            <Typography className="kiosk-step-label">Nomor Anda</Typography>
             <Typography className="assigned-number">{number}</Typography>
-            <Typography color="text.secondary" align="center">
+            <Typography
+                className="kiosk-help"
+                color="text.secondary"
+                align="center"
+            >
                 Simpan nomor ini dan perhatikan panggilan di layar.
             </Typography>
             <Stack spacing={1.25} sx={{ mt: 3, width: '100%' }}>
                 <Button
+                    className="kiosk-button"
                     variant="contained"
                     size="large"
                     startIcon={<PrintRounded />}
@@ -428,7 +494,12 @@ function AssignedStep({
                 >
                     Cetak tiket
                 </Button>
-                <Button variant="outlined" size="large" onClick={onDone}>
+                <Button
+                    className="kiosk-button"
+                    variant="outlined"
+                    size="large"
+                    onClick={onDone}
+                >
                     Selesai
                 </Button>
             </Stack>

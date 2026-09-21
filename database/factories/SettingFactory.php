@@ -21,6 +21,7 @@ class SettingFactory extends Factory
             'default_prefix' => null,
             'number_digits' => 3,
             'number_counters' => 1,
+            'photo_required' => false,
             'footer_links' => null,
         ];
     }

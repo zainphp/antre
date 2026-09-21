@@ -26,6 +26,7 @@ final class QueueSettingsController extends Controller
             'defaultPrefix' => $settings->default_prefix,
             'numberDigits' => $settings->number_digits,
             'numberCounters' => $settings->number_counters,
+            'photoRequired' => $settings->photo_required,
             'footerLinks' => $settings->footerLinks(),
         ]);
     }
@@ -39,6 +40,7 @@ final class QueueSettingsController extends Controller
             'default_prefix' => $data->defaultPrefix,
             'number_digits' => $data->numberDigits,
             'number_counters' => $data->numberCounters,
+            'photo_required' => $data->photoRequired,
             'footer_links' => $data->footerLinks,
         ]);
         $audit->record(
@@ -51,6 +53,7 @@ final class QueueSettingsController extends Controller
                 'default_prefix' => $data->defaultPrefix,
                 'number_digits' => $data->numberDigits,
                 'number_counters' => $data->numberCounters,
+                'photo_required' => $data->photoRequired,
                 'footer_links' => $data->footerLinks,
             ],
         );
