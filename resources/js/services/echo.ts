@@ -1,21 +1,35 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-const host = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
-const port = Number(import.meta.env.VITE_REVERB_PORT || 8080);
-const secure =
+const reverbHost = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
+const reverbPort = Number(import.meta.env.VITE_REVERB_PORT || 8080);
+const reverbSecure =
     (import.meta.env.VITE_REVERB_SCHEME ||
         window.location.protocol.replace(':', '')) === 'https';
 
-const echo = new Echo<'reverb'>({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    Pusher,
-    wsHost: host,
-    wsPort: secure ? 80 : port,
-    wssPort: secure ? port : 443,
-    forceTLS: secure,
-    enabledTransports: ['ws', 'wss'],
-});
+const echo =
+    import.meta.env.VITE_BROADCAST_CONNECTION === 'ably'
+        ? new Echo<'pusher'>({
+              broadcaster: 'pusher',
+              key: import.meta.env.VITE_ABLY_PUBLIC_KEY,
+              Pusher,
+              wsHost: 'realtime-pusher.ably.io',
+              wsPort: 443,
+              wssPort: 443,
+              forceTLS: true,
+              encrypted: true,
+              disableStats: true,
+              enabledTransports: ['ws', 'wss'],
+          })
+        : new Echo<'reverb'>({
+              broadcaster: 'reverb',
+              key: import.meta.env.VITE_REVERB_APP_KEY,
+              Pusher,
+              wsHost: reverbHost,
+              wsPort: reverbSecure ? 80 : reverbPort,
+              wssPort: reverbSecure ? reverbPort : 443,
+              forceTLS: reverbSecure,
+              enabledTransports: ['ws', 'wss'],
+          });
 
 export default echo;

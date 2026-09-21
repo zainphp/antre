@@ -3,7 +3,8 @@
 Antre is a centralized queue-management PWA for physical service locations.
 Laravel is the source of truth for devices, queue sessions, queue entries,
 settings, and queue operations. React/Inertia renders the client experiences,
-while Laravel Reverb distributes realtime changes.
+while Laravel Reverb distributes local realtime changes and Ably distributes
+production realtime changes.
 
 ## Experiences
 
@@ -33,7 +34,7 @@ browser
 Laravel
    ├── MariaDB: authoritative persistent state
    ├── HTTP: commands, initial state, uploads, authentication
-   └── Reverb: realtime queue and device events
+   └── Realtime: Reverb locally, Ably in production
 ```
 
 Queue operations are validated and persisted by Laravel inside database
@@ -69,6 +70,12 @@ Start Laravel and the Vite development server:
 composer run dev
 ```
 
+Start Reverb in a second terminal:
+
+```bash
+php artisan reverb:start
+```
+
 The first visit redirects to `/onboarding` when no administrator exists.
 
 ## Checks
@@ -90,6 +97,19 @@ routes.
 ## Deployment
 
 The application requires a PHP 8.5 runtime, a supported relational database,
-a web server serving the `public` directory, and a long-running Laravel Reverb
-process for realtime updates. Platform-specific deployment instructions can be
-added once the hosting target is selected.
+and a web server serving the `public` directory. Local development uses a
+long-running Laravel Reverb process. Production uses Ably with Pusher protocol
+support enabled in the Ably app, so Reverb is not required there.
+
+Set these production variables before building the frontend:
+
+```ini
+BROADCAST_CONNECTION=ably
+ABLY_KEY=public-key:secret-key
+ABLY_PUBLIC_KEY=public-key
+VITE_BROADCAST_CONNECTION=ably
+VITE_ABLY_PUBLIC_KEY=public-key
+```
+
+`ABLY_KEY` is server-only. `ABLY_PUBLIC_KEY` is the portion before `:` and is
+safe to expose to the browser through the Vite build.
