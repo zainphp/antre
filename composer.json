@@ -57,6 +57,22 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "ssh:deploy": [
+            "@ssh:deploy-fe",
+            "@ssh:deploy-be"
+        ],
+        "ssh:deploy-be": [
+            "./scotty run deploy_be"
+        ],
+        "ssh:deploy-fe": [
+            "bun run build",
+            "./scotty run deploy_fe"
+        ],
+        "ssh:get-scotty": [
+            "curl -L https://github.com/spatie/scotty/releases/latest/download/scotty -o scotty",
+            "chmod +x scotty",
+            "./scotty list"
+        ],
         "lint": [
             "pint --parallel"
         ],

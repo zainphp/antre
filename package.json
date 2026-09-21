@@ -38,6 +38,7 @@
         "agent-browser": "^0.38.1",
         "babel-plugin-react-compiler": "^1.0.0",
         "fontaine": "^0.8.2",
+        "vite-plugin-zip-pack": "^1.2.4",
         "vite-plus": "^0.3.3"
     },
     "optionalDependencies": {

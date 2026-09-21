@@ -5,6 +5,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { fontsource } from 'laravel-vite-plugin/fonts';
 import { defineConfig, lazyPlugins } from 'vite-plus';
+import zipPack from 'vite-plugin-zip-pack';
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
@@ -24,6 +25,10 @@ export default defineConfig({
         }),
         wayfinder({
             formVariants: true,
+        }),
+        zipPack({
+            inDir: 'public/build',
+            outDir: 'public/build',
         }),
     ]),
     server: {
