@@ -25,12 +25,14 @@ export default function Settings({
     sessionName,
     defaultPrefix,
     numberDigits,
+    numberCounters,
     footerLinks,
 }: {
     brandName: string;
     sessionName: string;
     defaultPrefix: string | null;
     numberDigits: number;
+    numberCounters: number;
     footerLinks: FooterLink[];
 }) {
     const form = useForm({
@@ -38,6 +40,7 @@ export default function Settings({
         session_name: sessionName,
         default_prefix: defaultPrefix ?? '',
         number_digits: numberDigits,
+        number_counters: numberCounters,
         footer_links: footerLinks,
     });
     const footerErrors = form.errors as Record<string, string | undefined>;
@@ -95,8 +98,8 @@ export default function Settings({
                             Pengaturan aplikasi
                         </Typography>
                         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                            Atur identitas tampilan, format nomor, dan tautan
-                            publik.
+                            Atur identitas tampilan, format nomor, loket, dan
+                            tautan publik.
                         </Typography>
                     </Box>
                 </Box>
@@ -233,6 +236,45 @@ export default function Settings({
                                         sx={{ width: { sm: 180 } }}
                                     />
                                 </Stack>
+                            </Box>
+                            <Box
+                                sx={{
+                                    mt: 5,
+                                    pt: 4,
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Typography component="h2" variant="h6">
+                                    Loket layanan
+                                </Typography>
+                                <Typography color="text.secondary">
+                                    Tentukan jumlah loket yang tersedia untuk
+                                    dipilih operator.
+                                </Typography>
+                                <TextField
+                                    label="Jumlah loket"
+                                    type="number"
+                                    value={form.data.number_counters}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'number_counters',
+                                            Number(event.target.value),
+                                        )
+                                    }
+                                    error={Boolean(form.errors.number_counters)}
+                                    helperText={
+                                        form.errors.number_counters ??
+                                        'Gunakan 1–20 loket. Default: 1.'
+                                    }
+                                    slotProps={{
+                                        htmlInput: { min: 1, max: 20 },
+                                    }}
+                                    sx={{
+                                        mt: 2,
+                                        width: { xs: '100%', sm: 180 },
+                                    }}
+                                />
                             </Box>
                             <Box
                                 sx={{

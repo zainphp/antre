@@ -24,6 +24,7 @@ final class QueueSettingsController extends Controller
             'sessionName' => $settings->session_name,
             'defaultPrefix' => $settings->default_prefix,
             'numberDigits' => $settings->number_digits,
+            'numberCounters' => $settings->number_counters,
             'footerLinks' => $settings->footerLinks(),
         ]);
     }
@@ -36,6 +37,7 @@ final class QueueSettingsController extends Controller
             'session_name' => $data->sessionName,
             'default_prefix' => $data->defaultPrefix,
             'number_digits' => $data->numberDigits,
+            'number_counters' => $data->numberCounters,
             'footer_links' => $data->footerLinks,
         ]);
         $audit->record(
@@ -47,6 +49,7 @@ final class QueueSettingsController extends Controller
                 'session_name' => $data->sessionName,
                 'default_prefix' => $data->defaultPrefix,
                 'number_digits' => $data->numberDigits,
+                'number_counters' => $data->numberCounters,
                 'footer_links' => $data->footerLinks,
             ],
         );

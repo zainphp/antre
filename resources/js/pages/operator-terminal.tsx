@@ -42,7 +42,7 @@ export default function OperatorTerminal({
 }) {
     const realtime = useQueueRealtime(state);
     state = realtime.state;
-    const action = useForm({ counter: counters[0] ?? '1' });
+    const action = useForm({ counter: counters[0] ?? 'Loket 1' });
     const { errors } = usePage().props as unknown as {
         errors: { queue?: string };
     };
@@ -112,13 +112,11 @@ export default function OperatorTerminal({
                                 }
                                 sx={{ minWidth: 145 }}
                             >
-                                {(counters.length ? counters : ['1']).map(
-                                    (counter) => (
-                                        <MenuItem key={counter} value={counter}>
-                                            {counter}
-                                        </MenuItem>
-                                    ),
-                                )}
+                                {counters.map((counter) => (
+                                    <MenuItem key={counter} value={counter}>
+                                        {counter}
+                                    </MenuItem>
+                                ))}
                             </TextField>
                             <Button
                                 className="call-button"

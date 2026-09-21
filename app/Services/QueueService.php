@@ -103,7 +103,7 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function callNext(string $counterName, Device $device): QueueEntry
+    public function callNext(?string $counterName, Device $device): QueueEntry
     {
         $entry = DB::transaction(function () use ($counterName, $device): QueueEntry {
             $session = $this->lockCurrentSession();
@@ -120,7 +120,16 @@ final readonly class QueueService
                 throw new QueueConflictException('Belum ada nomor yang menunggu.');
             }
 
-            $counter = Counter::firstOrCreate(['name' => trim($counterName) ?: '1'], ['active' => true]);
+            $counterNames = Setting::current()->counterNames();
+            $selectedCounter = trim($counterName ?? '');
+            if ($selectedCounter === '') {
+                $selectedCounter = $counterNames[0];
+            }
+            if (! in_array($selectedCounter, $counterNames, true)) {
+                throw new QueueConflictException('Loket yang dipilih tidak tersedia.');
+            }
+
+            $counter = Counter::firstOrCreate(['name' => $selectedCounter], ['active' => true]);
             if (! $counter->active) {
                 throw new QueueConflictException('Loket yang dipilih tidak aktif.');
             }

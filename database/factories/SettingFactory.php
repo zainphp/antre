@@ -20,6 +20,7 @@ class SettingFactory extends Factory
             'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => null,
             'number_digits' => 3,
+            'number_counters' => 1,
             'footer_links' => null,
         ];
     }

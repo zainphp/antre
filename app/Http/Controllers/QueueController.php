@@ -30,7 +30,7 @@ final class QueueController extends Controller
     public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         try {
-            $queues->callNext($data->counter ?: '1', $this->device($request));
+            $queues->callNext($data->counter, $this->device($request));
 
             return back()->with('success', 'Nomor berikutnya dipanggil.');
         } catch (QueueConflictException $exception) {

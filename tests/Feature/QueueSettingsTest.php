@@ -6,6 +6,7 @@ use App\Enums\DeviceRole;
 use App\Models\Device;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\DeviceRegistry;
 use App\Services\QueueService;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -25,11 +26,13 @@ test('only administrators can view and update queue settings', function () {
             'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => 'B',
             'number_digits' => 4,
+            'number_counters' => 1,
         ])
         ->assertRedirect();
 
     expect(Setting::current()->default_prefix)->toBe('B')
-        ->and(Setting::current()->number_digits)->toBe(4);
+        ->and(Setting::current()->number_digits)->toBe(4)
+        ->and(Setting::current()->number_counters)->toBe(1);
 });
 
 test('administrators can configure public footer links', function () {
@@ -45,6 +48,7 @@ test('administrators can configure public footer links', function () {
             'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => null,
             'number_digits' => 3,
+            'number_counters' => 1,
             'footer_links' => $links,
         ])
         ->assertRedirect();
@@ -67,6 +71,7 @@ test('administrators can configure the public brand and session name', function 
             'session_name' => 'Pelayanan Warga',
             'default_prefix' => null,
             'number_digits' => 3,
+            'number_counters' => 1,
             'footer_links' => [],
         ])
         ->assertRedirect();
@@ -82,6 +87,36 @@ test('administrators can configure the public brand and session name', function 
     );
 });
 
+test('administrators can configure the number of operator counters', function () {
+    $admin = User::factory()->administrator()->create();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
+            'default_prefix' => null,
+            'number_digits' => 3,
+            'number_counters' => 3,
+            'footer_links' => [],
+        ])
+        ->assertRedirect();
+
+    expect(Setting::current()->number_counters)->toBe(3);
+
+    $credential = 'operator-secret';
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+
+    $this->withCookie(DeviceRegistry::COOKIE, $device->id.'.'.$credential)
+        ->get(route('operator-terminal'))
+        ->assertInertia(
+            fn (Assert $page): Assert => $page
+                ->component('operator-terminal')
+                ->where('counters', ['Loket 1', 'Loket 2', 'Loket 3']),
+        );
+});
+
 test('brand and session names cannot be empty', function () {
     $admin = User::factory()->administrator()->create();
 
@@ -90,6 +125,7 @@ test('brand and session names cannot be empty', function () {
         'session_name' => '',
         'default_prefix' => null,
         'number_digits' => 3,
+        'number_counters' => 1,
         'footer_links' => [],
     ]);
 
@@ -110,6 +146,7 @@ test('a nullable default prefix formats new queue numbers without a separator', 
             'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => 'B',
             'number_digits' => 4,
+            'number_counters' => 1,
         ])
         ->assertRedirect();
     $queues->reset($device);
@@ -122,6 +159,7 @@ test('a nullable default prefix formats new queue numbers without a separator', 
             'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => '',
             'number_digits' => 2,
+            'number_counters' => 1,
         ])
         ->assertRedirect();
     $queues->reset($device);
@@ -138,6 +176,7 @@ test('a default prefix rejects separators and unsupported characters', function 
         'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => 'A-',
         'number_digits' => 3,
+        'number_counters' => 1,
     ]);
 
     $response->assertSessionHasErrors('default_prefix');
@@ -152,6 +191,7 @@ test('number digits must be between one and six', function () {
         'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => null,
         'number_digits' => 7,
+        'number_counters' => 1,
     ]);
 
     $response->assertSessionHasErrors('number_digits');
@@ -166,6 +206,7 @@ test('footer links only accept external http urls', function () {
         'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => null,
         'number_digits' => 3,
+        'number_counters' => 1,
         'footer_links' => [
             ['label' => 'Unsafe', 'url' => 'javascript:alert(1)'],
         ],

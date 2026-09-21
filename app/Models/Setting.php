@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $session_name
  * @property string|null $default_prefix
  * @property int $number_digits
+ * @property int $number_counters
  * @property list<mixed>|null $footer_links
  */
-#[Fillable(['brand_name', 'session_name', 'default_prefix', 'number_digits', 'footer_links'])]
+#[Fillable(['brand_name', 'session_name', 'default_prefix', 'number_digits', 'number_counters', 'footer_links'])]
 class Setting extends Model
 {
     /** @use HasFactory<SettingFactory> */
@@ -32,6 +33,7 @@ class Setting extends Model
                 'session_name' => 'Pelayanan Pelanggan',
                 'default_prefix' => null,
                 'number_digits' => 3,
+                'number_counters' => 1,
                 'footer_links' => null,
             ],
         );
@@ -42,7 +44,17 @@ class Setting extends Model
     {
         return [
             'footer_links' => 'array',
+            'number_counters' => 'integer',
         ];
+    }
+
+    /** @return non-empty-list<string> */
+    public function counterNames(): array
+    {
+        return array_map(
+            static fn (int $number): string => 'Loket '.$number,
+            range(1, $this->number_counters),
+        );
     }
 
     /** @return list<array{label: string, url: string}> */

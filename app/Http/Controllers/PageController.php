@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Counter;
 use App\Models\Setting;
 use App\Services\QueueService;
 use Inertia\Inertia;
@@ -30,9 +29,11 @@ final class PageController extends Controller
 
     public function operatorTerminal(QueueService $queues): Response
     {
+        $settings = Setting::current();
+
         return Inertia::render('operator-terminal', [
             'state' => $queues->state(),
-            'counters' => Counter::query()->where('active', true)->orderBy('name')->pluck('name')->values(),
+            'counters' => $settings->counterNames(),
         ]);
     }
 }

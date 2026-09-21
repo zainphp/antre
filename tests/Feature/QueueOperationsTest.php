@@ -8,6 +8,7 @@ use App\Events\QueueChanged;
 use App\Exceptions\QueueConflictException;
 use App\Models\Device;
 use App\Models\QueueSession;
+use App\Models\Setting;
 use App\Services\QueueService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
@@ -51,6 +52,21 @@ test('call next is serialized by the active queue session', function () {
 
     expect($next->number)->toBe('002')
         ->and($next->status)->toBe(QueueStatus::Called);
+});
+
+test('call next only accepts configured counters', function () {
+    Event::fake([QueueChanged::class]);
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
+    $queues = app(QueueService::class);
+    $queues->take(null, (string) Str::uuid());
+
+    expect(fn () => $queues->callNext('Loket 2', $device))
+        ->toThrow(QueueConflictException::class, 'tidak tersedia');
+
+    Setting::current()->update(['number_counters' => 2]);
+    $called = $queues->callNext('Loket 2', $device);
+
+    expect($called->counter?->name)->toBe('Loket 2');
 });
 
 test('reset archives the current session and starts numbering again', function () {

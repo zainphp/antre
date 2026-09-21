@@ -23,6 +23,8 @@ final class UpdateQueueSettingsData extends Data
         public ?string $defaultPrefix = null,
         #[MapInputName('number_digits')]
         public int $numberDigits = 3,
+        #[MapInputName('number_counters')]
+        public int $numberCounters = 1,
         #[MapInputName('footer_links')]
         public array $footerLinks = [],
     ) {}
@@ -63,6 +65,7 @@ final class UpdateQueueSettingsData extends Data
                 'regex:/^[A-Z0-9]+$/',
             ],
             'number_digits' => ['required', 'integer', 'min:1', 'max:6'],
+            'number_counters' => ['required', 'integer', 'min:1', 'max:20'],
             'footer_links' => ['array', 'max:5'],
             'footer_links.*.label' => ['required', 'string', 'max:40'],
             'footer_links.*.url' => [
