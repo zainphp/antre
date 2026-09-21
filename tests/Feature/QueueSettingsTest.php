@@ -3,15 +3,18 @@
 declare(strict_types=1);
 
 use App\Enums\DeviceRole;
+use App\Events\SettingsChanged;
 use App\Models\Device;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('only administrators can view and update queue settings', function () {
+    Event::fake([SettingsChanged::class]);
     $settings = route('admin.settings');
 
     $this->get($settings)->assertRedirect(route('onboarding'));
@@ -35,6 +38,8 @@ test('only administrators can view and update queue settings', function () {
     expect(Setting::current()->default_prefix)->toBe('B')
         ->and(Setting::current()->number_digits)->toBe(4)
         ->and(Setting::current()->number_counters)->toBe(1);
+
+    Event::assertDispatched(SettingsChanged::class);
 });
 
 test('administrators can configure public footer links', function () {

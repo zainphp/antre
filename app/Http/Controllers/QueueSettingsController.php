@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Data\UpdateQueueSettingsData;
+use App\Events\SettingsChanged;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -53,6 +54,7 @@ final class QueueSettingsController extends Controller
                 'footer_links' => $data->footerLinks,
             ],
         );
+        event(new SettingsChanged);
 
         return back()->with('success', 'Pengaturan antrian berhasil disimpan.');
     }

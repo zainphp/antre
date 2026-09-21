@@ -21,7 +21,10 @@ export default function Welcome({
     const realtime = useQueueRealtime(state);
     const queue = realtime.state;
     const visibleWaiting = queue.waiting.slice(0, 8);
-    const remainingWaiting = queue.waiting.length - visibleWaiting.length;
+    const remainingWaiting = Math.max(
+        0,
+        queue.stats.waiting - visibleWaiting.length,
+    );
 
     return (
         <Box component="main" className="public-queue-page">

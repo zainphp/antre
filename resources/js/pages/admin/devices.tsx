@@ -16,7 +16,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
@@ -44,6 +44,7 @@ export default function Devices({
     pairing: PairingState;
 }) {
     const pairingForm = useForm({});
+    const previousConnection = useRef(echo.connectionStatus());
     const [secondsRemaining, setSecondsRemaining] = useState(
         pairing.remaining_seconds,
     );
@@ -71,13 +72,26 @@ export default function Devices({
 
     useEffect(() => {
         const channel = echo.private('admin.devices');
-        channel.listen('.device.changed', () =>
-            router.reload({ only: ['devices'] }),
-        );
+        const reloadDevices = () =>
+            router.reload({ only: ['devices', 'pairing'] });
+        channel.listen('.device.changed', reloadDevices);
+        const stopWatching = echo.connector.onConnectionChange((status) => {
+            if (
+                status === 'connected' &&
+                previousConnection.current !== 'connected'
+            ) {
+                reloadDevices();
+            }
+
+            previousConnection.current = status;
+        });
+        const timer = window.setInterval(reloadDevices, 60000);
 
         return () => {
             channel.stopListening('.device.changed');
             echo.leave('admin.devices');
+            stopWatching();
+            window.clearInterval(timer);
         };
     }, []);
 
@@ -158,7 +172,7 @@ export default function Devices({
                                 <tbody>
                                     {devices.map((device) => (
                                         <DeviceRow
-                                            key={device.id}
+                                            key={`${device.id}:${device.name}:${device.roles.join(',')}:${device.status}`}
                                             device={device}
                                         />
                                     ))}

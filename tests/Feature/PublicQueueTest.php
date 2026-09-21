@@ -6,6 +6,7 @@ use App\Enums\DeviceRole;
 use App\Events\QueueChanged;
 use App\Models\Device;
 use App\Models\QueueEntry;
+use App\Models\QueueSession;
 use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\QueueService;
@@ -23,6 +24,44 @@ test('the public home page and queue API do not require login', function () {
     $response = $this->getJson('/api/queue/state');
 
     $response->assertOk()->assertJsonStructure(['data' => ['session', 'current', 'waiting', 'stats']]);
+});
+
+test('a public state read before onboarding does not create a queue session', function () {
+    Event::fake([QueueChanged::class]);
+
+    $this->getJson('/api/queue/state')->assertOk();
+
+    expect(QueueSession::query()->count())->toBe(0);
+
+    $this->post(route('onboarding.store'), [
+        'name' => 'Administrator Pertama',
+        'email' => 'admin@example.com',
+        'password' => 'password-secret',
+        'password_confirmation' => 'password-secret',
+        'brand_name' => 'Koperasi Kita',
+        'session_name' => 'Pelayanan Warga',
+        'default_prefix' => 'B',
+        'number_digits' => 4,
+        'number_counters' => 1,
+    ])->assertRedirect(route('admin.index'));
+
+    expect(app(QueueService::class)->take(null, (string) Str::uuid())->number)
+        ->toBe('B0001');
+});
+
+test('public queue state is bounded while its waiting count stays complete', function () {
+    Event::fake([QueueChanged::class]);
+    $device = Device::factory()->unregistered()->create();
+    $queues = app(QueueService::class);
+
+    foreach (range(1, 25) as $number) {
+        $queues->take(null, 'request-'.$number, $device);
+    }
+
+    $response = $this->getJson('/api/queue/state')->assertOk();
+
+    expect($response->json('data.waiting'))->toHaveCount(20)
+        ->and($response->json('data.stats.waiting'))->toBe(25);
 });
 
 test('public queue state excludes private entry data', function () {

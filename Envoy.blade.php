@@ -73,9 +73,12 @@
 @endtask
 
 @task('optimize_be', ['on' => 'production'])
-    echo "Optimizing application cache..."
     cd {{ $projectPath }}
 
+    echo "Running database migrations..."
+    php artisan migrate --force
+
+    echo "Optimizing application cache..."
     php artisan optimize
 @endtask
 

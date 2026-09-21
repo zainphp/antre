@@ -1,9 +1,9 @@
 import { usePoll } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-export function useQueuePolling(enabled: boolean): void {
+export function useQueuePolling(enabled: boolean, interval = 30000): void {
     const { start, stop } = usePoll(
-        30000,
+        interval,
         { only: ['state'] },
         {
             autoStart: enabled,
