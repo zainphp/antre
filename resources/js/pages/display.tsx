@@ -63,20 +63,20 @@ export default function Display({
                 <Typography className="display-counter">
                     {state.current?.counter ?? 'Menunggu panggilan berikutnya'}
                 </Typography>
-                <Typography className="display-waiting">
-                    {state.stats.waiting} nomor menunggu
-                </Typography>
-                <Typography className="display-hint">
-                    Mohon perhatikan layar dan suara panggilan.
-                </Typography>
             </Box>
             <Box component="footer" className="display-footer">
-                <Typography>{formatDate(state.session.date)}</Typography>
+                <Box className="display-footer-info">
+                    <Typography className="display-waiting">
+                        Sisa Antrian: {state.stats.waiting}
+                    </Typography>
+                    <Typography>{formatDate(state.session.date)}</Typography>
+                </Box>
                 <Box
                     className="display-public-monitor"
                     role="img"
                     aria-label="Pindai QR code untuk memantau antrean dari ponsel"
                 >
+                    <Typography>Pantau dari ponsel</Typography>
                     <QRCodeSVG
                         value={publicMonitorUrl}
                         size={112}
@@ -84,7 +84,6 @@ export default function Display({
                         marginSize={2}
                         title="Pantau antrean dari ponsel"
                     />
-                    <Typography>Pantau dari ponsel</Typography>
                 </Box>
             </Box>
         </Box>
