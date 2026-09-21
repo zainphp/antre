@@ -1,6 +1,7 @@
 import { createInertiaApp } from '@inertiajs/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
+import * as Sentry from '@sentry/react';
 import { createRoot } from 'react-dom/client';
 import type { ComponentType } from 'react';
 
@@ -10,6 +11,20 @@ import '../css/app.css';
 
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
 const appName = import.meta.env.VITE_APP_NAME || 'Antre';
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
+
+if (sentryDsn) {
+    Sentry.init({
+        dsn: sentryDsn,
+        environment:
+            import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
+        release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
+        tracesSampleRate: Number(
+            import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || 0,
+        ),
+        sendDefaultPii: false,
+    });
+}
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -33,7 +48,11 @@ void createInertiaApp({
             throw new Error('Root Inertia tidak ditemukan.');
         }
 
-        createRoot(el).render(
+        createRoot(el, {
+            onCaughtError: Sentry.reactErrorHandler(),
+            onRecoverableError: Sentry.reactErrorHandler(),
+            onUncaughtError: Sentry.reactErrorHandler(),
+        }).render(
             <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <App {...props} />
