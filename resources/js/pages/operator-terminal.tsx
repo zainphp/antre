@@ -1,8 +1,10 @@
 import CallRounded from '@mui/icons-material/CallRounded';
 import CheckRounded from '@mui/icons-material/CheckRounded';
+import ConfirmationNumberRounded from '@mui/icons-material/ConfirmationNumberRounded';
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded';
 import EventBusyRounded from '@mui/icons-material/EventBusyRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
+import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
 import SkipNextRounded from '@mui/icons-material/SkipNextRounded';
 import Alert from '@mui/material/Alert';
@@ -21,6 +23,7 @@ import { useForm, usePage } from '@inertiajs/react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { SectionHeading } from '@/components/section-heading';
+import { display, queueTerminal } from '@/routes';
 import queue from '@/routes/queue';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
 import type { QueueState, QueueStatus } from '@/types/queue';
@@ -36,9 +39,13 @@ const statusLabels: Record<QueueStatus, string> = {
 export default function OperatorTerminal({
     state,
     counters,
+    canOpenQueueTerminal,
+    canOpenDisplay,
 }: {
     state: QueueState;
     counters: string[];
+    canOpenQueueTerminal: boolean;
+    canOpenDisplay: boolean;
 }) {
     const realtime = useQueueRealtime(state);
     state = realtime.state;
@@ -62,7 +69,40 @@ export default function OperatorTerminal({
                         informasi yang jelas.
                     </Typography>
                 </Box>
-                <ConnectionBadge state={realtime.connection} />
+                <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1}
+                    sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
+                >
+                    {canOpenQueueTerminal && (
+                        <Button
+                            component="a"
+                            href={queueTerminal.url()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="outlined"
+                            size="small"
+                            startIcon={<ConfirmationNumberRounded />}
+                            endIcon={<OpenInNewRounded />}
+                        >
+                            Terminal nomor
+                        </Button>
+                    )}
+                    {canOpenDisplay && (
+                        <Button
+                            component="a"
+                            href={display.url()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="outlined"
+                            size="small"
+                            startIcon={<OpenInNewRounded />}
+                        >
+                            Display
+                        </Button>
+                    )}
+                    <ConnectionBadge state={realtime.connection} />
+                </Stack>
             </Box>
             {errors.queue && (
                 <Alert severity="error" sx={{ mb: 2 }}>

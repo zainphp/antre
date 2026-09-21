@@ -9,6 +9,7 @@ use App\Models\Device;
 use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\PairingSession;
+use Inertia\Testing\AssertableInertia as Assert;
 
 function deviceCookie(Device $device, string $credential): string
 {
@@ -120,7 +121,12 @@ test('operator access requires a registered operator terminal', function () {
     $response = $this->withCookie(DeviceRegistry::COOKIE, deviceCookie($device, $credential))
         ->get(route('operator-terminal'));
 
-    $response->assertOk();
+    $response->assertInertia(
+        fn (Assert $page): Assert => $page
+            ->component('operator-terminal')
+            ->where('canOpenQueueTerminal', false)
+            ->where('canOpenDisplay', false),
+    );
 
     $display = Device::factory()->create([
         'roles' => [DeviceRole::Display->value],
@@ -214,6 +220,7 @@ test('a device with multiple roles can access each assigned experience', functio
     $device = Device::factory()->roles(
         DeviceRole::OperatorTerminal,
         DeviceRole::Display,
+        DeviceRole::QueueTerminal,
     )->create([
         'credential_hash' => hash('sha256', $credential),
     ]);
@@ -221,6 +228,15 @@ test('a device with multiple roles can access each assigned experience', functio
 
     $this->withCookie(DeviceRegistry::COOKIE, $cookie)
         ->get(route('operator-terminal'))
+        ->assertInertia(
+            fn (Assert $page): Assert => $page
+                ->component('operator-terminal')
+                ->where('canOpenQueueTerminal', true)
+                ->where('canOpenDisplay', true),
+        );
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->get(route('queue-terminal'))
         ->assertOk();
 
     $this->withCookie(DeviceRegistry::COOKIE, $cookie)
