@@ -11,6 +11,7 @@ const echo =
     import.meta.env.VITE_BROADCAST_CONNECTION === 'ably'
         ? new Echo<'pusher'>({
               broadcaster: 'pusher',
+              cluster: 'ably',
               key: import.meta.env.VITE_ABLY_PUBLIC_KEY,
               Pusher,
               wsHost: 'realtime-pusher.ably.io',
