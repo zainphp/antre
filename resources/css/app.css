@@ -47,54 +47,6 @@ select:focus-visible {
     flex-direction: column;
 }
 
-.app-bar {
-    background: rgba(18, 72, 59, 0.98) !important;
-    color: #fff !important;
-}
-
-.app-toolbar {
-    min-height: 72px !important;
-    padding-inline: max(20px, env(safe-area-inset-left))
-        max(20px, env(safe-area-inset-right)) !important;
-    gap: 8px;
-}
-
-.brand-mark {
-    color: inherit !important;
-    display: inline-flex;
-    text-align: left;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 8px !important;
-}
-
-.brand-symbol {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(255, 255, 255, 0.42);
-    border-radius: 9px;
-}
-
-.brand-name {
-    font-weight: 800 !important;
-    line-height: 1.1 !important;
-}
-
-.brand-caption {
-    font-size: 0.68rem !important;
-    opacity: 0.7;
-    line-height: 1.2 !important;
-}
-
-.app-footer {
-    margin-top: auto;
-    padding-top: 20px;
-    padding-bottom: max(22px, env(safe-area-inset-bottom));
-    color: var(--muted);
-}
-
 .eyebrow {
     color: #2f765f;
     font-size: 0.72rem !important;
@@ -790,14 +742,6 @@ select:focus-visible {
 }
 
 @media (max-width: 620px) {
-    .app-toolbar {
-        min-height: 64px !important;
-    }
-
-    .app-toolbar > .MuiButton-root:last-child {
-        display: none;
-    }
-
     .operator-terminal-page {
         padding-top: 30px;
     }
