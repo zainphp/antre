@@ -13,6 +13,7 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import MenuItem from '@mui/material/MenuItem';
@@ -70,9 +71,12 @@ export default function OperatorTerminal({
                     </Typography>
                 </Box>
                 <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
+                    direction="row"
                     spacing={1}
-                    sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
+                    sx={{
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                    }}
                 >
                     {canOpenQueueTerminal && (
                         <Button
@@ -162,21 +166,27 @@ export default function OperatorTerminal({
                                 className="call-button"
                                 variant="contained"
                                 color="secondary"
-                                startIcon={<CallRounded />}
+                                startIcon={
+                                    action.processing ? (
+                                        <CircularProgress
+                                            color="inherit"
+                                            size={18}
+                                        />
+                                    ) : (
+                                        <CallRounded />
+                                    )
+                                }
                                 disabled={
                                     action.processing || Boolean(state.current)
                                 }
                                 onClick={() => post(queue.callNext.url())}
                             >
-                                Panggil berikutnya
+                                {action.processing
+                                    ? 'Memproses…'
+                                    : 'Panggil berikutnya'}
                             </Button>
                         </Box>
-                        <Stack
-                            direction="row"
-                            spacing={1}
-                            className="current-actions"
-                            sx={{ flexWrap: 'wrap' }}
-                        >
+                        <Box className="current-actions">
                             <Button
                                 variant="outlined"
                                 className="display-control"
@@ -217,7 +227,7 @@ export default function OperatorTerminal({
                             >
                                 Lewati
                             </Button>
-                        </Stack>
+                        </Box>
                     </CardContent>
                 </Card>
                 <Card className="waiting-card">

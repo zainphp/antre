@@ -322,7 +322,14 @@ select:focus-visible {
 }
 
 .current-actions {
+    display: flex;
+    flex-wrap: wrap;
     margin-top: 20px;
+    gap: 8px;
+}
+
+.current-actions .MuiButton-root {
+    min-width: 0;
 }
 
 .waiting-card {
@@ -805,6 +812,23 @@ select:focus-visible {
 
     .call-button {
         min-height: 58px !important;
+    }
+
+    .operator-terminal-page .page-topline > .MuiStack-root {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .current-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .current-actions .MuiButton-root {
+        width: 100%;
+        min-height: 48px !important;
+        white-space: normal;
+        line-height: 1.25;
     }
 
     .display-header,
