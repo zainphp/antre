@@ -18,7 +18,7 @@ return new class extends Migration
             $table->date('business_date');
             $table->string('active_key')->nullable()->unique();
             $table->string('prefix', 4)->nullable();
-            $table->string('service_name')->default('Pelayanan TBS');
+            $table->string('service_name')->default('Pelayanan Pelanggan');
             $table->unsignedInteger('next_sequence')->default(1);
             $table->string('status')->default('RUNNING');
             $table->uuid('current_entry_id')->nullable();

@@ -21,6 +21,8 @@ test('only administrators can view and update queue settings', function () {
 
     $this->actingAs($admin)
         ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => 'B',
             'number_digits' => 4,
         ])
@@ -39,6 +41,8 @@ test('administrators can configure public footer links', function () {
 
     $this->actingAs($admin)
         ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => null,
             'number_digits' => 3,
             'footer_links' => $links,
@@ -54,6 +58,46 @@ test('administrators can configure public footer links', function () {
     );
 });
 
+test('administrators can configure the public brand and session name', function () {
+    $admin = User::factory()->administrator()->create();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.settings.update'), [
+            'brand_name' => 'Layanan Kita',
+            'session_name' => 'Pelayanan Warga',
+            'default_prefix' => null,
+            'number_digits' => 3,
+            'footer_links' => [],
+        ])
+        ->assertRedirect();
+
+    expect(Setting::current()->brand_name)->toBe('Layanan Kita')
+        ->and(Setting::current()->session_name)->toBe('Pelayanan Warga');
+
+    $this->get('/')->assertInertia(
+        fn (Assert $page): Assert => $page
+            ->component('welcome')
+            ->where('brandName', 'Layanan Kita')
+            ->where('state.session.service_name', 'Pelayanan Warga'),
+    );
+});
+
+test('brand and session names cannot be empty', function () {
+    $admin = User::factory()->administrator()->create();
+
+    $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
+        'brand_name' => ' ',
+        'session_name' => '',
+        'default_prefix' => null,
+        'number_digits' => 3,
+        'footer_links' => [],
+    ]);
+
+    $response->assertSessionHasErrors(['brand_name', 'session_name']);
+    expect(Setting::current()->brand_name)->toBe('ANTRE')
+        ->and(Setting::current()->session_name)->toBe('Pelayanan Pelanggan');
+});
+
 test('a nullable default prefix formats new queue numbers without a separator', function () {
     $admin = User::factory()->administrator()->create();
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
@@ -62,6 +106,8 @@ test('a nullable default prefix formats new queue numbers without a separator', 
     expect($queues->take(null, (string) Str::uuid())->number)->toBe('001');
     $this->actingAs($admin)
         ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => 'B',
             'number_digits' => 4,
         ])
@@ -72,6 +118,8 @@ test('a nullable default prefix formats new queue numbers without a separator', 
 
     $this->actingAs($admin)
         ->patch(route('admin.settings.update'), [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => '',
             'number_digits' => 2,
         ])
@@ -86,6 +134,8 @@ test('a default prefix rejects separators and unsupported characters', function 
     $admin = User::factory()->administrator()->create();
 
     $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
+        'brand_name' => 'ANTRE',
+        'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => 'A-',
         'number_digits' => 3,
     ]);
@@ -98,6 +148,8 @@ test('number digits must be between one and six', function () {
     $admin = User::factory()->administrator()->create();
 
     $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
+        'brand_name' => 'ANTRE',
+        'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => null,
         'number_digits' => 7,
     ]);
@@ -110,6 +162,8 @@ test('footer links only accept external http urls', function () {
     $admin = User::factory()->administrator()->create();
 
     $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
+        'brand_name' => 'ANTRE',
+        'session_name' => 'Pelayanan Pelanggan',
         'default_prefix' => null,
         'number_digits' => 3,
         'footer_links' => [

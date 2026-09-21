@@ -25,7 +25,6 @@ class QueueSessionFactory extends Factory
             'active_key' => null,
             'prefix' => null,
             'number_digits' => 3,
-            'service_name' => 'Pelayanan TBS',
             'next_sequence' => 1,
             'status' => QueueSessionStatus::Running,
             'current_entry_id' => null,

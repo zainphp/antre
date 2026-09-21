@@ -13,7 +13,13 @@ import { announceQueue } from '@/services/speech';
 import { formatDate } from '@/utils/format';
 import type { QueueState } from '@/types/queue';
 
-export default function Display({ state }: { state: QueueState }) {
+export default function Display({
+    state,
+    brandName,
+}: {
+    state: QueueState;
+    brandName: string;
+}) {
     const realtime = useQueueRealtime(state);
     state = realtime.state;
     const [lastAnnouncement, setLastAnnouncement] = useState<string | null>(
@@ -40,7 +46,7 @@ export default function Display({ state }: { state: QueueState }) {
             <Box component="header" className="display-header">
                 <Box>
                     <Typography component="h1" className="display-brand">
-                        ANTRE
+                        {brandName}
                     </Typography>
                     <Typography className="display-subtitle">
                         {state.session.service_name}

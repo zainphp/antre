@@ -16,6 +16,8 @@ class SettingFactory extends Factory
     public function definition(): array
     {
         return [
+            'brand_name' => 'ANTRE',
+            'session_name' => 'Pelayanan Pelanggan',
             'default_prefix' => null,
             'number_digits' => 3,
             'footer_links' => null,

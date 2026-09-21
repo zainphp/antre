@@ -15,6 +15,10 @@ final class UpdateQueueSettingsData extends Data
      * @param  list<array{label: string, url: string}>  $footerLinks
      */
     public function __construct(
+        #[MapInputName('brand_name')]
+        public string $brandName = 'ANTRE',
+        #[MapInputName('session_name')]
+        public string $sessionName = 'Pelayanan Pelanggan',
         #[MapInputName('default_prefix')]
         public ?string $defaultPrefix = null,
         #[MapInputName('number_digits')]
@@ -34,6 +38,11 @@ final class UpdateQueueSettingsData extends Data
      */
     public static function prepareForPipeline(array $properties): array
     {
+        foreach (['brand_name', 'session_name'] as $key) {
+            $value = $properties[$key] ?? null;
+            $properties[$key] = is_string($value) ? trim($value) : $value;
+        }
+
         $prefix = $properties['default_prefix'] ?? null;
         $prefix = is_string($prefix) ? strtoupper(trim($prefix)) : null;
         $properties['default_prefix'] = $prefix === '' ? null : $prefix;
@@ -45,6 +54,8 @@ final class UpdateQueueSettingsData extends Data
     public static function rules(): array
     {
         return [
+            'brand_name' => ['required', 'string', 'max:80'],
+            'session_name' => ['required', 'string', 'max:120'],
             'default_prefix' => [
                 'nullable',
                 'string',

@@ -27,6 +27,7 @@ final readonly class QueueService
     public function state(): array
     {
         $session = $this->currentSession();
+        $settings = Setting::current();
         $session->load(['currentEntry.counter']);
 
         $waiting = $session->entries()
@@ -38,7 +39,7 @@ final readonly class QueueService
         return [
             'session' => [
                 'date' => $session->business_date->format('Y-m-d'),
-                'service_name' => $session->service_name,
+                'service_name' => $settings->session_name,
             ],
             'current' => $session->currentEntry && in_array(
                 $session->currentEntry->status,
@@ -219,7 +220,6 @@ final readonly class QueueService
                 'active_key' => $current->business_date->format('Y-m-d'),
                 'prefix' => $settings->default_prefix,
                 'number_digits' => $settings->number_digits,
-                'service_name' => $current->service_name,
                 'next_sequence' => 1,
                 'status' => QueueSessionStatus::Running,
                 'started_at' => now(),
@@ -277,7 +277,6 @@ final readonly class QueueService
                 'business_date' => $businessDate,
                 'prefix' => $settings->default_prefix,
                 'number_digits' => $settings->number_digits,
-                'service_name' => 'Pelayanan TBS',
                 'next_sequence' => 1,
                 'status' => QueueSessionStatus::Running,
                 'started_at' => now(),

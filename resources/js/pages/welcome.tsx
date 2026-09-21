@@ -10,9 +10,11 @@ import { formatDate } from '@/utils/format';
 
 export default function Welcome({
     state,
+    brandName,
     footerLinks,
 }: {
     state: QueueState;
+    brandName: string;
     footerLinks: FooterLink[];
 }) {
     const realtime = useQueueRealtime(state);
@@ -29,7 +31,7 @@ export default function Welcome({
                             component="h1"
                             className="public-queue-brand"
                         >
-                            ANTRE
+                            {brandName}
                         </Typography>
                         <Typography className="public-queue-service">
                             {queue.session.service_name}

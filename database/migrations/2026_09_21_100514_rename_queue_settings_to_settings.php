@@ -13,6 +13,8 @@ return new class extends Migration
         Schema::rename('queue_settings', 'settings');
 
         Schema::table('settings', function (Blueprint $table): void {
+            $table->string('brand_name', 80)->default('ANTRE')->after('id');
+            $table->string('session_name', 120)->default('Pelayanan Pelanggan')->after('brand_name');
             $table->json('footer_links')->nullable()->after('number_digits');
         });
     }
@@ -20,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table): void {
-            $table->dropColumn('footer_links');
+            $table->dropColumn(['brand_name', 'session_name', 'footer_links']);
         });
 
         Schema::rename('settings', 'queue_settings');

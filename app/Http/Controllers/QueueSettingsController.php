@@ -20,6 +20,8 @@ final class QueueSettingsController extends Controller
         $settings = Setting::current();
 
         return Inertia::render('admin/settings', [
+            'brandName' => $settings->brand_name,
+            'sessionName' => $settings->session_name,
             'defaultPrefix' => $settings->default_prefix,
             'numberDigits' => $settings->number_digits,
             'footerLinks' => $settings->footerLinks(),
@@ -30,6 +32,8 @@ final class QueueSettingsController extends Controller
     {
         $settings = Setting::current();
         $settings->update([
+            'brand_name' => $data->brandName,
+            'session_name' => $data->sessionName,
             'default_prefix' => $data->defaultPrefix,
             'number_digits' => $data->numberDigits,
             'footer_links' => $data->footerLinks,
@@ -39,6 +43,8 @@ final class QueueSettingsController extends Controller
             user: $user,
             subject: $settings,
             metadata: [
+                'brand_name' => $data->brandName,
+                'session_name' => $data->sessionName,
                 'default_prefix' => $data->defaultPrefix,
                 'number_digits' => $data->numberDigits,
                 'footer_links' => $data->footerLinks,

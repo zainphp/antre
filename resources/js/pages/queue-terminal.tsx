@@ -33,8 +33,10 @@ type Step = 'ready' | 'camera' | 'review' | 'assigned';
 
 export default function QueueTerminal({
     state: _state,
+    brandName,
 }: {
     state: QueueState;
+    brandName: string;
 }) {
     const online = useOnlineState();
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -208,6 +210,7 @@ export default function QueueTerminal({
                                     printQueueTicket(
                                         assigned.number,
                                         assigned.created_at,
+                                        brandName,
                                     )
                                 }
                                 onDone={reset}

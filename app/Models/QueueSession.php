@@ -20,7 +20,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $active_key
  * @property string|null $prefix
  * @property int $number_digits
- * @property string $service_name
  * @property int $next_sequence
  * @property QueueSessionStatus $status
  * @property string|null $current_entry_id
@@ -28,7 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $started_at
  * @property Carbon|null $ended_at
  */
-#[Fillable(['business_date', 'active_key', 'prefix', 'number_digits', 'service_name', 'next_sequence', 'status', 'current_entry_id', 'current_counter_id', 'started_at', 'ended_at'])]
+#[Fillable(['business_date', 'active_key', 'prefix', 'number_digits', 'next_sequence', 'status', 'current_entry_id', 'current_counter_id', 'started_at', 'ended_at'])]
 class QueueSession extends Model
 {
     /** @use HasFactory<QueueSessionFactory> */

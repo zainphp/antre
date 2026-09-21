@@ -11,11 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
+ * @property string $brand_name
+ * @property string $session_name
  * @property string|null $default_prefix
  * @property int $number_digits
  * @property list<mixed>|null $footer_links
  */
-#[Fillable(['default_prefix', 'number_digits', 'footer_links'])]
+#[Fillable(['brand_name', 'session_name', 'default_prefix', 'number_digits', 'footer_links'])]
 class Setting extends Model
 {
     /** @use HasFactory<SettingFactory> */
@@ -25,7 +27,13 @@ class Setting extends Model
     {
         return static::query()->firstOrCreate(
             ['id' => 1],
-            ['default_prefix' => null, 'number_digits' => 3, 'footer_links' => null],
+            [
+                'brand_name' => 'ANTRE',
+                'session_name' => 'Pelayanan Pelanggan',
+                'default_prefix' => null,
+                'number_digits' => 3,
+                'footer_links' => null,
+            ],
         );
     }
 

@@ -21,15 +21,21 @@ import type { FooterLink } from '@/types/footer-link';
 const emptyFooterLink = (): FooterLink => ({ label: '', url: '' });
 
 export default function Settings({
+    brandName,
+    sessionName,
     defaultPrefix,
     numberDigits,
     footerLinks,
 }: {
+    brandName: string;
+    sessionName: string;
     defaultPrefix: string | null;
     numberDigits: number;
     footerLinks: FooterLink[];
 }) {
     const form = useForm({
+        brand_name: brandName,
+        session_name: sessionName,
         default_prefix: defaultPrefix ?? '',
         number_digits: numberDigits,
         footer_links: footerLinks,
@@ -86,11 +92,11 @@ export default function Settings({
                             component="h1"
                             sx={{ mt: 0.75 }}
                         >
-                            Pengaturan antrian
+                            Pengaturan aplikasi
                         </Typography>
                         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                            Tentukan awalan dan jumlah digit untuk sesi antrian
-                            berikutnya.
+                            Atur identitas tampilan, format nomor, dan tautan
+                            publik.
                         </Typography>
                     </Box>
                 </Box>
@@ -101,11 +107,11 @@ export default function Settings({
                             <SettingsRounded color="primary" />
                             <Box>
                                 <Typography component="h2" variant="h6">
-                                    Format nomor
+                                    Identitas tampilan
                                 </Typography>
                                 <Typography color="text.secondary">
-                                    Gunakan 1–4 huruf atau angka sebagai prefix.
-                                    Kosongkan jika nomor cukup berupa angka.
+                                    Nama ini tampil pada monitor publik,
+                                    display, dan tiket antrian.
                                 </Typography>
                             </Box>
                         </Box>
@@ -121,47 +127,113 @@ export default function Settings({
                             >
                                 <TextField
                                     fullWidth
-                                    label="Prefix default"
-                                    value={form.data.default_prefix}
+                                    label="Nama brand"
+                                    value={form.data.brand_name}
                                     onChange={(event) =>
                                         form.setData(
-                                            'default_prefix',
-                                            event.target.value
-                                                .toUpperCase()
-                                                .replace(/[^A-Z0-9]/g, '')
-                                                .slice(0, 4),
+                                            'brand_name',
+                                            event.target.value,
                                         )
                                     }
-                                    error={Boolean(form.errors.default_prefix)}
+                                    error={Boolean(form.errors.brand_name)}
                                     helperText={
-                                        form.errors.default_prefix ??
-                                        'Contoh nomor berikutnya: ' + preview
+                                        form.errors.brand_name ??
+                                        'Contoh: ANTRE'
                                     }
                                     slotProps={{
-                                        htmlInput: { maxLength: 4 },
+                                        htmlInput: { maxLength: 80 },
                                     }}
                                 />
                                 <TextField
-                                    label="Jumlah digit"
-                                    type="number"
-                                    value={form.data.number_digits}
+                                    fullWidth
+                                    label="Nama sesi"
+                                    value={form.data.session_name}
                                     onChange={(event) =>
                                         form.setData(
-                                            'number_digits',
-                                            Number(event.target.value),
+                                            'session_name',
+                                            event.target.value,
                                         )
                                     }
-                                    error={Boolean(form.errors.number_digits)}
+                                    error={Boolean(form.errors.session_name)}
                                     helperText={
-                                        form.errors.number_digits ??
-                                        'Gunakan 1–6 digit. Default: 3.'
+                                        form.errors.session_name ??
+                                        'Contoh: Pelayanan Pelanggan'
                                     }
                                     slotProps={{
-                                        htmlInput: { min: 1, max: 6 },
+                                        htmlInput: { maxLength: 120 },
                                     }}
-                                    sx={{ width: { sm: 180 } }}
                                 />
                             </Stack>
+
+                            <Box
+                                sx={{
+                                    mt: 5,
+                                    pt: 4,
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Typography component="h2" variant="h6">
+                                    Format nomor
+                                </Typography>
+                                <Typography color="text.secondary">
+                                    Gunakan 1–4 huruf atau angka sebagai prefix.
+                                    Kosongkan jika nomor cukup berupa angka.
+                                </Typography>
+
+                                <Stack
+                                    direction={{ xs: 'column', sm: 'row' }}
+                                    spacing={2}
+                                >
+                                    <TextField
+                                        fullWidth
+                                        label="Prefix default"
+                                        value={form.data.default_prefix}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'default_prefix',
+                                                event.target.value
+                                                    .toUpperCase()
+                                                    .replace(/[^A-Z0-9]/g, '')
+                                                    .slice(0, 4),
+                                            )
+                                        }
+                                        error={Boolean(
+                                            form.errors.default_prefix,
+                                        )}
+                                        helperText={
+                                            form.errors.default_prefix ??
+                                            'Contoh nomor berikutnya: ' +
+                                                preview
+                                        }
+                                        slotProps={{
+                                            htmlInput: { maxLength: 4 },
+                                        }}
+                                    />
+                                    <TextField
+                                        label="Jumlah digit"
+                                        type="number"
+                                        value={form.data.number_digits}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'number_digits',
+                                                Number(event.target.value),
+                                            )
+                                        }
+                                        error={Boolean(
+                                            form.errors.number_digits,
+                                        )}
+                                        helperText={
+                                            form.errors.number_digits ??
+                                            'Gunakan 1–6 digit. Default: 3.'
+                                        }
+                                        slotProps={{
+                                            htmlInput: { min: 1, max: 6 },
+                                        }}
+                                        sx={{ width: { sm: 180 } }}
+                                    />
+                                </Stack>
+                            </Box>
                             <Box
                                 sx={{
                                     mt: 5,

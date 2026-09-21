@@ -33,9 +33,12 @@ final class RootController extends Controller
             }
         }
 
+        $settings = Setting::current();
+
         return Inertia::render('welcome', [
             'state' => $queues->state(),
-            'footerLinks' => Setting::current()->footerLinks(),
+            'brandName' => $settings->brand_name,
+            'footerLinks' => $settings->footerLinks(),
         ]);
     }
 }
