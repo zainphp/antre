@@ -37,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
+        RateLimiter::for(
+            'public-queue',
+            fn (Request $request): Limit => Limit::perMinute(120)->by($request->ip()),
+        );
+
         Model::preventLazyLoading(
             ! app()->isProduction()
         );

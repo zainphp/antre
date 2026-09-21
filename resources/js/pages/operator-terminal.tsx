@@ -24,7 +24,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { SectionHeading } from '@/components/section-heading';
@@ -65,6 +65,12 @@ export default function OperatorTerminal({
     const { errors } = usePage().props as unknown as {
         errors: { queue?: string };
     };
+
+    useEffect(() => {
+        if (!counters.includes(action.data.counter)) {
+            action.setData('counter', counters[0] ?? 'Loket 1');
+        }
+    }, [action, counters]);
 
     const post = (url: string, entryId: string | null = null) => {
         action.transform((data) => ({ ...data, entry_id: entryId }));

@@ -21,7 +21,7 @@ export function useQueueRealtime(
     );
     const previousConnection = useRef<ConnectionState | null>(null);
 
-    useQueuePolling(connection !== 'CONNECTED');
+    useQueuePolling(true, connection === 'CONNECTED' ? 60000 : 30000);
 
     useEffect(() => setState(initialState), [initialState]);
 
@@ -31,9 +31,7 @@ export function useQueueRealtime(
             previousConnection.current !== 'CONNECTED';
 
         if (connection === 'CONNECTED' && wasDisconnected) {
-            router.reload({
-                only: ['state'],
-            });
+            router.reload();
         }
 
         previousConnection.current = connection;
@@ -52,6 +50,7 @@ export function useQueueRealtime(
 
             setState(payload.state);
         });
+        channel.listen('.settings.changed', () => router.reload());
         const stopWatching = echo.connector.onConnectionChange((status) =>
             setConnection(mapConnection(status)),
         );
@@ -59,6 +58,7 @@ export function useQueueRealtime(
 
         return () => {
             channel.stopListening('.queue.changed');
+            channel.stopListening('.settings.changed');
             echo.leave('queue');
             stopWatching();
         };

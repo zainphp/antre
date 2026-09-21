@@ -15,6 +15,7 @@ use App\Models\QueueSession;
 use App\Models\Setting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 final readonly class QueueService
@@ -27,16 +28,44 @@ final readonly class QueueService
     public function state(
         bool $includeCallable = false,
         bool $includePhoto = false,
+        int $waitingLimit = 20,
     ): array {
-        $session = $this->currentSession();
         $settings = Setting::current();
+        $session = $this->currentSession(create: false);
+        if ($session === null) {
+            $state = [
+                'session' => [
+                    'date' => now()->toDateString(),
+                    'service_name' => $settings->session_name,
+                ],
+                'current' => null,
+                'waiting' => [],
+                'stats' => [
+                    'total' => 0,
+                    'waiting' => 0,
+                    'completed' => 0,
+                    'skipped' => 0,
+                ],
+            ];
+
+            if ($includeCallable) {
+                $state['callable'] = [];
+            }
+
+            return $state;
+        }
+
         $session->load(['currentEntry.counter']);
 
         $waiting = $session->entries()
             ->with('counter')
             ->where('status', QueueStatus::Waiting)
             ->orderBy('sequence')
+            ->limit($waitingLimit)
             ->get();
+        $waitingCount = $session->entries()
+            ->where('status', QueueStatus::Waiting)
+            ->count();
         $state = [
             'session' => [
                 'date' => $session->business_date->format('Y-m-d'),
@@ -50,7 +79,7 @@ final readonly class QueueService
             'waiting' => $waiting->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))->values()->all(),
             'stats' => [
                 'total' => $session->entries()->count(),
-                'waiting' => $waiting->count(),
+                'waiting' => $waitingCount,
                 'completed' => $session->entries()->where('status', QueueStatus::Completed)->count(),
                 'skipped' => $session->entries()->where('status', QueueStatus::Skipped)->count(),
             ],
@@ -267,13 +296,15 @@ final readonly class QueueService
 
     public function reset(Device $device): QueueSession
     {
-        $session = DB::transaction(function () use ($device): QueueSession {
+        /** @var list<string> $photoPaths */
+        $photoPaths = [];
+        $session = DB::transaction(function () use ($device, &$photoPaths): QueueSession {
             $current = $this->lockCurrentSession();
             $settings = Setting::current();
             $entries = $current->entries()->get();
             foreach ($entries as $entry) {
-                if ($entry->photo_path) {
-                    Storage::disk('local')->delete($entry->photo_path);
+                if ($entry->photo_path !== null) {
+                    $photoPaths[] = $entry->photo_path;
                 }
 
                 $updates = ['photo_path' => null];
@@ -305,6 +336,7 @@ final readonly class QueueService
             return $next;
         });
 
+        $this->deletePhotos($photoPaths);
         event(new QueueChanged($this->state()));
 
         return $session;
@@ -346,12 +378,38 @@ final readonly class QueueService
         $this->audit->record('queue.skipped', device: $device, subject: $entry);
     }
 
-    private function currentSession(): QueueSession
+    /** @param list<string> $photoPaths */
+    private function deletePhotos(array $photoPaths): void
+    {
+        $failed = 0;
+        foreach ($photoPaths as $photoPath) {
+            try {
+                if (! Storage::disk('local')->delete($photoPath)) {
+                    $failed++;
+                }
+            } catch (\Throwable $exception) {
+                report($exception);
+                $failed++;
+            }
+        }
+
+        if ($failed > 0) {
+            Log::warning('Some queue photos could not be deleted after session reset.', [
+                'failed_count' => $failed,
+            ]);
+        }
+    }
+
+    private function currentSession(bool $create = true): ?QueueSession
     {
         $businessDate = now()->toDateString();
         $session = QueueSession::query()->where('active_key', $businessDate)->first();
         if ($session) {
             return $session;
+        }
+
+        if (! $create) {
+            return null;
         }
 
         $settings = Setting::current();
@@ -374,7 +432,7 @@ final readonly class QueueService
         return QueueSession::query()
             ->where('active_key', now()->toDateString())
             ->lockForUpdate()
-            ->first() ?? $this->currentSession();
+            ->first() ?? $this->currentSession() ?? throw new \LogicException('Queue session could not be created.');
     }
 
     /** @return array{0: QueueSession, 1: QueueEntry} */
