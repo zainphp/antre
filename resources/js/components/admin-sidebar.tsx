@@ -1,6 +1,8 @@
 import DashboardRounded from '@mui/icons-material/DashboardRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
+import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
@@ -11,7 +13,9 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import { Link, usePage } from '@inertiajs/react';
 
+import { InertiaButton } from '@/components/inertia-button';
 import admin from '@/routes/admin';
+import { logout } from '@/routes';
 
 const navigation = [
     {
@@ -96,6 +100,23 @@ export function AdminSidebar() {
                         </ListItemButton>
                     ))}
                 </List>
+                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid var(--line)' }}>
+                    <InertiaButton
+                        href={logout.url()}
+                        method="post"
+                        fullWidth
+                        variant="outlined"
+                        color="inherit"
+                        startIcon={<LogoutRounded />}
+                        sx={{
+                            justifyContent: 'flex-start',
+                            color: 'var(--muted)',
+                            borderColor: 'var(--line)',
+                        }}
+                    >
+                        Keluar
+                    </InertiaButton>
+                </Box>
             </CardContent>
         </Card>
     );
