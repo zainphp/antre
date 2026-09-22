@@ -367,7 +367,44 @@ select:focus-visible {
 }
 
 .waiting-list .MuiListItem-root {
-    min-height: 58px;
+    min-height: 72px;
+    align-items: center;
+    gap: 16px;
+    padding-block: 14px;
+}
+
+.waiting-entry-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.waiting-entry-number {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+}
+
+.waiting-entry-status {
+    color: var(--muted);
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+}
+
+.waiting-entry-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.waiting-entry-actions .MuiButton-root {
+    min-height: 48px;
+}
+
+.waiting-call-button {
+    min-width: 112px;
 }
 
 .empty-state {
@@ -912,6 +949,58 @@ select:focus-visible {
     .queue-counter-row {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .waiting-card .section-title-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .waiting-card .section-title-row > .MuiChip-root {
+        align-self: flex-start;
+    }
+
+    .waiting-list .MuiListItem-root {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        padding-block: 16px;
+    }
+
+    .waiting-entry-content {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .waiting-entry-actions {
+        width: 100%;
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    .waiting-entry-actions:not(.is-current) .MuiButton-root {
+        width: 100%;
+    }
+
+    .waiting-entry-actions.is-current {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .waiting-entry-actions.is-current .MuiChip-root {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+
+    .waiting-entry-actions.is-current.only-action .MuiButton-root {
+        grid-column: 1 / -1;
+    }
+
+    .waiting-entry-actions .MuiButton-root {
+        min-width: 0;
+        padding-inline: 10px;
     }
 
     .queue-counter-row .MuiTextField-root {
