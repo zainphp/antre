@@ -185,6 +185,7 @@ export default function OperatorTerminal({
                             <Button
                                 className="display-control current-recall"
                                 variant="outlined"
+                                color="secondary"
                                 startIcon={<ReplayRounded />}
                                 disabled={action.processing}
                                 onClick={() => post(queue.recall.url())}
