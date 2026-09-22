@@ -7,6 +7,7 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -14,19 +15,14 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
-class AppServiceProvider extends ServiceProvider
+final class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void {}
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureDevCommand();
 
         RateLimiter::for('login', function (Request $request): Limit {
             $email = $request->input('email');
@@ -47,9 +43,12 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
+    private function configureDevCommand(): void
+    {
+        DevCommands::artisan('serve --port=8123', 'server');
+        DevCommands::except('queue', 'logs');
+    }
+
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);

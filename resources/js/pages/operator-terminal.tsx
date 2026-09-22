@@ -185,6 +185,7 @@ export default function OperatorTerminal({
                             <Button
                                 className="display-control current-recall"
                                 variant="outlined"
+                                color="secondary"
                                 startIcon={<ReplayRounded />}
                                 disabled={action.processing}
                                 onClick={() => post(queue.recall.url())}
@@ -229,36 +230,41 @@ export default function OperatorTerminal({
                         </Box>
                         {callableEntries.length ? (
                             <List className="waiting-list">
-                                {callableEntries.map((entry) => (
-                                    <ListItem
-                                        key={entry.id}
-                                        divider
-                                        aria-current={
-                                            state.current?.id === entry.id
-                                                ? 'true'
-                                                : undefined
-                                        }
-                                        secondaryAction={
-                                            state.current?.id === entry.id ? (
-                                                <Stack
-                                                    direction={{
-                                                        xs: 'column',
-                                                        sm: 'row',
-                                                    }}
-                                                    spacing={1}
-                                                    sx={{
-                                                        alignItems: 'flex-end',
-                                                    }}
-                                                >
+                                {callableEntries.map((entry) => {
+                                    const isCurrent =
+                                        state.current?.id === entry.id;
+
+                                    return (
+                                        <ListItem
+                                            key={entry.id}
+                                            className={`waiting-entry ${isCurrent ? 'is-current' : ''}`}
+                                            divider
+                                            aria-current={
+                                                isCurrent ? 'true' : undefined
+                                            }
+                                        >
+                                            <Box className="waiting-entry-content">
+                                                <Typography className="waiting-entry-number">
+                                                    {entry.number}
+                                                </Typography>
+                                                <Typography className="waiting-entry-status">
+                                                    {statusLabels[entry.status]}
+                                                </Typography>
+                                            </Box>
+                                            <Box
+                                                className={`waiting-entry-actions ${isCurrent ? 'is-current' : ''} ${isCurrent && entry.status !== 'CALLED' ? 'only-action' : ''}`}
+                                            >
+                                                {isCurrent && (
                                                     <Chip
                                                         label="Saat ini"
                                                         color="secondary"
                                                         size="small"
                                                     />
-                                                    {entry.status ===
+                                                )}
+                                                {isCurrent &&
+                                                    entry.status ===
                                                         'CALLED' && (
                                                         <Button
-                                                            size="small"
                                                             variant="outlined"
                                                             startIcon={
                                                                 <CheckRounded />
@@ -275,8 +281,8 @@ export default function OperatorTerminal({
                                                             Mulai layani
                                                         </Button>
                                                     )}
+                                                {isCurrent ? (
                                                     <Button
-                                                        size="small"
                                                         variant="outlined"
                                                         startIcon={
                                                             <DoneAllRounded />
@@ -292,40 +298,30 @@ export default function OperatorTerminal({
                                                     >
                                                         Selesai
                                                     </Button>
-                                                </Stack>
-                                            ) : (
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<CallRounded />}
-                                                    disabled={action.processing}
-                                                    onClick={() =>
-                                                        post(
-                                                            queue.recall.url(),
-                                                            entry.id,
-                                                        )
-                                                    }
-                                                >
-                                                    Panggil
-                                                </Button>
-                                            )
-                                        }
-                                    >
-                                        <Stack spacing={0.25}>
-                                            <Typography
-                                                sx={{ fontWeight: 700 }}
-                                            >
-                                                {entry.number}
-                                            </Typography>
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                            >
-                                                {statusLabels[entry.status]}
-                                            </Typography>
-                                        </Stack>
-                                    </ListItem>
-                                ))}
+                                                ) : (
+                                                    <Button
+                                                        className="waiting-call-button"
+                                                        variant="outlined"
+                                                        startIcon={
+                                                            <CallRounded />
+                                                        }
+                                                        disabled={
+                                                            action.processing
+                                                        }
+                                                        onClick={() =>
+                                                            post(
+                                                                queue.recall.url(),
+                                                                entry.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Panggil
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </ListItem>
+                                    );
+                                })}
                             </List>
                         ) : (
                             <Box className="empty-state">
