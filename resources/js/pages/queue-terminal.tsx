@@ -51,6 +51,9 @@ type BluetoothPrinterState =
     | 'RECONNECTING'
     | 'FAILED';
 
+const ASSIGNED_STEP_IDLE_TIMEOUT_MS = 30_000;
+const PRINT_COOLDOWN_MS = 5_000;
+
 type QueueTerminalProps = {
     brandName: string;
     sessionName: string;
@@ -152,14 +155,14 @@ export default function QueueTerminal({
         reconnectBluetooth();
     }, [printerSettings.mode, reconnectBluetooth]);
 
-    const reset = () => {
+    const reset = useCallback((): void => {
         setStep('ready');
         setPhoto(null);
         setAssigned(null);
         setError(null);
         setBusy(false);
         setRequestId(crypto.randomUUID());
-    };
+    }, []);
 
     const requestNumber = async () => {
         setBusy(true);
@@ -583,10 +586,47 @@ function AssignedStep({
     onDone: () => void;
 }) {
     const [printing, setPrinting] = useState(false);
+    const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
+    const [printStarted, setPrintStarted] = useState(false);
+
+    useEffect(() => {
+        if (!printCooldown) {
+            return;
+        }
+
+        const timeout = window.setTimeout(
+            () => setPrintCooldown(false),
+            PRINT_COOLDOWN_MS,
+        );
+
+        return () => window.clearTimeout(timeout);
+    }, [printCooldown]);
+
+    useEffect(() => {
+        let timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
+        const resetTimeout = (): void => {
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
+        };
+        const activityEvents = ['pointerdown', 'keydown'] as const;
+
+        activityEvents.forEach((event) =>
+            window.addEventListener(event, resetTimeout),
+        );
+
+        return () => {
+            window.clearTimeout(timeout);
+            activityEvents.forEach((event) =>
+                window.removeEventListener(event, resetTimeout),
+            );
+        };
+    }, [onDone]);
 
     const print = async (): Promise<void> => {
         setPrinting(true);
+        setPrintCooldown(true);
+        setPrintStarted(true);
         setPrintError(null);
 
         try {
@@ -616,7 +656,9 @@ function AssignedStep({
                 color="text.secondary"
                 align="center"
             >
-                Simpan nomor ini dan perhatikan panggilan di layar.
+                {printStarted && !printError
+                    ? 'Setelah tiket keluar, tekan Selesai untuk membuat tiket baru.'
+                    : 'Simpan nomor ini dan perhatikan panggilan di layar.'}
             </Typography>
             {printError && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
@@ -630,9 +672,13 @@ function AssignedStep({
                     size="large"
                     startIcon={<PrintRounded />}
                     onClick={() => void print()}
-                    disabled={printing}
+                    disabled={printing || printCooldown}
                 >
-                    {printing ? 'Mencetak…' : 'Cetak tiket'}
+                    {printing
+                        ? 'Mencetak…'
+                        : printCooldown
+                          ? 'Tunggu sebentar…'
+                          : 'Cetak tiket'}
                 </Button>
                 <Button
                     className="kiosk-button"
