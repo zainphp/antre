@@ -442,7 +442,8 @@ function CameraStep({
                 color="text.secondary"
                 sx={{ mt: 0.75, mb: 2.5 }}
             >
-                Pastikan wajah terlihat jelas dan pencahayaan cukup.
+                Pastikan wajah terlihat jelas. Lepaskan topi atau masker,
+                tersenyumlah, dan pastikan pencahayaan cukup.
             </Typography>
             <Box
                 className={
@@ -568,7 +569,7 @@ function ReviewStep({
                     onClick={onBack}
                     startIcon={<ReplayRounded />}
                 >
-                    Ambil foto lagi
+                    Ulangi ambil foto
                 </Button>
             </Stack>
             {busy && <LinearProgress sx={{ mt: 2 }} />}
