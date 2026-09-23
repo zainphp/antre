@@ -20,15 +20,18 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 import { queueTerminal } from '@/routes';
+import { formatDateTime } from '@/utils/format';
 import {
     loadPrinterSettings,
     openAndroidBluetoothSettings,
     openAndroidPrintSettings,
     pairWebBluetoothPrinter,
-    printQueueTicket,
+    printerTestPhotoUrl,
+    printPrinterTest,
     rawBtInstallUrl,
     savePrinterSettings,
     supportsWebBluetooth,
+    type PrintImageMode,
     type PrinterMode,
     type PrinterSettings,
 } from '@/services/printer';
@@ -50,7 +53,13 @@ export default function QueueTerminalSettings({
     );
     const [busy, setBusy] = useState(false);
     const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [testImageMode, setTestImageMode] =
+        useState<PrintImageMode>('full-color');
+    const [testCreatedAt, setTestCreatedAt] = useState(() =>
+        new Date().toISOString(),
+    );
     const bluetoothAvailable = supportsWebBluetooth();
+    const browserPrintAvailable = import.meta.env.DEV;
 
     const updateSettings = (changes: Partial<PrinterSettings>): void => {
         const next = { ...settings, ...changes };
@@ -87,20 +96,23 @@ export default function QueueTerminalSettings({
         }
     };
 
-    const testPrint = async (): Promise<void> => {
+    const testPrint = async (imageMode: PrintImageMode): Promise<void> => {
+        const createdAt = new Date().toISOString();
+        setTestImageMode(imageMode);
+        setTestCreatedAt(createdAt);
         setBusy(true);
         setFeedback(null);
 
         try {
-            await printQueueTicket(
-                'UJI',
-                new Date().toISOString(),
+            await printPrinterTest(
                 brandName,
                 sessionName,
+                imageMode,
+                createdAt,
             );
             setFeedback({
                 severity: 'success',
-                message: 'Perintah cetak sudah dikirim.',
+                message: 'Tes cetak sudah dikirim.',
             });
         } catch (reason) {
             setFeedback({
@@ -222,10 +234,19 @@ export default function QueueTerminalSettings({
                                     sx={{ gap: 1 }}
                                 >
                                     <PrinterModeOption
+                                        value="browser-default"
+                                        selected={
+                                            settings.mode === 'browser-default'
+                                        }
+                                        title="Browser bawaan"
+                                        description="Gunakan dialog print standar browser."
+                                    />
+                                    <PrinterModeOption
                                         value="browser"
                                         selected={settings.mode === 'browser'}
-                                        title="Dialog cetak Android"
-                                        description="Pilih printer dari layanan cetak Android."
+                                        title="Jendela tiket (development)"
+                                        description="Buka tiket di jendela terpisah untuk pengujian."
+                                        disabled={!browserPrintAvailable}
                                     />
                                     <PrinterModeOption
                                         value="rawbt"
@@ -302,10 +323,18 @@ export default function QueueTerminalSettings({
                             {settings.mode === 'browser' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Printer Bluetooth biasa mungkin tidak
-                                        muncul di dialog Chrome. Pastikan
-                                        layanan cetak Android mendukung thermal
-                                        ESC/POS.
+                                        Mode ini membuka tiket di jendela
+                                        terpisah dan hanya tersedia saat
+                                        development.
+                                    </Alert>
+                                </PrinterInstructions>
+                            )}
+
+                            {settings.mode === 'browser-default' && (
+                                <PrinterInstructions>
+                                    <Alert severity="info">
+                                        Browser akan membuka dialog print
+                                        standarnya untuk tiket ini.
                                     </Alert>
                                     <Button
                                         variant="outlined"
@@ -380,16 +409,151 @@ export default function QueueTerminalSettings({
                                 </PrinterInstructions>
                             )}
 
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                startIcon={<PrintRounded />}
-                                onClick={() => void testPrint()}
-                                disabled={busy}
-                                sx={{ minHeight: 52, mt: 0.25 }}
-                            >
-                                {busy ? 'Memproses…' : 'Cetak tiket uji'}
-                            </Button>
+                            <Box>
+                                <Typography variant="subtitle1">
+                                    Tes foto printer
+                                </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mt: 0.5, mb: 1.25 }}
+                                >
+                                    Cetak gambar contoh untuk membandingkan
+                                    hasil warna, grayscale, dan hitam putih.
+                                    Printer thermal akan mencetak gambar sebagai
+                                    monokrom.
+                                </Typography>
+                                <Stack
+                                    direction={{ xs: 'column', sm: 'row' }}
+                                    spacing={1}
+                                >
+                                    {(
+                                        [
+                                            ['full-color', 'Warna penuh'],
+                                            ['grayscale', 'Grayscale'],
+                                            ['black-and-white', 'Hitam putih'],
+                                        ] as const
+                                    ).map(([value, label]) => (
+                                        <Button
+                                            key={value}
+                                            fullWidth
+                                            variant={
+                                                testImageMode === value
+                                                    ? 'contained'
+                                                    : 'outlined'
+                                            }
+                                            onClick={() =>
+                                                setTestImageMode(value)
+                                            }
+                                            disabled={busy}
+                                            sx={{ minHeight: 52 }}
+                                        >
+                                            {label}
+                                        </Button>
+                                    ))}
+                                </Stack>
+                                <Box
+                                    sx={{
+                                        alignItems: 'center',
+                                        backgroundColor: '#eef3ef',
+                                        borderRadius: 2,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        minHeight: 260,
+                                        mt: 2,
+                                        p: 2,
+                                    }}
+                                >
+                                    <Box
+                                        component="article"
+                                        sx={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #dfe7e1',
+                                            borderRadius: 1,
+                                            boxShadow:
+                                                '0 8px 20px rgba(18, 72, 59, 0.1)',
+                                            color: '#17211c',
+                                            px: 1.5,
+                                            py: 1.75,
+                                            textAlign: 'center',
+                                            width:
+                                                settings.paperWidth === 58
+                                                    ? 190
+                                                    : 245,
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                fontSize: 11,
+                                                fontWeight: 800,
+                                                lineHeight: 1.25,
+                                            }}
+                                        >
+                                            {brandName}
+                                        </Typography>
+                                        <Typography
+                                            color="text.secondary"
+                                            sx={{ fontSize: 9, mt: 0.25 }}
+                                        >
+                                            {sessionName}
+                                        </Typography>
+                                        <Box
+                                            component="img"
+                                            src={printerTestPhotoUrl}
+                                            alt="Foto contoh untuk tes printer"
+                                            sx={{
+                                                aspectRatio: '1',
+                                                borderRadius: 1.5,
+                                                display: 'block',
+                                                filter:
+                                                    testImageMode ===
+                                                    'full-color'
+                                                        ? 'none'
+                                                        : testImageMode ===
+                                                            'grayscale'
+                                                          ? 'grayscale(1)'
+                                                          : 'grayscale(1) contrast(4)',
+                                                mx: 'auto',
+                                                my: 1,
+                                                objectFit: 'cover',
+                                                width: '40%',
+                                            }}
+                                        />
+                                        <Typography
+                                            sx={{
+                                                color: 'var(--green)',
+                                                fontFamily: 'Georgia, serif',
+                                                fontSize:
+                                                    settings.paperWidth === 58
+                                                        ? 38
+                                                        : 44,
+                                                fontWeight: 700,
+                                                lineHeight: 1,
+                                            }}
+                                        >
+                                            UJI
+                                        </Typography>
+                                        <Typography
+                                            color="text.secondary"
+                                            sx={{ fontSize: 8, mt: 0.75 }}
+                                        >
+                                            {formatDateTime(testCreatedAt)}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    startIcon={<PrintRounded />}
+                                    onClick={() =>
+                                        void testPrint(testImageMode)
+                                    }
+                                    disabled={busy}
+                                    sx={{ minHeight: 52, mt: 1.5 }}
+                                >
+                                    {busy ? 'Memproses…' : 'Cetak foto uji'}
+                                </Button>
+                            </Box>
                         </Stack>
                     </CardContent>
                 </Card>

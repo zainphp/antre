@@ -1,6 +1,11 @@
 import { formatDateTime } from '@/utils/format';
 
-export type PrinterMode = 'browser' | 'rawbt' | 'web-bluetooth';
+export type PrinterMode =
+    | 'browser'
+    | 'browser-default'
+    | 'rawbt'
+    | 'web-bluetooth';
+export type PrintImageMode = 'full-color' | 'grayscale' | 'black-and-white';
 export type PaperWidth = 58 | 80;
 
 export type PrinterSettings = {
@@ -46,6 +51,15 @@ type BluetoothApi = {
 
 const STORAGE_KEY = 'antre.queue-terminal.printer';
 const rawBtPackage = 'ru.a402d.rawbtprinter';
+export const printerTestPhotoUrl = '/images/printer-test-photo.jpg';
+const thermalPhotoWidthDots: Record<PaperWidth, number> = {
+    58: 154,
+    80: 230,
+};
+const thermalPhotoWidthMm: Record<PaperWidth, number> = {
+    58: 23.2,
+    80: 32,
+};
 const bluetoothServiceUuids = [
     '000018f0-0000-1000-8000-00805f9b34fb',
     '0000ffe0-0000-1000-8000-00805f9b34fb',
@@ -59,7 +73,7 @@ let bluetoothConnection: {
 
 export function loadPrinterSettings(): PrinterSettings {
     const defaults: PrinterSettings = {
-        mode: 'browser',
+        mode: 'browser-default',
         paperWidth: 58,
         bluetoothDeviceId: null,
         bluetoothDeviceName: null,
@@ -73,11 +87,18 @@ export function loadPrinterSettings(): PrinterSettings {
         const stored = JSON.parse(
             window.localStorage.getItem(STORAGE_KEY) ?? '{}',
         ) as Partial<PrinterSettings>;
-        const mode = stored.mode;
+        const storedMode = stored.mode;
+        const mode: PrinterMode =
+            storedMode === 'rawbt' ||
+            storedMode === 'web-bluetooth' ||
+            storedMode === 'browser-default'
+                ? storedMode
+                : storedMode === 'browser' && import.meta.env.DEV
+                  ? 'browser'
+                  : 'browser-default';
 
         return {
-            mode:
-                mode === 'rawbt' || mode === 'web-bluetooth' ? mode : 'browser',
+            mode,
             paperWidth: stored.paperWidth === 80 ? 80 : 58,
             bluetoothDeviceId:
                 typeof stored.bluetoothDeviceId === 'string'
@@ -134,6 +155,7 @@ export async function printQueueTicket(
     brandName: string,
     sessionName: string,
     photo: string | null = null,
+    imageMode: PrintImageMode = 'black-and-white',
 ): Promise<void> {
     const settings = loadPrinterSettings();
 
@@ -145,6 +167,7 @@ export async function printQueueTicket(
             sessionName,
             photo,
             settings.paperWidth,
+            imageMode,
         );
 
         return;
@@ -158,9 +181,30 @@ export async function printQueueTicket(
             sessionName,
             photo,
             settings,
+            imageMode,
         );
 
         return;
+    }
+
+    if (settings.mode === 'browser-default') {
+        printWithDefaultBrowser(
+            number,
+            createdAt,
+            brandName,
+            sessionName,
+            photo,
+            settings.paperWidth,
+            imageMode,
+        );
+
+        return;
+    }
+
+    if (!import.meta.env.DEV) {
+        throw new Error(
+            'Dialog cetak browser hanya tersedia di development. Pilih RawBT atau Web Bluetooth untuk production.',
+        );
     }
 
     printWithBrowser(
@@ -170,6 +214,23 @@ export async function printQueueTicket(
         sessionName,
         photo,
         settings.paperWidth,
+        imageMode,
+    );
+}
+
+export async function printPrinterTest(
+    brandName: string,
+    sessionName: string,
+    imageMode: PrintImageMode,
+    createdAt = new Date().toISOString(),
+): Promise<void> {
+    await printQueueTicket(
+        'UJI',
+        createdAt,
+        brandName,
+        sessionName,
+        printerTestPhotoUrl,
+        imageMode,
     );
 }
 
@@ -194,6 +255,7 @@ async function printWithWebBluetooth(
     sessionName: string,
     photo: string | null,
     settings: PrinterSettings,
+    imageMode: PrintImageMode,
 ): Promise<void> {
     const device = await findRememberedDevice(settings.bluetoothDeviceId);
     const characteristic = await findWritableCharacteristic(device);
@@ -206,6 +268,7 @@ async function printWithWebBluetooth(
         sessionName,
         photo,
         settings.paperWidth,
+        imageMode,
     );
     const chunkSize = 20;
 
@@ -224,6 +287,7 @@ async function printWithRawBt(
     sessionName: string,
     photo: string | null,
     paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
 ): Promise<void> {
     const bytes = await buildEscPosTicket(
         number,
@@ -232,8 +296,58 @@ async function printWithRawBt(
         sessionName,
         photo,
         paperWidth,
+        imageMode,
     );
     window.location.assign(`rawbt:base64,${bytesToBase64(bytes)}`);
+}
+
+function printWithDefaultBrowser(
+    number: string,
+    createdAt: string | null,
+    brandName: string,
+    sessionName: string,
+    photo: string | null,
+    paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
+): void {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText =
+        'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    document.body.append(frame);
+
+    const frameWindow = frame.contentWindow;
+    if (!frameWindow) {
+        frame.remove();
+        window.print();
+
+        return;
+    }
+
+    frameWindow.addEventListener('afterprint', () => frame.remove(), {
+        once: true,
+    });
+    frameWindow.addEventListener(
+        'load',
+        () => {
+            frameWindow.focus();
+            frameWindow.print();
+        },
+        { once: true },
+    );
+    frameWindow.document.open();
+    frameWindow.document.write(
+        buildTicketMarkup(
+            number,
+            createdAt,
+            brandName,
+            sessionName,
+            photo,
+            paperWidth,
+            imageMode,
+        ),
+    );
+    frameWindow.document.close();
 }
 
 function printWithBrowser(
@@ -243,23 +357,88 @@ function printWithBrowser(
     sessionName: string,
     photo: string | null,
     paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
 ): void {
     const popup = window.open('', '_blank', 'width=420,height=560');
     if (!popup) {
-        window.print();
+        printWithDefaultBrowser(
+            number,
+            createdAt,
+            brandName,
+            sessionName,
+            photo,
+            paperWidth,
+            imageMode,
+        );
 
         return;
     }
 
+    popup.document.write(
+        buildTicketMarkup(
+            number,
+            createdAt,
+            brandName,
+            sessionName,
+            photo,
+            paperWidth,
+            imageMode,
+            true,
+        ),
+    );
+    popup.document.close();
+}
+
+function buildTicketMarkup(
+    number: string,
+    createdAt: string | null,
+    brandName: string,
+    sessionName: string,
+    photo: string | null,
+    paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
+    printOnLoad = false,
+): string {
     const photoMarkup = photo
         ? `<img class="ticket-photo" src="${escapeHtml(photo)}" alt="Foto pelanggan" />`
         : '';
     const ticketWidth = paperWidth === 58 ? '50mm' : '72mm';
+    const photoWidth = thermalPhotoWidthMm[paperWidth];
+    const photoFilter =
+        imageMode === 'full-color'
+            ? 'none'
+            : imageMode === 'grayscale'
+              ? 'grayscale(1)'
+              : 'grayscale(1) contrast(4)';
+    const ticketStyles = [
+        `@page{size:${paperWidth}mm auto;margin:0}`,
+        '*{box-sizing:border-box}',
+        `body{width:${ticketWidth};font-family:Arial,sans-serif;text-align:center;margin:0 auto;padding:4mm 2mm;color:#17211c}`,
+        'h1{font-size:13px;line-height:1.25;margin:0 0 3px}',
+        'h2{font-size:11px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}',
+        `.ticket-photo{display:block;width:${photoWidth}mm;`,
+        `height:${photoWidth}mm;object-fit:cover;border-radius:3mm;`,
+        `filter:${photoFilter};margin:0 auto 8px}`,
+        `.ticket-number{display:block;font:700 ${paperWidth === 58 ? '48px' : '56px'} Georgia,serif;line-height:1;margin:8px 0 10px}`,
+        '.ticket-note{font-size:10px;line-height:1.35;margin:0 0 5px}',
+        '.ticket-date{font-size:9px;color:#56645d;margin:0}',
+    ].join('');
 
-    popup.document.write(
-        `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Tiket ${escapeHtml(number)}</title><style>@page{size:${paperWidth}mm auto;margin:0}*{box-sizing:border-box}body{width:${ticketWidth};font-family:Arial,sans-serif;text-align:center;margin:0 auto;padding:4mm 2mm;color:#17211c}h1{font-size:13px;line-height:1.25;margin:0 0 3px}h2{font-size:11px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}.ticket-photo{display:block;width:24mm;height:24mm;object-fit:cover;border-radius:4mm;margin:0 auto 8px}.ticket-number{display:block;font:700 ${paperWidth === 58 ? '48px' : '56px'} Georgia,serif;line-height:1;margin:8px 0 10px}.ticket-note{font-size:10px;line-height:1.35;margin:0 0 5px}.ticket-date{font-size:9px;color:#56645d;margin:0}</style></head><body><h1>${escapeHtml(brandName)}</h1><h2>${escapeHtml(sessionName)}</h2>${photoMarkup}<strong class="ticket-number">${escapeHtml(number)}</strong><p class="ticket-note">Silakan menunggu panggilan Anda.</p><p class="ticket-date">${escapeHtml(formatDateTime(createdAt))}</p><script>window.addEventListener('load',()=>{window.print();window.close()})</script></body></html>`,
-    );
-    popup.document.close();
+    return [
+        '<!doctype html><html lang="id"><head><meta charset="utf-8">',
+        `<title>Tiket ${escapeHtml(number)}</title>`,
+        `<style>${ticketStyles}</style></head><body>`,
+        `<h1>${escapeHtml(brandName)}</h1>`,
+        `<h2>${escapeHtml(sessionName)}</h2>`,
+        photoMarkup,
+        `<strong class="ticket-number">${escapeHtml(number)}</strong>`,
+        '<p class="ticket-note">Silakan menunggu panggilan Anda.</p>',
+        `<p class="ticket-date">${escapeHtml(formatDateTime(createdAt))}</p>`,
+        printOnLoad
+            ? "<script>window.addEventListener('load',()=>{window.print();window.close()})</script>"
+            : '',
+        '</body></html>',
+    ].join('');
 }
 
 function getBluetoothApi(): BluetoothApi | null {
@@ -361,6 +540,7 @@ async function buildEscPosTicket(
     sessionName: string,
     photo: string | null,
     paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
 ): Promise<Uint8Array> {
     const encoder = new TextEncoder();
     const header = encoder.encode(
@@ -372,7 +552,7 @@ async function buildEscPosTicket(
         ].join(''),
     );
     const image = photo
-        ? await buildEscPosImage(photo, paperWidth)
+        ? await buildEscPosImage(photo, paperWidth, imageMode)
         : new Uint8Array();
     const details = encoder.encode(
         [
@@ -392,9 +572,10 @@ async function buildEscPosTicket(
 async function buildEscPosImage(
     source: string,
     paperWidth: PaperWidth,
+    imageMode: PrintImageMode,
 ): Promise<Uint8Array> {
     const image = await loadImage(source);
-    const width = paperWidth === 58 ? 384 : 576;
+    const width = thermalPhotoWidthDots[paperWidth];
     const height = Math.max(
         1,
         Math.round((image.naturalHeight / image.naturalWidth) * width),
@@ -412,16 +593,21 @@ async function buildEscPosImage(
     const pixels = context.getImageData(0, 0, width, height).data;
     const bytesPerRow = Math.ceil(width / 8);
     const raster = new Uint8Array(bytesPerRow * height);
+    const threshold = imageMode === 'black-and-white' ? 128 : 170;
 
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
             const pixel = (y * width + x) * 4;
             const luminance =
-                pixels[pixel] * 0.299 +
-                pixels[pixel + 1] * 0.587 +
-                pixels[pixel + 2] * 0.114;
+                imageMode === 'grayscale'
+                    ? pixels[pixel] * 0.2126 +
+                      pixels[pixel + 1] * 0.7152 +
+                      pixels[pixel + 2] * 0.0722
+                    : pixels[pixel] * 0.299 +
+                      pixels[pixel + 1] * 0.587 +
+                      pixels[pixel + 2] * 0.114;
 
-            if (luminance < 170) {
+            if (luminance < threshold) {
                 raster[y * bytesPerRow + Math.floor(x / 8)] |= 0x80 >> (x % 8);
             }
         }
