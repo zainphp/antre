@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DevicePairController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QueueController;
@@ -59,4 +60,10 @@ Route::middleware(['auth', 'user.role:ADMINISTRATOR'])->prefix('admin')->name('a
     Route::delete('/devices/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
     Route::get('/settings', [QueueSettingsController::class, 'edit'])->name('settings');
     Route::patch('/settings', [QueueSettingsController::class, 'update'])->name('settings.update');
+    Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations');
+    Route::post('/integrations/sentry/backend', [IntegrationController::class, 'testBackendSentry'])
+        ->name('integrations.sentry.backend');
+    Route::post('/integrations/{connection}', [IntegrationController::class, 'testBroadcast'])
+        ->whereIn('connection', ['ably', 'reverb'])
+        ->name('integrations.broadcast');
 });

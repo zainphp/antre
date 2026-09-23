@@ -1,6 +1,7 @@
 import DashboardRounded from '@mui/icons-material/DashboardRounded';
 import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
+import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -35,6 +36,12 @@ const navigation = [
         label: 'Pengaturan',
         description: 'Atur format nomor antrian',
         icon: <SettingsRounded />,
+    },
+    {
+        href: admin.integrations.url(),
+        label: 'Integrasi',
+        description: 'Uji layanan Sentry dan realtime',
+        icon: <MonitorHeartRounded />,
     },
 ];
 
