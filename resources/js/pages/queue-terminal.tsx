@@ -590,6 +590,7 @@ function AssignedStep({
     const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
     const [printStarted, setPrintStarted] = useState(false);
+    const autoPrintStarted = useRef(false);
 
     useEffect(() => {
         if (!printCooldown) {
@@ -624,7 +625,7 @@ function AssignedStep({
         };
     }, [onDone]);
 
-    const print = async (): Promise<void> => {
+    const print = useCallback(async (): Promise<void> => {
         setPrinting(true);
         setPrintCooldown(true);
         setPrintStarted(true);
@@ -641,7 +642,16 @@ function AssignedStep({
         } finally {
             setPrinting(false);
         }
-    };
+    }, [onPrint]);
+
+    useEffect(() => {
+        if (autoPrintStarted.current) {
+            return;
+        }
+
+        autoPrintStarted.current = true;
+        void print();
+    }, [print]);
 
     return (
         <Box
@@ -671,6 +681,14 @@ function AssignedStep({
                     className="kiosk-button"
                     variant="contained"
                     size="large"
+                    onClick={onDone}
+                >
+                    Selesai
+                </Button>
+                <Button
+                    className="kiosk-button"
+                    variant="outlined"
+                    size="large"
                     startIcon={<PrintRounded />}
                     onClick={() => void print()}
                     disabled={printing || printCooldown}
@@ -679,15 +697,7 @@ function AssignedStep({
                         ? 'Mencetak…'
                         : printCooldown
                           ? 'Tunggu sebentar…'
-                          : 'Cetak tiket'}
-                </Button>
-                <Button
-                    className="kiosk-button"
-                    variant="outlined"
-                    size="large"
-                    onClick={onDone}
-                >
-                    Selesai
+                          : 'Ulangi cetak tiket'}
                 </Button>
             </Stack>
         </Box>
