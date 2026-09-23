@@ -19,16 +19,18 @@ import Typography from '@mui/material/Typography';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
+import { PrinterTestPreview } from '@/components/printer-test-preview';
 import { queueTerminal } from '@/routes';
 import {
+    androidPrintInstallUrl,
+    getPrinterOperatingSystem,
     loadPrinterSettings,
     openAndroidBluetoothSettings,
-    openAndroidPrintSettings,
     pairWebBluetoothPrinter,
-    printQueueTicket,
-    rawBtInstallUrl,
+    printPrinterTest,
     savePrinterSettings,
     supportsWebBluetooth,
+    type PrintImageMode,
     type PrinterMode,
     type PrinterSettings,
 } from '@/services/printer';
@@ -50,13 +52,29 @@ export default function QueueTerminalSettings({
     );
     const [busy, setBusy] = useState(false);
     const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [testCreatedAt, setTestCreatedAt] = useState(() =>
+        new Date().toISOString(),
+    );
     const bluetoothAvailable = supportsWebBluetooth();
+    const operatingSystem = getPrinterOperatingSystem();
+    const isAndroid = operatingSystem === 'android';
+    const operatingSystemLabel = {
+        android: 'Android',
+        ios: 'iOS',
+        linux: 'Linux',
+        macos: 'macOS',
+        unknown: 'tidak dikenal',
+        windows: 'Windows',
+    }[operatingSystem];
 
     const updateSettings = (changes: Partial<PrinterSettings>): void => {
         const next = { ...settings, ...changes };
         setSettings(next);
         savePrinterSettings(next);
-        setFeedback(null);
+        setFeedback({
+            severity: 'success',
+            message: 'Pengaturan tersimpan di terminal ini.',
+        });
     };
 
     const connectBluetooth = async (): Promise<void> => {
@@ -87,20 +105,22 @@ export default function QueueTerminalSettings({
         }
     };
 
-    const testPrint = async (): Promise<void> => {
+    const testPrint = async (imageMode: PrintImageMode): Promise<void> => {
+        const createdAt = new Date().toISOString();
+        setTestCreatedAt(createdAt);
         setBusy(true);
         setFeedback(null);
 
         try {
-            await printQueueTicket(
-                'UJI',
-                new Date().toISOString(),
+            await printPrinterTest(
                 brandName,
                 sessionName,
+                imageMode,
+                createdAt,
             );
             setFeedback({
                 severity: 'success',
-                message: 'Perintah cetak sudah dikirim.',
+                message: 'Tes cetak sudah dikirim.',
             });
         } catch (reason) {
             setFeedback({
@@ -128,6 +148,13 @@ export default function QueueTerminalSettings({
                     paddingTop: { xs: 2.5, sm: 3.5 },
                 }}
             >
+                <Button
+                    onClick={() => router.visit(queueTerminal.url())}
+                    startIcon={<ArrowBackRounded />}
+                    sx={{ minHeight: 48, mb: 1 }}
+                >
+                    Kembali ke terminal
+                </Button>
                 <Box
                     className="self-service-header"
                     sx={{ alignItems: 'center', marginBottom: 2.25 }}
@@ -194,6 +221,13 @@ export default function QueueTerminalSettings({
                                 >
                                     Pengaturan hanya tersimpan di terminal ini.
                                 </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mt: 0.25 }}
+                                >
+                                    Sistem terdeteksi: {operatingSystemLabel}.
+                                </Typography>
                             </Box>
 
                             <FormControl fullWidth>
@@ -222,24 +256,39 @@ export default function QueueTerminalSettings({
                                     sx={{ gap: 1 }}
                                 >
                                     <PrinterModeOption
-                                        value="browser"
-                                        selected={settings.mode === 'browser'}
-                                        title="Dialog cetak Android"
-                                        description="Pilih printer dari layanan cetak Android."
+                                        value="iframe"
+                                        selected={settings.mode === 'iframe'}
+                                        title="Dialog cetak"
+                                        description="Buka dialog cetak browser tanpa meninggalkan halaman terminal."
                                     />
                                     <PrinterModeOption
-                                        value="rawbt"
-                                        selected={settings.mode === 'rawbt'}
-                                        title="RawBT melalui intent"
-                                        description="Untuk printer Bluetooth Classic ESC/POS."
+                                        value="window"
+                                        selected={settings.mode === 'window'}
+                                        title="Jendela tiket"
+                                        description="Buka tiket di jendela baru lalu cetak dari browser."
                                     />
+                                    {isAndroid && (
+                                        <PrinterModeOption
+                                            value="android-intent"
+                                            selected={
+                                                settings.mode ===
+                                                'android-intent'
+                                            }
+                                            title="Aplikasi Android"
+                                            description="Kirim tiket ke aplikasi Android yang mendukung pencetakan."
+                                        />
+                                    )}
                                     <PrinterModeOption
                                         value="web-bluetooth"
                                         selected={
                                             settings.mode === 'web-bluetooth'
                                         }
-                                        title="Web Bluetooth (BLE)"
-                                        description="Untuk printer Bluetooth LE yang mendukung cetak."
+                                        title="Printer Bluetooth"
+                                        description={
+                                            bluetoothAvailable
+                                                ? 'Cetak langsung ke printer Bluetooth yang didukung.'
+                                                : 'Tidak tersedia di browser atau perangkat ini. Pilih metode lain.'
+                                        }
                                         disabled={!bluetoothAvailable}
                                     />
                                 </RadioGroup>
@@ -259,14 +308,15 @@ export default function QueueTerminalSettings({
                                         textTransform: 'uppercase',
                                     }}
                                 >
-                                    Lebar kertas thermal
+                                    Ukuran kertas
                                 </Typography>
                                 <Typography
                                     color="text.secondary"
                                     variant="body2"
                                     sx={{ mb: 0.75 }}
                                 >
-                                    Ukuran umum roll printer: 58 mm atau 80 mm.
+                                    Pilih lebar kertas printer: 58 mm atau 80
+                                    mm.
                                 </Typography>
                                 <RadioGroup
                                     aria-label="Lebar kertas thermal"
@@ -299,64 +349,76 @@ export default function QueueTerminalSettings({
 
                             <Divider />
 
-                            {settings.mode === 'browser' && (
+                            {settings.mode === 'window' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Printer Bluetooth biasa mungkin tidak
-                                        muncul di dialog Chrome. Pastikan
-                                        layanan cetak Android mendukung thermal
-                                        ESC/POS.
+                                        Tiket dibuka di jendela baru, lalu
+                                        dialog cetak browser akan muncul.
                                     </Alert>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<LaunchRounded />}
-                                        onClick={openAndroidPrintSettings}
-                                    >
-                                        Buka layanan cetak
-                                    </Button>
+                                    {operatingSystem === 'windows' && (
+                                        <Alert severity="success">
+                                            Windows terdeteksi. Metode ini
+                                            menggunakan printer yang tersedia di
+                                            sistem Windows.
+                                        </Alert>
+                                    )}
                                 </PrinterInstructions>
                             )}
 
-                            {settings.mode === 'rawbt' && (
+                            {settings.mode === 'iframe' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Pair printer di pengaturan Bluetooth
-                                        Android, lalu pilih printer tersebut di
-                                        RawBT.
+                                        Dialog cetak browser akan dibuka tanpa
+                                        meninggalkan halaman terminal.
                                     </Alert>
-                                    <Stack
-                                        direction={{ xs: 'column', sm: 'row' }}
-                                        spacing={1}
-                                    >
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<BluetoothRounded />}
-                                            onClick={
-                                                openAndroidBluetoothSettings
-                                            }
-                                        >
-                                            Buka Bluetooth
-                                        </Button>
-                                        <Button
-                                            component="a"
-                                            href={rawBtInstallUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            variant="outlined"
-                                            startIcon={<LaunchRounded />}
-                                        >
-                                            Pasang RawBT
-                                        </Button>
-                                    </Stack>
                                 </PrinterInstructions>
                             )}
+
+                            {isAndroid &&
+                                settings.mode === 'android-intent' && (
+                                    <PrinterInstructions>
+                                        <Alert severity="info">
+                                            Hubungkan perangkat di pengaturan
+                                            Bluetooth Android, lalu pilih
+                                            aplikasi yang mendukung pencetakan.
+                                        </Alert>
+                                        <Stack
+                                            direction={{
+                                                xs: 'column',
+                                                sm: 'row',
+                                            }}
+                                            spacing={1}
+                                        >
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<BluetoothRounded />}
+                                                onClick={
+                                                    openAndroidBluetoothSettings
+                                                }
+                                            >
+                                                Buka Bluetooth
+                                            </Button>
+                                            <Button
+                                                component="a"
+                                                href={androidPrintInstallUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                variant="outlined"
+                                                startIcon={<LaunchRounded />}
+                                            >
+                                                Pasang aplikasi cetak
+                                            </Button>
+                                        </Stack>
+                                    </PrinterInstructions>
+                                )}
 
                             {settings.mode === 'web-bluetooth' && (
                                 <PrinterInstructions>
                                     <Alert severity="warning">
-                                        Web Bluetooth tidak dapat melihat
-                                        printer Bluetooth Classic. Jika C80BT
-                                        tidak muncul, gunakan RawBT.
+                                        Metode ini memerlukan dukungan Bluetooth
+                                        dari browser dan printer. Jika printer
+                                        tidak muncul, pilih metode cetak
+                                        browser.
                                     </Alert>
                                     <Button
                                         variant="outlined"
@@ -364,43 +426,88 @@ export default function QueueTerminalSettings({
                                         onClick={() => void connectBluetooth()}
                                         disabled={busy || !bluetoothAvailable}
                                     >
-                                        {settings.bluetoothDeviceName
-                                            ? `Hubungkan ulang ${settings.bluetoothDeviceName}`
-                                            : 'Pilih printer BLE'}
+                                        Pilih printer Bluetooth
                                     </Button>
                                     {!bluetoothAvailable && (
                                         <Typography
                                             variant="body2"
                                             color="text.secondary"
                                         >
-                                            Browser ini tidak menyediakan Web
-                                            Bluetooth.
+                                            Browser atau perangkat ini tidak
+                                            menyediakan Bluetooth.
                                         </Typography>
                                     )}
                                 </PrinterInstructions>
                             )}
 
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                startIcon={<PrintRounded />}
-                                onClick={() => void testPrint()}
-                                disabled={busy}
-                                sx={{ minHeight: 52, mt: 0.25 }}
-                            >
-                                {busy ? 'Memproses…' : 'Cetak tiket uji'}
-                            </Button>
+                            <Box>
+                                <Typography variant="subtitle1" component="h3">
+                                    Mode foto tiket
+                                </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mt: 0.5, mb: 1.25 }}
+                                >
+                                    Pilih mode foto yang disimpan di terminal
+                                    ini. Gunakan tombol tes untuk melihat
+                                    hasilnya sebelum mencetak tiket.
+                                </Typography>
+                                <Stack
+                                    direction={{ xs: 'column', sm: 'row' }}
+                                    spacing={1}
+                                >
+                                    {(
+                                        [
+                                            ['full-color', 'Warna penuh'],
+                                            ['grayscale', 'Abu-abu'],
+                                            ['black-and-white', 'Hitam putih'],
+                                        ] as const
+                                    ).map(([value, label]) => (
+                                        <Button
+                                            key={value}
+                                            fullWidth
+                                            variant={
+                                                settings.imageMode === value
+                                                    ? 'contained'
+                                                    : 'outlined'
+                                            }
+                                            onClick={() =>
+                                                updateSettings({
+                                                    imageMode: value,
+                                                })
+                                            }
+                                            disabled={busy}
+                                            sx={{ minHeight: 52 }}
+                                        >
+                                            {label}
+                                        </Button>
+                                    ))}
+                                </Stack>
+                                <PrinterTestPreview
+                                    brandName={brandName}
+                                    createdAt={testCreatedAt}
+                                    imageMode={settings.imageMode}
+                                    paperWidth={settings.paperWidth}
+                                    sessionName={sessionName}
+                                />
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    startIcon={<PrintRounded />}
+                                    onClick={() =>
+                                        void testPrint(settings.imageMode)
+                                    }
+                                    disabled={busy}
+                                    sx={{ minHeight: 52, mt: 1.5 }}
+                                >
+                                    {busy ? 'Memproses…' : 'Cetak foto uji'}
+                                </Button>
+                            </Box>
                         </Stack>
                     </CardContent>
                 </Card>
 
-                <Button
-                    onClick={() => router.visit(queueTerminal.url())}
-                    startIcon={<ArrowBackRounded />}
-                    sx={{ minHeight: 48, mt: 1.25 }}
-                >
-                    Kembali ke terminal
-                </Button>
                 <Typography component="p" className="self-service-copyright">
                     © {new Date().getFullYear()} Antre by zainphp
                 </Typography>

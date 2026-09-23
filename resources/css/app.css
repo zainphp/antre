@@ -596,6 +596,12 @@ select:focus-visible {
     place-items: center;
 }
 
+.camera-frame-error {
+    aspect-ratio: auto;
+    min-height: 180px;
+    max-height: 220px;
+}
+
 .camera-frame video {
     display: block;
     width: 100%;
@@ -611,6 +617,7 @@ select:focus-visible {
     padding: 28px;
     gap: 9px;
     color: #fff;
+    text-align: center;
 }
 
 .camera-fallback svg {
@@ -686,7 +693,7 @@ select:focus-visible {
 .self-service-copyright {
     display: block;
     margin: 16px auto 0;
-    max-width: 470px;
+    padding-top: 32px;
     text-align: center;
     color: var(--muted);
     font-size: 0.8rem !important;

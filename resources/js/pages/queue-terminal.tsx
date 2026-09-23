@@ -2,6 +2,8 @@ import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import CameraAltRounded from '@mui/icons-material/CameraAltRounded';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
+import BluetoothConnectedRounded from '@mui/icons-material/BluetoothConnectedRounded';
+import BluetoothDisabledRounded from '@mui/icons-material/BluetoothDisabledRounded';
 import LinkRounded from '@mui/icons-material/LinkRounded';
 import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import PrintRounded from '@mui/icons-material/PrintRounded';
@@ -12,13 +14,15 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Head, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import queue from '@/routes/queue';
@@ -29,11 +33,23 @@ import {
     startCamera,
     stopCamera,
 } from '@/services/camera';
-import { printQueueTicket } from '@/services/printer';
+import {
+    connectRememberedWebBluetoothPrinter,
+    loadPrinterSettings,
+    printQueueTicket,
+    repairWebBluetoothPrinter,
+    savePrinterSettings,
+    type PrinterSettings,
+} from '@/services/printer';
 import { useOnlineState } from '@/hooks/use-online-state';
 import type { QueueEntry } from '@/types/queue';
 
 type Step = 'ready' | 'camera' | 'review' | 'assigned';
+type BluetoothPrinterState =
+    | 'CONNECTED'
+    | 'DISCONNECTED'
+    | 'RECONNECTING'
+    | 'FAILED';
 
 type QueueTerminalProps = {
     brandName: string;
@@ -48,12 +64,56 @@ export default function QueueTerminal({
 }: QueueTerminalProps) {
     const online = useOnlineState();
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [printerSettings, setPrinterSettings] = useState<PrinterSettings>(
+        () => loadPrinterSettings(),
+    );
+    const [printerState, setPrinterState] = useState<BluetoothPrinterState>(
+        printerSettings.mode === 'web-bluetooth'
+            ? 'RECONNECTING'
+            : 'DISCONNECTED',
+    );
     const [step, setStep] = useState<Step>('ready');
     const [photo, setPhoto] = useState<string | null>(null);
     const [assigned, setAssigned] = useState<QueueEntry | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+    const [cameraAttempt, setCameraAttempt] = useState(0);
+
+    const reconnectBluetooth = useCallback((): void => {
+        if (printerSettings.mode !== 'web-bluetooth') {
+            return;
+        }
+
+        setPrinterState('RECONNECTING');
+        void connectRememberedWebBluetoothPrinter(printerSettings, () => {
+            setPrinterState('DISCONNECTED');
+        })
+            .then(() => setPrinterState('CONNECTED'))
+            .catch(() => setPrinterState('FAILED'));
+    }, [printerSettings]);
+
+    const repairBluetooth = useCallback((): void => {
+        if (printerSettings.mode !== 'web-bluetooth') {
+            return;
+        }
+
+        setPrinterState('RECONNECTING');
+        void repairWebBluetoothPrinter(printerSettings, () => {
+            setPrinterState('DISCONNECTED');
+        })
+            .then((device) => {
+                const nextSettings = {
+                    ...printerSettings,
+                    bluetoothDeviceId: device.id,
+                    bluetoothDeviceName: device.name,
+                };
+                setPrinterSettings(nextSettings);
+                savePrinterSettings(nextSettings);
+                setPrinterState('CONNECTED');
+            })
+            .catch(() => setPrinterState('FAILED'));
+    }, [printerSettings]);
 
     useEffect(() => {
         if (step !== 'camera' || !videoRef.current) {
@@ -82,7 +142,15 @@ export default function QueueTerminal({
             active = false;
             stopCamera(stream);
         };
-    }, [photoRequired, step]);
+    }, [cameraAttempt, photoRequired, step]);
+
+    useEffect(() => {
+        if (printerSettings.mode !== 'web-bluetooth') {
+            return;
+        }
+
+        reconnectBluetooth();
+    }, [printerSettings.mode, reconnectBluetooth]);
 
     const reset = () => {
         setStep('ready');
@@ -167,11 +235,22 @@ export default function QueueTerminal({
                     <Stack
                         direction="row"
                         spacing={1}
-                        sx={{ alignItems: 'center' }}
+                        sx={{
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            justifyContent: 'flex-end',
+                        }}
                     >
                         <ConnectionBadge
                             state={online ? 'CONNECTED' : 'DISCONNECTED'}
                         />
+                        {printerSettings.mode === 'web-bluetooth' && (
+                            <BluetoothPrinterBadge
+                                name={printerSettings.bluetoothDeviceName}
+                                state={printerState}
+                                onReconnect={repairBluetooth}
+                            />
+                        )}
                         <IconButton
                             onClick={() =>
                                 router.visit(queueTerminalRoutes.settings.url())
@@ -232,6 +311,10 @@ export default function QueueTerminal({
                                     setError(null);
                                 }}
                                 onBack={reset}
+                                onRetry={() => {
+                                    setError(null);
+                                    setCameraAttempt((attempt) => attempt + 1);
+                                }}
                             />
                         )}
                         {step === 'review' && (
@@ -333,6 +416,7 @@ function CameraStep({
     onCapture,
     onWithoutPhoto,
     onBack,
+    onRetry,
 }: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     photoError: boolean;
@@ -340,6 +424,7 @@ function CameraStep({
     onCapture: () => void;
     onWithoutPhoto: () => void;
     onBack: () => void;
+    onRetry: () => void;
 }) {
     return (
         <Box className="self-step">
@@ -356,20 +441,18 @@ function CameraStep({
             >
                 Pastikan wajah terlihat jelas dan pencahayaan cukup.
             </Typography>
-            <Box className="camera-frame">
+            <Box
+                className={
+                    photoError
+                        ? 'camera-frame camera-frame-error'
+                        : 'camera-frame'
+                }
+            >
                 {photoError ? (
                     <Box className="camera-fallback">
                         <CameraAltRounded />
-                        <Typography sx={{ fontWeight: 700 }}>
+                        <Typography sx={{ color: 'inherit', fontWeight: 700 }}>
                             Kamera tidak tersedia
-                        </Typography>
-                        <Typography
-                            className="kiosk-help"
-                            color="text.secondary"
-                        >
-                            {photoRequired
-                                ? 'Foto wajib diambil. Izinkan akses kamera pada browser, lalu coba lagi.'
-                                : 'Anda tetap dapat mengambil nomor tanpa foto.'}
                         </Typography>
                     </Box>
                 ) : (
@@ -382,16 +465,27 @@ function CameraStep({
                 )}
             </Box>
             <Stack spacing={1.25} sx={{ mt: 2.5 }}>
-                <Button
-                    className="kiosk-button"
-                    variant="contained"
-                    size="large"
-                    onClick={onCapture}
-                    disabled={photoError}
-                    startIcon={<PhotoCameraRounded />}
-                >
-                    Ambil foto
-                </Button>
+                {photoError ? (
+                    <Button
+                        className="kiosk-button"
+                        variant="contained"
+                        size="large"
+                        onClick={onRetry}
+                        startIcon={<ReplayRounded />}
+                    >
+                        Coba lagi
+                    </Button>
+                ) : (
+                    <Button
+                        className="kiosk-button"
+                        variant="contained"
+                        size="large"
+                        onClick={onCapture}
+                        startIcon={<PhotoCameraRounded />}
+                    >
+                        Ambil foto
+                    </Button>
+                )}
                 {!photoRequired && (
                     <Button
                         className="kiosk-button"
@@ -557,5 +651,54 @@ function csrfToken(): string {
     return (
         document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
             ?.content ?? ''
+    );
+}
+
+function BluetoothPrinterBadge({
+    name,
+    state,
+    onReconnect,
+}: {
+    name: string | null;
+    state: BluetoothPrinterState;
+    onReconnect?: () => void;
+}) {
+    const connected = state === 'CONNECTED';
+    const reconnecting = state === 'RECONNECTING';
+    const canReconnect = !connected && !reconnecting && onReconnect;
+
+    return (
+        <Chip
+            size="small"
+            icon={
+                reconnecting ? (
+                    <CircularProgress color="inherit" size={16} />
+                ) : connected ? (
+                    <BluetoothConnectedRounded fontSize="small" />
+                ) : (
+                    <BluetoothDisabledRounded fontSize="small" />
+                )
+            }
+            label={
+                connected
+                    ? 'Printer terhubung'
+                    : reconnecting
+                      ? 'Menyambungkan printer'
+                      : 'Printer terputus'
+            }
+            color={connected ? 'success' : reconnecting ? 'warning' : 'error'}
+            variant={connected ? 'filled' : 'outlined'}
+            clickable={Boolean(canReconnect)}
+            disabled={reconnecting}
+            onClick={canReconnect ? onReconnect : undefined}
+            aria-label={
+                canReconnect
+                    ? 'Hubungkan ulang printer'
+                    : connected
+                      ? 'Printer terhubung'
+                      : 'Printer sedang disambungkan'
+            }
+            title={name ? `Printer: ${name}` : undefined}
+        />
     );
 }
