@@ -458,8 +458,21 @@ function CameraStep({
     onBack: () => void;
     onRetry: () => void;
 }) {
+    const stepRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const frame = window.requestAnimationFrame(() => {
+            stepRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'end',
+            });
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, []);
+
     return (
-        <Box className="self-step">
+        <Box ref={stepRef} className="self-step">
             <Typography className="kiosk-step-label">
                 Langkah 1 dari 2
             </Typography>
