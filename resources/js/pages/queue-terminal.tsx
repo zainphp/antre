@@ -255,6 +255,8 @@ export default function QueueTerminal({
                                         assigned.number,
                                         assigned.created_at,
                                         brandName,
+                                        sessionName,
+                                        photo,
                                     )
                                 }
                                 onDone={reset}

@@ -35,8 +35,11 @@ final class PageController extends Controller
 
     public function queueTerminalSettings(): Response
     {
+        $settings = Setting::current();
+
         return Inertia::render('queue-terminal-settings', [
-            'brandName' => Setting::current()->brand_name,
+            'brandName' => $settings->brand_name,
+            'sessionName' => $settings->session_name,
         ]);
     }
 
