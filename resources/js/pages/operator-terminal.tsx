@@ -62,6 +62,10 @@ export default function OperatorTerminal({
     const displayedEntry = state.current;
     const canRecall = Boolean(state.current);
     const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+    const [photoDialog, setPhotoDialog] = useState<{
+        number: string;
+        url: string;
+    } | null>(null);
     const { errors } = usePage().props as unknown as {
         errors: { queue?: string };
     };
@@ -162,7 +166,23 @@ export default function OperatorTerminal({
                             className={`current-queue-focus ${displayedEntry?.photo_url ? 'has-photo' : ''}`}
                         >
                             {displayedEntry?.photo_url && (
-                                <Box className="operator-photo-frame">
+                                <Box
+                                    component="button"
+                                    type="button"
+                                    className="operator-photo-frame"
+                                    sx={{
+                                        appearance: 'none',
+                                        cursor: 'zoom-in',
+                                        font: 'inherit',
+                                    }}
+                                    aria-label={`Perbesar foto pelanggan nomor ${displayedEntry.number}`}
+                                    onClick={() =>
+                                        setPhotoDialog({
+                                            number: displayedEntry.number,
+                                            url: displayedEntry.photo_url!,
+                                        })
+                                    }
+                                >
                                     <Box
                                         component="img"
                                         className="operator-customer-photo"
@@ -394,6 +414,39 @@ export default function OperatorTerminal({
                     </CardContent>
                 </Card>
             </Box>
+            <Dialog
+                open={Boolean(photoDialog)}
+                onClose={() => setPhotoDialog(null)}
+                maxWidth="md"
+                fullWidth
+                aria-labelledby="customer-photo-dialog-title"
+            >
+                <DialogTitle id="customer-photo-dialog-title">
+                    Foto pelanggan nomor {photoDialog?.number}
+                </DialogTitle>
+                <DialogContent
+                    dividers
+                    sx={{ display: 'flex', justifyContent: 'center', p: 2 }}
+                >
+                    {photoDialog && (
+                        <Box
+                            component="img"
+                            src={photoDialog.url}
+                            alt={`Foto pelanggan nomor ${photoDialog.number}`}
+                            sx={{
+                                borderRadius: 2,
+                                display: 'block',
+                                maxHeight: '70vh',
+                                maxWidth: '100%',
+                                objectFit: 'contain',
+                            }}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPhotoDialog(null)}>Tutup</Button>
+                </DialogActions>
+            </Dialog>
             <Dialog
                 open={completeDialogOpen}
                 onClose={() => setCompleteDialogOpen(false)}
