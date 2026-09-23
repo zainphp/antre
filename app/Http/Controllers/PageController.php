@@ -33,6 +33,13 @@ final class PageController extends Controller
         ]);
     }
 
+    public function queueTerminalSettings(): Response
+    {
+        return Inertia::render('queue-terminal-settings', [
+            'brandName' => Setting::current()->brand_name,
+        ]);
+    }
+
     public function operatorTerminal(Request $request, QueueService $queues): Response
     {
         $settings = Setting::current();

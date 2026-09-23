@@ -6,27 +6,30 @@ import LinkRounded from '@mui/icons-material/LinkRounded';
 import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import PrintRounded from '@mui/icons-material/PrintRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
+import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import queue from '@/routes/queue';
+import queueTerminalRoutes from '@/routes/queue-terminal';
 import {
     captureCamera,
     dataUrlToBlob,
     startCamera,
     stopCamera,
 } from '@/services/camera';
-import { printQueueTicket } from '@/services/print-queue-ticket';
+import { printQueueTicket } from '@/services/printer';
 import { useOnlineState } from '@/hooks/use-online-state';
 import type { QueueEntry } from '@/types/queue';
 
@@ -161,9 +164,24 @@ export default function QueueTerminal({
                             Ambil nomor antrian
                         </Typography>
                     </Box>
-                    <ConnectionBadge
-                        state={online ? 'CONNECTED' : 'DISCONNECTED'}
-                    />
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: 'center' }}
+                    >
+                        <ConnectionBadge
+                            state={online ? 'CONNECTED' : 'DISCONNECTED'}
+                        />
+                        <IconButton
+                            onClick={() =>
+                                router.visit(queueTerminalRoutes.settings.url())
+                            }
+                            color="primary"
+                            aria-label="Pengaturan printer"
+                        >
+                            <SettingsRounded />
+                        </IconButton>
+                    </Stack>
                 </Box>
                 {!online && (
                     <Alert
@@ -465,9 +483,29 @@ function AssignedStep({
     onDone,
 }: {
     number: string;
-    onPrint: () => void;
+    onPrint: () => Promise<void>;
     onDone: () => void;
 }) {
+    const [printing, setPrinting] = useState(false);
+    const [printError, setPrintError] = useState<string | null>(null);
+
+    const print = async (): Promise<void> => {
+        setPrinting(true);
+        setPrintError(null);
+
+        try {
+            await onPrint();
+        } catch (reason) {
+            setPrintError(
+                reason instanceof Error
+                    ? reason.message
+                    : 'Tiket belum dapat dicetak.',
+            );
+        } finally {
+            setPrinting(false);
+        }
+    };
+
     return (
         <Box
             className="self-step assigned-step"
@@ -484,15 +522,21 @@ function AssignedStep({
             >
                 Simpan nomor ini dan perhatikan panggilan di layar.
             </Typography>
+            {printError && (
+                <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+                    {printError}
+                </Alert>
+            )}
             <Stack spacing={1.25} sx={{ mt: 3, width: '100%' }}>
                 <Button
                     className="kiosk-button"
                     variant="contained"
                     size="large"
                     startIcon={<PrintRounded />}
-                    onClick={onPrint}
+                    onClick={() => void print()}
+                    disabled={printing}
                 >
-                    Cetak tiket
+                    {printing ? 'Mencetak…' : 'Cetak tiket'}
                 </Button>
                 <Button
                     className="kiosk-button"
