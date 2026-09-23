@@ -82,6 +82,7 @@ export default function QueueTerminal({
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
     const [cameraAttempt, setCameraAttempt] = useState(0);
+    const printerConfigured = printerSettings.mode !== null;
 
     const reconnectBluetooth = useCallback((): void => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -265,6 +266,29 @@ export default function QueueTerminal({
                         </IconButton>
                     </Stack>
                 </Box>
+                {!printerConfigured && (
+                    <Alert
+                        className="kiosk-alert"
+                        severity="warning"
+                        sx={{ mb: 2.5 }}
+                        action={
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={() =>
+                                    router.visit(
+                                        queueTerminalRoutes.settings.url(),
+                                    )
+                                }
+                            >
+                                Atur printer
+                            </Button>
+                        }
+                    >
+                        Metode cetak belum dipilih. Atur printer sebelum
+                        mengambil nomor.
+                    </Alert>
+                )}
                 {!online && (
                     <Alert
                         className="kiosk-alert"
@@ -290,7 +314,8 @@ export default function QueueTerminal({
                     <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
                         {step === 'ready' && (
                             <ReadyStep
-                                disabled={!online}
+                                disabled={!online || !printerConfigured}
+                                printerConfigured={printerConfigured}
                                 photoRequired={photoRequired}
                                 onStart={() => {
                                     setError(null);
@@ -360,10 +385,12 @@ export default function QueueTerminal({
 
 function ReadyStep({
     disabled,
+    printerConfigured,
     photoRequired,
     onStart,
 }: {
     disabled: boolean;
+    printerConfigured: boolean;
     photoRequired: boolean;
     onStart: () => void;
 }) {
@@ -405,7 +432,9 @@ function ReadyStep({
                     align="center"
                     sx={{ mt: 1.5 }}
                 >
-                    Perangkat belum terhubung ke server.
+                    {printerConfigured
+                        ? 'Perangkat belum terhubung ke server.'
+                        : 'Atur printer sebelum mengambil nomor.'}
                 </Typography>
             )}
         </Box>
