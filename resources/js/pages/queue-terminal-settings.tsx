@@ -230,6 +230,13 @@ export default function QueueTerminalSettings({
                                 </Typography>
                             </Box>
 
+                            {settings.mode === null && (
+                                <Alert severity="warning">
+                                    Pilih metode cetak sebelum terminal dapat
+                                    digunakan.
+                                </Alert>
+                            )}
+
                             <FormControl fullWidth>
                                 <Typography
                                     component="span"
@@ -246,7 +253,7 @@ export default function QueueTerminalSettings({
                                 </Typography>
                                 <RadioGroup
                                     aria-label="Metode cetak"
-                                    value={settings.mode}
+                                    value={settings.mode ?? ''}
                                     onChange={(event) =>
                                         updateSettings({
                                             mode: event.target

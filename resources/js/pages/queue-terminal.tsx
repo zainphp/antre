@@ -51,6 +51,9 @@ type BluetoothPrinterState =
     | 'RECONNECTING'
     | 'FAILED';
 
+const ASSIGNED_STEP_IDLE_TIMEOUT_MS = 30_000;
+const PRINT_COOLDOWN_MS = 5_000;
+
 type QueueTerminalProps = {
     brandName: string;
     sessionName: string;
@@ -79,6 +82,7 @@ export default function QueueTerminal({
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
     const [cameraAttempt, setCameraAttempt] = useState(0);
+    const printerConfigured = printerSettings.mode !== null;
 
     const reconnectBluetooth = useCallback((): void => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -152,14 +156,14 @@ export default function QueueTerminal({
         reconnectBluetooth();
     }, [printerSettings.mode, reconnectBluetooth]);
 
-    const reset = () => {
+    const reset = useCallback((): void => {
         setStep('ready');
         setPhoto(null);
         setAssigned(null);
         setError(null);
         setBusy(false);
         setRequestId(crypto.randomUUID());
-    };
+    }, []);
 
     const requestNumber = async () => {
         setBusy(true);
@@ -262,6 +266,29 @@ export default function QueueTerminal({
                         </IconButton>
                     </Stack>
                 </Box>
+                {!printerConfigured && (
+                    <Alert
+                        className="kiosk-alert"
+                        severity="warning"
+                        sx={{ mb: 2.5 }}
+                        action={
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={() =>
+                                    router.visit(
+                                        queueTerminalRoutes.settings.url(),
+                                    )
+                                }
+                            >
+                                Atur printer
+                            </Button>
+                        }
+                    >
+                        Metode cetak belum dipilih. Atur printer sebelum
+                        mengambil nomor.
+                    </Alert>
+                )}
                 {!online && (
                     <Alert
                         className="kiosk-alert"
@@ -287,7 +314,8 @@ export default function QueueTerminal({
                     <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
                         {step === 'ready' && (
                             <ReadyStep
-                                disabled={!online}
+                                disabled={!online || !printerConfigured}
+                                printerConfigured={printerConfigured}
                                 photoRequired={photoRequired}
                                 onStart={() => {
                                     setError(null);
@@ -357,10 +385,12 @@ export default function QueueTerminal({
 
 function ReadyStep({
     disabled,
+    printerConfigured,
     photoRequired,
     onStart,
 }: {
     disabled: boolean;
+    printerConfigured: boolean;
     photoRequired: boolean;
     onStart: () => void;
 }) {
@@ -402,7 +432,9 @@ function ReadyStep({
                     align="center"
                     sx={{ mt: 1.5 }}
                 >
-                    Perangkat belum terhubung ke server.
+                    {printerConfigured
+                        ? 'Perangkat belum terhubung ke server.'
+                        : 'Atur printer sebelum mengambil nomor.'}
                 </Typography>
             )}
         </Box>
@@ -426,8 +458,21 @@ function CameraStep({
     onBack: () => void;
     onRetry: () => void;
 }) {
+    const stepRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const frame = window.requestAnimationFrame(() => {
+            stepRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'end',
+            });
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, []);
+
     return (
-        <Box className="self-step">
+        <Box ref={stepRef} className="self-step">
             <Typography className="kiosk-step-label">
                 Langkah 1 dari 2
             </Typography>
@@ -439,7 +484,8 @@ function CameraStep({
                 color="text.secondary"
                 sx={{ mt: 0.75, mb: 2.5 }}
             >
-                Pastikan wajah terlihat jelas dan pencahayaan cukup.
+                Pastikan wajah terlihat jelas. Lepaskan topi atau masker,
+                tersenyumlah, dan pastikan pencahayaan cukup.
             </Typography>
             <Box
                 className={
@@ -565,7 +611,7 @@ function ReviewStep({
                     onClick={onBack}
                     startIcon={<ReplayRounded />}
                 >
-                    Ambil foto lagi
+                    Ulangi ambil foto
                 </Button>
             </Stack>
             {busy && <LinearProgress sx={{ mt: 2 }} />}
@@ -583,10 +629,48 @@ function AssignedStep({
     onDone: () => void;
 }) {
     const [printing, setPrinting] = useState(false);
+    const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
+    const [printStarted, setPrintStarted] = useState(false);
+    const autoPrintStarted = useRef(false);
 
-    const print = async (): Promise<void> => {
+    useEffect(() => {
+        if (!printCooldown) {
+            return;
+        }
+
+        const timeout = window.setTimeout(
+            () => setPrintCooldown(false),
+            PRINT_COOLDOWN_MS,
+        );
+
+        return () => window.clearTimeout(timeout);
+    }, [printCooldown]);
+
+    useEffect(() => {
+        let timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
+        const resetTimeout = (): void => {
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
+        };
+        const activityEvents = ['pointerdown', 'keydown'] as const;
+
+        activityEvents.forEach((event) =>
+            window.addEventListener(event, resetTimeout),
+        );
+
+        return () => {
+            window.clearTimeout(timeout);
+            activityEvents.forEach((event) =>
+                window.removeEventListener(event, resetTimeout),
+            );
+        };
+    }, [onDone]);
+
+    const print = useCallback(async (): Promise<void> => {
         setPrinting(true);
+        setPrintCooldown(true);
+        setPrintStarted(true);
         setPrintError(null);
 
         try {
@@ -600,7 +684,16 @@ function AssignedStep({
         } finally {
             setPrinting(false);
         }
-    };
+    }, [onPrint]);
+
+    useEffect(() => {
+        if (autoPrintStarted.current) {
+            return;
+        }
+
+        autoPrintStarted.current = true;
+        void print();
+    }, [print]);
 
     return (
         <Box
@@ -616,7 +709,9 @@ function AssignedStep({
                 color="text.secondary"
                 align="center"
             >
-                Simpan nomor ini dan perhatikan panggilan di layar.
+                {printStarted && !printError
+                    ? 'Setelah tiket keluar, tekan Selesai untuk membuat tiket baru.'
+                    : 'Simpan nomor ini dan perhatikan panggilan di layar.'}
             </Typography>
             {printError && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
@@ -628,19 +723,23 @@ function AssignedStep({
                     className="kiosk-button"
                     variant="contained"
                     size="large"
-                    startIcon={<PrintRounded />}
-                    onClick={() => void print()}
-                    disabled={printing}
+                    onClick={onDone}
                 >
-                    {printing ? 'Mencetak…' : 'Cetak tiket'}
+                    Selesai
                 </Button>
                 <Button
                     className="kiosk-button"
                     variant="outlined"
                     size="large"
-                    onClick={onDone}
+                    startIcon={<PrintRounded />}
+                    onClick={() => void print()}
+                    disabled={printing || printCooldown}
                 >
-                    Selesai
+                    {printing
+                        ? 'Mencetak…'
+                        : printCooldown
+                          ? 'Tunggu sebentar…'
+                          : 'Ulangi cetak tiket'}
                 </Button>
             </Stack>
         </Box>

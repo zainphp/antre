@@ -17,7 +17,7 @@ export type PrinterMode =
     | 'android-intent'
     | 'web-bluetooth';
 export type PrinterSettings = {
-    mode: PrinterMode;
+    mode: PrinterMode | null;
     paperWidth: PaperWidth;
     imageMode: PrintImageMode;
     bluetoothDeviceId: string | null;
@@ -124,7 +124,7 @@ export function getPrinterOperatingSystem(): PrinterOperatingSystem {
 
 export function loadPrinterSettings(): PrinterSettings {
     const defaults: PrinterSettings = {
-        mode: getDefaultPrinterMode(),
+        mode: null,
         paperWidth: 58,
         imageMode: 'black-and-white',
         bluetoothDeviceId: null,
@@ -245,6 +245,10 @@ export async function printQueueTicket(
 ): Promise<void> {
     const settings = loadPrinterSettings();
     const selectedImageMode = imageMode ?? settings.imageMode;
+
+    if (settings.mode === null) {
+        throw new Error('Metode cetak belum dikonfigurasi.');
+    }
 
     if (settings.mode === 'android-intent') {
         await printWithAndroidIntent(
@@ -508,8 +512,12 @@ function isPrintImageMode(value: unknown): value is PrintImageMode {
     );
 }
 
-function normalizePrinterMode(value: unknown): PrinterMode {
-    if (value === undefined || value === null || value === 'browser-default') {
+function normalizePrinterMode(value: unknown): PrinterMode | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+
+    if (value === 'browser-default') {
         return getDefaultPrinterMode();
     }
 
@@ -527,7 +535,7 @@ function normalizePrinterMode(value: unknown): PrinterMode {
         return 'window';
     }
 
-    return 'iframe';
+    return null;
 }
 
 function getDefaultPrinterMode(): PrinterMode {

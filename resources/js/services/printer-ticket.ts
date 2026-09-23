@@ -34,7 +34,7 @@ export function buildTicketMarkup(
         '*,*::before,*::after{box-sizing:border-box}',
         'h1,h2,p,strong{margin:0;padding:0;border:0;font-weight:400}',
         'img{border:0;max-width:100%;vertical-align:middle}',
-        `body{width:${ticketWidth};font-family:Arial,sans-serif;font-size:16px;line-height:1.2;text-align:center;margin:0 auto;padding:4mm 2mm;color:#17211c}`,
+        `body{width:${ticketWidth};font-family:Arial,sans-serif;font-size:16px;line-height:1.2;text-align:center;margin:0 auto;padding:4mm 2mm 12mm;color:#17211c}`,
         'h1{font-size:13px;line-height:1.25;margin:0 0 3px}',
         'h2{font-size:11px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}',
         `.ticket-photo{display:block;width:${photoWidth}mm;`,
@@ -88,7 +88,7 @@ export async function buildEscPosTicket(
             '\x1d\x21\x00',
             '\x1b\x45\x00',
             'Silakan menunggu panggilan Anda.\n',
-            `${formatDateTime(createdAt)}\n\n\n`,
+            `${formatDateTime(createdAt)}\n\n\n\n\n`,
         ].join(''),
     );
 
