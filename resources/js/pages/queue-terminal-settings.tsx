@@ -27,7 +27,7 @@ import {
     openAndroidPrintSettings,
     pairWebBluetoothPrinter,
     printPrinterTest,
-    rawBtInstallUrl,
+    androidPrintInstallUrl,
     savePrinterSettings,
     supportsWebBluetooth,
     type PrintImageMode,
@@ -52,13 +52,10 @@ export default function QueueTerminalSettings({
     );
     const [busy, setBusy] = useState(false);
     const [feedback, setFeedback] = useState<Feedback | null>(null);
-    const [testImageMode, setTestImageMode] =
-        useState<PrintImageMode>('full-color');
     const [testCreatedAt, setTestCreatedAt] = useState(() =>
         new Date().toISOString(),
     );
     const bluetoothAvailable = supportsWebBluetooth();
-    const browserPrintAvailable = import.meta.env.DEV;
 
     const updateSettings = (changes: Partial<PrinterSettings>): void => {
         const next = { ...settings, ...changes };
@@ -97,7 +94,6 @@ export default function QueueTerminalSettings({
 
     const testPrint = async (imageMode: PrintImageMode): Promise<void> => {
         const createdAt = new Date().toISOString();
-        setTestImageMode(imageMode);
         setTestCreatedAt(createdAt);
         setBusy(true);
         setFeedback(null);
@@ -233,25 +229,24 @@ export default function QueueTerminalSettings({
                                     sx={{ gap: 1 }}
                                 >
                                     <PrinterModeOption
-                                        value="browser-default"
+                                        value="iframe"
+                                        selected={settings.mode === 'iframe'}
+                                        title="Dialog cetak (iframe)"
+                                        description="Muat tiket di iframe tersembunyi lalu gunakan dialog cetak browser."
+                                    />
+                                    <PrinterModeOption
+                                        value="window"
+                                        selected={settings.mode === 'window'}
+                                        title="Jendela tiket (native window.print)"
+                                        description="Buka tiket di jendela baru lalu panggil native window.print()."
+                                    />
+                                    <PrinterModeOption
+                                        value="android-intent"
                                         selected={
-                                            settings.mode === 'browser-default'
+                                            settings.mode === 'android-intent'
                                         }
-                                        title="Browser bawaan"
-                                        description="Gunakan dialog print standar browser."
-                                    />
-                                    <PrinterModeOption
-                                        value="browser"
-                                        selected={settings.mode === 'browser'}
-                                        title="Jendela tiket (development)"
-                                        description="Buka tiket di jendela terpisah untuk pengujian."
-                                        disabled={!browserPrintAvailable}
-                                    />
-                                    <PrinterModeOption
-                                        value="rawbt"
-                                        selected={settings.mode === 'rawbt'}
-                                        title="RawBT melalui intent"
-                                        description="Untuk printer Bluetooth Classic ESC/POS."
+                                        title="Aplikasi cetak (intent)"
+                                        description="Kirim tiket ke aplikasi Android yang mendukung perintah ESC/POS."
                                     />
                                     <PrinterModeOption
                                         value="web-bluetooth"
@@ -319,38 +314,37 @@ export default function QueueTerminalSettings({
 
                             <Divider />
 
-                            {settings.mode === 'browser' && (
+                            {settings.mode === 'window' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Mode ini membuka tiket di jendela
-                                        terpisah dan hanya tersedia saat
-                                        development.
+                                        Tiket dibuka di jendela baru. Browser
+                                        akan menjalankan native window.print().
                                     </Alert>
                                 </PrinterInstructions>
                             )}
 
-                            {settings.mode === 'browser-default' && (
+                            {settings.mode === 'iframe' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Browser akan membuka dialog print
-                                        standarnya untuk tiket ini.
+                                        Tiket dimuat di iframe tersembunyi, lalu
+                                        browser membuka dialog cetak standarnya.
                                     </Alert>
                                     <Button
                                         variant="outlined"
                                         startIcon={<LaunchRounded />}
                                         onClick={openAndroidPrintSettings}
                                     >
-                                        Buka layanan cetak
+                                        Buka pengaturan cetak
                                     </Button>
                                 </PrinterInstructions>
                             )}
 
-                            {settings.mode === 'rawbt' && (
+                            {settings.mode === 'android-intent' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Pair printer di pengaturan Bluetooth
-                                        Android, lalu pilih printer tersebut di
-                                        RawBT.
+                                        Hubungkan perangkat di pengaturan
+                                        Bluetooth Android, lalu pilih aplikasi
+                                        cetak yang mendukung perintah ESC/POS.
                                     </Alert>
                                     <Stack
                                         direction={{ xs: 'column', sm: 'row' }}
@@ -367,13 +361,13 @@ export default function QueueTerminalSettings({
                                         </Button>
                                         <Button
                                             component="a"
-                                            href={rawBtInstallUrl}
+                                            href={androidPrintInstallUrl}
                                             target="_blank"
                                             rel="noreferrer"
                                             variant="outlined"
                                             startIcon={<LaunchRounded />}
                                         >
-                                            Pasang RawBT
+                                            Pasang aplikasi cetak
                                         </Button>
                                     </Stack>
                                 </PrinterInstructions>
@@ -382,9 +376,10 @@ export default function QueueTerminalSettings({
                             {settings.mode === 'web-bluetooth' && (
                                 <PrinterInstructions>
                                     <Alert severity="warning">
-                                        Web Bluetooth tidak dapat melihat
-                                        printer Bluetooth Classic. Jika C80BT
-                                        tidak muncul, gunakan RawBT.
+                                        Web Bluetooth hanya mendukung perangkat
+                                        BLE. Jika perangkat tidak muncul, pilih
+                                        aplikasi cetak Android atau metode
+                                        browser.
                                     </Alert>
                                     <Button
                                         variant="outlined"
@@ -410,17 +405,16 @@ export default function QueueTerminalSettings({
 
                             <Box>
                                 <Typography variant="subtitle1">
-                                    Tes foto printer
+                                    Mode foto tiket
                                 </Typography>
                                 <Typography
                                     color="text.secondary"
                                     variant="body2"
                                     sx={{ mt: 0.5, mb: 1.25 }}
                                 >
-                                    Cetak gambar contoh untuk membandingkan
-                                    hasil warna, grayscale, dan hitam putih.
-                                    Printer thermal akan mencetak gambar sebagai
-                                    monokrom.
+                                    Pilih mode foto yang disimpan di terminal
+                                    ini. Gunakan tombol tes untuk melihat
+                                    hasilnya sebelum mencetak tiket.
                                 </Typography>
                                 <Stack
                                     direction={{ xs: 'column', sm: 'row' }}
@@ -437,12 +431,14 @@ export default function QueueTerminalSettings({
                                             key={value}
                                             fullWidth
                                             variant={
-                                                testImageMode === value
+                                                settings.imageMode === value
                                                     ? 'contained'
                                                     : 'outlined'
                                             }
                                             onClick={() =>
-                                                setTestImageMode(value)
+                                                updateSettings({
+                                                    imageMode: value,
+                                                })
                                             }
                                             disabled={busy}
                                             sx={{ minHeight: 52 }}
@@ -454,7 +450,7 @@ export default function QueueTerminalSettings({
                                 <PrinterTestPreview
                                     brandName={brandName}
                                     createdAt={testCreatedAt}
-                                    imageMode={testImageMode}
+                                    imageMode={settings.imageMode}
                                     paperWidth={settings.paperWidth}
                                     sessionName={sessionName}
                                 />
@@ -463,7 +459,7 @@ export default function QueueTerminalSettings({
                                     variant="contained"
                                     startIcon={<PrintRounded />}
                                     onClick={() =>
-                                        void testPrint(testImageMode)
+                                        void testPrint(settings.imageMode)
                                     }
                                     disabled={busy}
                                     sx={{ minHeight: 52, mt: 1.5 }}

@@ -12,13 +12,14 @@ export {
 export type { PaperWidth, PrintImageMode } from '@/services/printer-ticket';
 
 export type PrinterMode =
-    | 'browser'
-    | 'browser-default'
-    | 'rawbt'
+    | 'iframe'
+    | 'window'
+    | 'android-intent'
     | 'web-bluetooth';
 export type PrinterSettings = {
     mode: PrinterMode;
     paperWidth: PaperWidth;
+    imageMode: PrintImageMode;
     bluetoothDeviceId: string | null;
     bluetoothDeviceName: string | null;
 };
@@ -47,6 +48,10 @@ type BluetoothDevice = {
     id: string;
     name?: string;
     gatt?: BluetoothServer | null;
+    addEventListener?: (
+        type: 'gattserverdisconnected',
+        listener: () => void,
+    ) => void;
 };
 
 type BluetoothApi = {
@@ -58,7 +63,7 @@ type BluetoothApi = {
 };
 
 const STORAGE_KEY = 'antre.queue-terminal.printer';
-const rawBtPackage = 'ru.a402d.rawbtprinter';
+const androidPrintPackage = 'ru.a402d.rawbtprinter';
 const bluetoothServiceUuids = [
     '000018f0-0000-1000-8000-00805f9b34fb',
     '0000ffe0-0000-1000-8000-00805f9b34fb',
@@ -72,8 +77,9 @@ let bluetoothConnection: {
 
 export function loadPrinterSettings(): PrinterSettings {
     const defaults: PrinterSettings = {
-        mode: 'browser-default',
+        mode: 'iframe',
         paperWidth: 58,
+        imageMode: 'black-and-white',
         bluetoothDeviceId: null,
         bluetoothDeviceName: null,
     };
@@ -86,19 +92,14 @@ export function loadPrinterSettings(): PrinterSettings {
         const stored = JSON.parse(
             window.localStorage.getItem(STORAGE_KEY) ?? '{}',
         ) as Partial<PrinterSettings>;
-        const storedMode = stored.mode;
-        const mode: PrinterMode =
-            storedMode === 'rawbt' ||
-            storedMode === 'web-bluetooth' ||
-            storedMode === 'browser-default'
-                ? storedMode
-                : storedMode === 'browser' && import.meta.env.DEV
-                  ? 'browser'
-                  : 'browser-default';
+        const mode = normalizePrinterMode((stored as { mode?: unknown }).mode);
 
         return {
             mode,
             paperWidth: stored.paperWidth === 80 ? 80 : 58,
+            imageMode: isPrintImageMode(stored.imageMode)
+                ? stored.imageMode
+                : defaults.imageMode,
             bluetoothDeviceId:
                 typeof stored.bluetoothDeviceId === 'string'
                     ? stored.bluetoothDeviceId
@@ -148,25 +149,43 @@ export async function pairWebBluetoothPrinter(): Promise<{
     };
 }
 
+export async function connectRememberedWebBluetoothPrinter(
+    settings: PrinterSettings,
+    onDisconnected?: () => void,
+): Promise<void> {
+    if (settings.mode !== 'web-bluetooth') {
+        throw new Error('Metode cetak Web Bluetooth belum dipilih.');
+    }
+
+    const device = await findRememberedDevice(settings.bluetoothDeviceId);
+    const characteristic = await findWritableCharacteristic(device);
+
+    bluetoothConnection = { device, characteristic };
+    if (onDisconnected) {
+        device.addEventListener?.('gattserverdisconnected', onDisconnected);
+    }
+}
+
 export async function printQueueTicket(
     number: string,
     createdAt: string | null,
     brandName: string,
     sessionName: string,
     photo: string | null = null,
-    imageMode: PrintImageMode = 'black-and-white',
+    imageMode?: PrintImageMode,
 ): Promise<void> {
     const settings = loadPrinterSettings();
+    const selectedImageMode = imageMode ?? settings.imageMode;
 
-    if (settings.mode === 'rawbt') {
-        await printWithRawBt(
+    if (settings.mode === 'android-intent') {
+        await printWithAndroidIntent(
             number,
             createdAt,
             brandName,
             sessionName,
             photo,
             settings.paperWidth,
-            imageMode,
+            selectedImageMode,
         );
 
         return;
@@ -180,40 +199,34 @@ export async function printQueueTicket(
             sessionName,
             photo,
             settings,
-            imageMode,
+            selectedImageMode,
         );
 
         return;
     }
 
-    if (settings.mode === 'browser-default') {
-        printWithDefaultBrowser(
+    if (settings.mode === 'iframe') {
+        printWithIframe(
             number,
             createdAt,
             brandName,
             sessionName,
             photo,
             settings.paperWidth,
-            imageMode,
+            selectedImageMode,
         );
 
         return;
     }
 
-    if (!import.meta.env.DEV) {
-        throw new Error(
-            'Dialog cetak browser hanya tersedia di development. Pilih RawBT atau Web Bluetooth untuk production.',
-        );
-    }
-
-    printWithBrowser(
+    printWithTicketWindow(
         number,
         createdAt,
         brandName,
         sessionName,
         photo,
         settings.paperWidth,
-        imageMode,
+        selectedImageMode,
     );
 }
 
@@ -245,7 +258,7 @@ export function openAndroidPrintSettings(): void {
     );
 }
 
-export const rawBtInstallUrl = `https://play.google.com/store/apps/details?id=${rawBtPackage}`;
+export const androidPrintInstallUrl = `https://play.google.com/store/apps/details?id=${androidPrintPackage}`;
 
 async function printWithWebBluetooth(
     number: string,
@@ -256,9 +269,14 @@ async function printWithWebBluetooth(
     settings: PrinterSettings,
     imageMode: PrintImageMode,
 ): Promise<void> {
-    const device = await findRememberedDevice(settings.bluetoothDeviceId);
-    const characteristic = await findWritableCharacteristic(device);
-    bluetoothConnection = { device, characteristic };
+    await connectRememberedWebBluetoothPrinter(settings);
+    const characteristic = bluetoothConnection?.characteristic;
+
+    if (!characteristic) {
+        throw new Error(
+            `Printer ${settings.bluetoothDeviceName ?? 'BLE'} belum siap digunakan.`,
+        );
+    }
 
     const bytes = await buildEscPosTicket(
         number,
@@ -279,7 +297,7 @@ async function printWithWebBluetooth(
     }
 }
 
-async function printWithRawBt(
+async function printWithAndroidIntent(
     number: string,
     createdAt: string | null,
     brandName: string,
@@ -300,7 +318,7 @@ async function printWithRawBt(
     window.location.assign(`rawbt:base64,${bytesToBase64(bytes)}`);
 }
 
-function printWithDefaultBrowser(
+function printWithIframe(
     number: string,
     createdAt: string | null,
     brandName: string,
@@ -349,7 +367,7 @@ function printWithDefaultBrowser(
     frameWindow.document.close();
 }
 
-function printWithBrowser(
+function printWithTicketWindow(
     number: string,
     createdAt: string | null,
     brandName: string,
@@ -360,7 +378,7 @@ function printWithBrowser(
 ): void {
     const popup = window.open('', '_blank', 'width=420,height=560');
     if (!popup) {
-        printWithDefaultBrowser(
+        printWithIframe(
             number,
             createdAt,
             brandName,
@@ -397,6 +415,30 @@ function getBluetoothApi(): BluetoothApi | null {
         (navigator as Navigator & { bluetooth?: BluetoothApi }).bluetooth ??
         null
     );
+}
+
+function isPrintImageMode(value: unknown): value is PrintImageMode {
+    return (
+        value === 'full-color' ||
+        value === 'grayscale' ||
+        value === 'black-and-white'
+    );
+}
+
+function normalizePrinterMode(value: unknown): PrinterMode {
+    if (value === 'android-intent' || value === 'rawbt') {
+        return 'android-intent';
+    }
+
+    if (value === 'web-bluetooth') {
+        return 'web-bluetooth';
+    }
+
+    if (value === 'window' || value === 'browser') {
+        return 'window';
+    }
+
+    return 'iframe';
 }
 
 async function findRememberedDevice(
