@@ -113,6 +113,10 @@ test('an assigned display cannot use the queue terminal endpoint', function () {
     $response = $this->withCookie(DeviceRegistry::COOKIE, deviceCookie($device, $credential))->get(route('queue-terminal'));
 
     $response->assertForbidden();
+
+    $this->withCookie(DeviceRegistry::COOKIE, deviceCookie($device, $credential))
+        ->get(route('queue-terminal.settings'))
+        ->assertForbidden();
 });
 
 test('operator access requires a registered operator terminal', function () {
@@ -245,6 +249,10 @@ test('a device with multiple roles can access each assigned experience', functio
 
     $this->withCookie(DeviceRegistry::COOKIE, $cookie)
         ->get(route('queue-terminal'))
+        ->assertOk();
+
+    $this->withCookie(DeviceRegistry::COOKIE, $cookie)
+        ->get(route('queue-terminal.settings'))
         ->assertOk();
 
     $this->withCookie(DeviceRegistry::COOKIE, $cookie)

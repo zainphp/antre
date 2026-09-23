@@ -34,6 +34,7 @@ Route::get('/display', [PageController::class, 'display'])
 
 Route::middleware(['device.auth', 'device.role:QUEUE_TERMINAL'])->group(function (): void {
     Route::get('/queue-terminal', [PageController::class, 'queueTerminal'])->name('queue-terminal');
+    Route::get('/queue-terminal/settings', [PageController::class, 'queueTerminalSettings'])->name('queue-terminal.settings');
     Route::post('/queue-terminal/queue/take', [QueueController::class, 'take'])->name('queue.take');
 });
 
