@@ -167,6 +167,15 @@ test('queue terminals receive the configured brand, session, and photo requireme
                 ->where('sessionName', 'Pelayanan Warga')
                 ->where('photoRequired', true),
         );
+
+    $this->withCookie(DeviceRegistry::COOKIE, $device->id.'.'.$credential)
+        ->get(route('queue-terminal.settings'))
+        ->assertInertia(
+            fn (Assert $page): Assert => $page
+                ->component('queue-terminal-settings')
+                ->where('brandName', 'Koperasi Kita')
+                ->where('sessionName', 'Pelayanan Warga'),
+        );
 });
 
 test('brand and session names cannot be empty', function () {

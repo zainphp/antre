@@ -14,3 +14,12 @@ export function formatDate(value: string): string {
         new Date(year, month - 1, day),
     );
 }
+
+export function formatDateTime(value: string | null): string {
+    return value
+        ? new Intl.DateTimeFormat('id-ID', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+          }).format(new Date(value))
+        : '—';
+}

@@ -40,8 +40,10 @@ type Feedback = {
 
 export default function QueueTerminalSettings({
     brandName,
+    sessionName,
 }: {
     brandName: string;
+    sessionName: string;
 }) {
     const [settings, setSettings] = useState<PrinterSettings>(() =>
         loadPrinterSettings(),
@@ -50,8 +52,8 @@ export default function QueueTerminalSettings({
     const [feedback, setFeedback] = useState<Feedback | null>(null);
     const bluetoothAvailable = supportsWebBluetooth();
 
-    const changeMode = (mode: PrinterMode): void => {
-        const next = { ...settings, mode };
+    const updateSettings = (changes: Partial<PrinterSettings>): void => {
+        const next = { ...settings, ...changes };
         setSettings(next);
         savePrinterSettings(next);
         setFeedback(null);
@@ -63,14 +65,11 @@ export default function QueueTerminalSettings({
 
         try {
             const device = await pairWebBluetoothPrinter();
-            const next: PrinterSettings = {
-                ...settings,
+            updateSettings({
                 mode: 'web-bluetooth',
                 bluetoothDeviceId: device.id,
                 bluetoothDeviceName: device.name,
-            };
-            setSettings(next);
-            savePrinterSettings(next);
+            });
             setFeedback({
                 severity: 'success',
                 message: `Printer ${device.name} berhasil dihubungkan.`,
@@ -95,8 +94,9 @@ export default function QueueTerminalSettings({
         try {
             await printQueueTicket(
                 'UJI',
-                new Date().toLocaleString('id-ID'),
+                new Date().toISOString(),
                 brandName,
+                sessionName,
             );
             setFeedback({
                 severity: 'success',
@@ -122,212 +122,282 @@ export default function QueueTerminalSettings({
                 component="main"
                 maxWidth="sm"
                 className="self-service-page"
+                sx={{
+                    maxWidth: '640px !important',
+                    paddingBottom: { xs: 3, sm: 4 },
+                    paddingTop: { xs: 2.5, sm: 3.5 },
+                }}
             >
-                <Box className="self-service-header">
-                    <Box>
+                <Box
+                    className="self-service-header"
+                    sx={{ alignItems: 'center', marginBottom: 2.25 }}
+                >
+                    <Box sx={{ minWidth: 0 }}>
                         <Typography className="self-service-brand">
                             {brandName}
                         </Typography>
                         <Typography className="self-service-session">
-                            Terminal ambil nomor
+                            {sessionName}
                         </Typography>
-                        <Typography variant="h1" component="h1">
+                        <Typography
+                            component="h1"
+                            sx={{
+                                fontSize: { xs: '1.75rem', sm: '2.15rem' },
+                                lineHeight: 1.1,
+                                marginTop: 1,
+                            }}
+                        >
                             Pengaturan printer
                         </Typography>
                     </Box>
-                    <SettingsRounded color="primary" fontSize="large" />
+                    <Box
+                        aria-hidden="true"
+                        sx={{
+                            alignItems: 'center',
+                            backgroundColor: '#e4f1e8',
+                            borderRadius: 2,
+                            color: 'var(--green)',
+                            display: 'flex',
+                            flex: '0 0 auto',
+                            height: 48,
+                            justifyContent: 'center',
+                            width: 48,
+                        }}
+                    >
+                        <SettingsRounded />
+                    </Box>
                 </Box>
 
                 {feedback && (
-                    <Alert severity={feedback.severity} sx={{ mb: 2.5 }}>
+                    <Alert severity={feedback.severity} sx={{ mb: 2 }}>
                         {feedback.message}
                     </Alert>
                 )}
 
-                <Card>
-                    <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
-                        <Typography variant="h5" component="h2">
-                            Cara mencetak tiket
-                        </Typography>
-                        <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                            Pengaturan ini hanya tersimpan di perangkat terminal
-                            ini.
-                        </Typography>
-
-                        <FormControl fullWidth sx={{ mt: 3 }}>
-                            <RadioGroup
-                                value={settings.mode}
-                                onChange={(event) =>
-                                    changeMode(
-                                        event.target.value as PrinterMode,
-                                    )
-                                }
-                            >
-                                <FormControlLabel
-                                    value="browser"
-                                    control={<Radio />}
-                                    label={
-                                        <Box>
-                                            <Typography
-                                                sx={{ fontWeight: 700 }}
-                                            >
-                                                Dialog cetak Android
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                            >
-                                                Gunakan printer yang tersedia
-                                                pada layanan cetak Android.
-                                            </Typography>
-                                        </Box>
-                                    }
-                                    sx={{ alignItems: 'flex-start', py: 1 }}
-                                />
-                                <FormControlLabel
-                                    value="rawbt"
-                                    control={<Radio />}
-                                    label={
-                                        <Box>
-                                            <Typography
-                                                sx={{ fontWeight: 700 }}
-                                            >
-                                                RawBT melalui intent
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                            >
-                                                Kirim tiket langsung ke printer
-                                                Bluetooth Classic ESC/POS.
-                                            </Typography>
-                                        </Box>
-                                    }
-                                    sx={{ alignItems: 'flex-start', py: 1 }}
-                                />
-                                <FormControlLabel
-                                    value="web-bluetooth"
-                                    control={<Radio />}
-                                    disabled={!bluetoothAvailable}
-                                    label={
-                                        <Box>
-                                            <Typography
-                                                sx={{ fontWeight: 700 }}
-                                            >
-                                                Web Bluetooth (BLE)
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                            >
-                                                Hanya untuk printer Bluetooth LE
-                                                yang memiliki kanal cetak.
-                                            </Typography>
-                                        </Box>
-                                    }
-                                    sx={{ alignItems: 'flex-start', py: 1 }}
-                                />
-                            </RadioGroup>
-                        </FormControl>
-
-                        <Divider sx={{ my: 3 }} />
-
-                        {settings.mode === 'browser' && (
-                            <PrinterInstructions>
-                                <Alert severity="info">
-                                    Printer Bluetooth biasa sering tidak muncul
-                                    di dialog Chrome. Aktifkan Print Service
-                                    yang mendukung printer thermal ESC/POS.
-                                </Alert>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<LaunchRounded />}
-                                    onClick={openAndroidPrintSettings}
+                <Card
+                    sx={{
+                        border: '1px solid var(--line)',
+                        borderRadius: 3,
+                        boxShadow: '0 12px 30px rgba(18, 72, 59, 0.08)',
+                    }}
+                >
+                    <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                        <Stack spacing={2.25}>
+                            <Box>
+                                <Typography variant="h6" component="h2">
+                                    Cetak tiket
+                                </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mt: 0.5 }}
                                 >
-                                    Buka pengaturan layanan cetak
-                                </Button>
-                            </PrinterInstructions>
-                        )}
+                                    Pengaturan hanya tersimpan di terminal ini.
+                                </Typography>
+                            </Box>
 
-                        {settings.mode === 'rawbt' && (
-                            <PrinterInstructions>
-                                <Alert severity="info">
-                                    Pair printer di pengaturan Bluetooth
-                                    Android, lalu pilih printer tersebut di
-                                    aplikasi RawBT.
-                                </Alert>
-                                <Stack
-                                    direction={{ xs: 'column', sm: 'row' }}
-                                    spacing={1.25}
+                            <FormControl fullWidth>
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        color: 'var(--muted)',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        letterSpacing: '0.08em',
+                                        mb: 1,
+                                        textTransform: 'uppercase',
+                                    }}
                                 >
+                                    Metode cetak
+                                </Typography>
+                                <RadioGroup
+                                    aria-label="Metode cetak"
+                                    value={settings.mode}
+                                    onChange={(event) =>
+                                        updateSettings({
+                                            mode: event.target
+                                                .value as PrinterMode,
+                                        })
+                                    }
+                                    sx={{ gap: 1 }}
+                                >
+                                    <PrinterModeOption
+                                        value="browser"
+                                        selected={settings.mode === 'browser'}
+                                        title="Dialog cetak Android"
+                                        description="Pilih printer dari layanan cetak Android."
+                                    />
+                                    <PrinterModeOption
+                                        value="rawbt"
+                                        selected={settings.mode === 'rawbt'}
+                                        title="RawBT melalui intent"
+                                        description="Untuk printer Bluetooth Classic ESC/POS."
+                                    />
+                                    <PrinterModeOption
+                                        value="web-bluetooth"
+                                        selected={
+                                            settings.mode === 'web-bluetooth'
+                                        }
+                                        title="Web Bluetooth (BLE)"
+                                        description="Untuk printer Bluetooth LE yang mendukung cetak."
+                                        disabled={!bluetoothAvailable}
+                                    />
+                                </RadioGroup>
+                            </FormControl>
+
+                            <Divider />
+
+                            <FormControl fullWidth>
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        color: 'var(--muted)',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        letterSpacing: '0.08em',
+                                        mb: 0.5,
+                                        textTransform: 'uppercase',
+                                    }}
+                                >
+                                    Lebar kertas thermal
+                                </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mb: 0.75 }}
+                                >
+                                    Ukuran umum roll printer: 58 mm atau 80 mm.
+                                </Typography>
+                                <RadioGroup
+                                    aria-label="Lebar kertas thermal"
+                                    row
+                                    value={String(settings.paperWidth)}
+                                    onChange={(event) =>
+                                        updateSettings({
+                                            paperWidth:
+                                                event.target.value === '80'
+                                                    ? 80
+                                                    : 58,
+                                        })
+                                    }
+                                    sx={{ gap: { xs: 1, sm: 2 } }}
+                                >
+                                    <FormControlLabel
+                                        value="58"
+                                        control={<Radio size="small" />}
+                                        label="58 mm (57/58)"
+                                        sx={{ margin: 0, minHeight: 48 }}
+                                    />
+                                    <FormControlLabel
+                                        value="80"
+                                        control={<Radio size="small" />}
+                                        label="80 mm"
+                                        sx={{ margin: 0, minHeight: 48 }}
+                                    />
+                                </RadioGroup>
+                            </FormControl>
+
+                            <Divider />
+
+                            {settings.mode === 'browser' && (
+                                <PrinterInstructions>
+                                    <Alert severity="info">
+                                        Printer Bluetooth biasa mungkin tidak
+                                        muncul di dialog Chrome. Pastikan
+                                        layanan cetak Android mendukung thermal
+                                        ESC/POS.
+                                    </Alert>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<LaunchRounded />}
+                                        onClick={openAndroidPrintSettings}
+                                    >
+                                        Buka layanan cetak
+                                    </Button>
+                                </PrinterInstructions>
+                            )}
+
+                            {settings.mode === 'rawbt' && (
+                                <PrinterInstructions>
+                                    <Alert severity="info">
+                                        Pair printer di pengaturan Bluetooth
+                                        Android, lalu pilih printer tersebut di
+                                        RawBT.
+                                    </Alert>
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'row' }}
+                                        spacing={1}
+                                    >
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<BluetoothRounded />}
+                                            onClick={
+                                                openAndroidBluetoothSettings
+                                            }
+                                        >
+                                            Buka Bluetooth
+                                        </Button>
+                                        <Button
+                                            component="a"
+                                            href={rawBtInstallUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            variant="outlined"
+                                            startIcon={<LaunchRounded />}
+                                        >
+                                            Pasang RawBT
+                                        </Button>
+                                    </Stack>
+                                </PrinterInstructions>
+                            )}
+
+                            {settings.mode === 'web-bluetooth' && (
+                                <PrinterInstructions>
+                                    <Alert severity="warning">
+                                        Web Bluetooth tidak dapat melihat
+                                        printer Bluetooth Classic. Jika C80BT
+                                        tidak muncul, gunakan RawBT.
+                                    </Alert>
                                     <Button
                                         variant="outlined"
                                         startIcon={<BluetoothRounded />}
-                                        onClick={openAndroidBluetoothSettings}
+                                        onClick={() => void connectBluetooth()}
+                                        disabled={busy || !bluetoothAvailable}
                                     >
-                                        Buka Bluetooth
+                                        {settings.bluetoothDeviceName
+                                            ? `Hubungkan ulang ${settings.bluetoothDeviceName}`
+                                            : 'Pilih printer BLE'}
                                     </Button>
-                                    <Button
-                                        component="a"
-                                        href={rawBtInstallUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        variant="outlined"
-                                        startIcon={<LaunchRounded />}
-                                    >
-                                        Pasang RawBT
-                                    </Button>
-                                </Stack>
-                            </PrinterInstructions>
-                        )}
+                                    {!bluetoothAvailable && (
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
+                                            Browser ini tidak menyediakan Web
+                                            Bluetooth.
+                                        </Typography>
+                                    )}
+                                </PrinterInstructions>
+                            )}
 
-                        {settings.mode === 'web-bluetooth' && (
-                            <PrinterInstructions>
-                                <Alert severity="warning">
-                                    Web Bluetooth tidak dapat melihat printer
-                                    Bluetooth Classic. Jika C80BT tidak muncul
-                                    pada pemilih perangkat, gunakan RawBT.
-                                </Alert>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<BluetoothRounded />}
-                                    onClick={() => void connectBluetooth()}
-                                    disabled={busy || !bluetoothAvailable}
-                                >
-                                    {settings.bluetoothDeviceName
-                                        ? `Hubungkan ulang ${settings.bluetoothDeviceName}`
-                                        : 'Pilih printer BLE'}
-                                </Button>
-                                {!bluetoothAvailable && (
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        Browser ini tidak menyediakan Web
-                                        Bluetooth.
-                                    </Typography>
-                                )}
-                            </PrinterInstructions>
-                        )}
-
-                        <Button
-                            fullWidth
-                            variant="contained"
-                            size="large"
-                            startIcon={<PrintRounded />}
-                            onClick={() => void testPrint()}
-                            disabled={busy}
-                            sx={{ mt: 3 }}
-                        >
-                            {busy ? 'Memproses…' : 'Cetak tiket uji'}
-                        </Button>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                startIcon={<PrintRounded />}
+                                onClick={() => void testPrint()}
+                                disabled={busy}
+                                sx={{ minHeight: 52, mt: 0.25 }}
+                            >
+                                {busy ? 'Memproses…' : 'Cetak tiket uji'}
+                            </Button>
+                        </Stack>
                     </CardContent>
                 </Card>
 
                 <Button
                     onClick={() => router.visit(queueTerminal.url())}
                     startIcon={<ArrowBackRounded />}
-                    sx={{ mt: 2 }}
+                    sx={{ minHeight: 48, mt: 1.25 }}
                 >
                     Kembali ke terminal
                 </Button>
@@ -339,6 +409,53 @@ export default function QueueTerminalSettings({
     );
 }
 
+function PrinterModeOption({
+    value,
+    selected,
+    title,
+    description,
+    disabled = false,
+}: {
+    value: PrinterMode;
+    selected: boolean;
+    title: string;
+    description: string;
+    disabled?: boolean;
+}) {
+    return (
+        <FormControlLabel
+            value={value}
+            disabled={disabled}
+            control={<Radio size="small" />}
+            label={
+                <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 750, lineHeight: 1.3 }}>
+                        {title}
+                    </Typography>
+                    <Typography
+                        color="text.secondary"
+                        variant="body2"
+                        sx={{ lineHeight: 1.35, mt: 0.25 }}
+                    >
+                        {description}
+                    </Typography>
+                </Box>
+            }
+            sx={{
+                alignItems: 'flex-start',
+                border: '1px solid',
+                borderColor: selected ? 'var(--green)' : 'var(--line)',
+                borderRadius: 2,
+                margin: 0,
+                minHeight: 64,
+                padding: '9px 10px',
+                '& .MuiFormControlLabel-label': { flex: 1 },
+                '& .MuiRadio-root': { padding: '2px 8px 2px 0' },
+            }}
+        />
+    );
+}
+
 function PrinterInstructions({ children }: { children: React.ReactNode }) {
-    return <Stack spacing={2}>{children}</Stack>;
+    return <Stack spacing={1.25}>{children}</Stack>;
 }
