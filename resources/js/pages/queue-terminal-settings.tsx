@@ -22,12 +22,12 @@ import { useState } from 'react';
 import { PrinterTestPreview } from '@/components/printer-test-preview';
 import { queueTerminal } from '@/routes';
 import {
+    androidPrintInstallUrl,
+    getPrinterOperatingSystem,
     loadPrinterSettings,
     openAndroidBluetoothSettings,
-    openAndroidPrintSettings,
     pairWebBluetoothPrinter,
     printPrinterTest,
-    androidPrintInstallUrl,
     savePrinterSettings,
     supportsWebBluetooth,
     type PrintImageMode,
@@ -56,6 +56,16 @@ export default function QueueTerminalSettings({
         new Date().toISOString(),
     );
     const bluetoothAvailable = supportsWebBluetooth();
+    const operatingSystem = getPrinterOperatingSystem();
+    const isAndroid = operatingSystem === 'android';
+    const operatingSystemLabel = {
+        android: 'Android',
+        ios: 'iOS',
+        linux: 'Linux',
+        macos: 'macOS',
+        unknown: 'tidak dikenal',
+        windows: 'Windows',
+    }[operatingSystem];
 
     const updateSettings = (changes: Partial<PrinterSettings>): void => {
         const next = { ...settings, ...changes };
@@ -201,6 +211,13 @@ export default function QueueTerminalSettings({
                                 >
                                     Pengaturan hanya tersimpan di terminal ini.
                                 </Typography>
+                                <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                    sx={{ mt: 0.25 }}
+                                >
+                                    Sistem terdeteksi: {operatingSystemLabel}.
+                                </Typography>
                             </Box>
 
                             <FormControl fullWidth>
@@ -240,14 +257,17 @@ export default function QueueTerminalSettings({
                                         title="Jendela tiket (native window.print)"
                                         description="Buka tiket di jendela baru lalu panggil native window.print()."
                                     />
-                                    <PrinterModeOption
-                                        value="android-intent"
-                                        selected={
-                                            settings.mode === 'android-intent'
-                                        }
-                                        title="Aplikasi cetak (intent)"
-                                        description="Kirim tiket ke aplikasi Android yang mendukung perintah ESC/POS."
-                                    />
+                                    {isAndroid && (
+                                        <PrinterModeOption
+                                            value="android-intent"
+                                            selected={
+                                                settings.mode ===
+                                                'android-intent'
+                                            }
+                                            title="Aplikasi cetak (intent)"
+                                            description="Kirim tiket ke aplikasi Android yang mendukung perintah ESC/POS."
+                                        />
+                                    )}
                                     <PrinterModeOption
                                         value="web-bluetooth"
                                         selected={
@@ -320,6 +340,13 @@ export default function QueueTerminalSettings({
                                         Tiket dibuka di jendela baru. Browser
                                         akan menjalankan native window.print().
                                     </Alert>
+                                    {operatingSystem === 'windows' && (
+                                        <Alert severity="success">
+                                            Windows terdeteksi. Metode ini
+                                            menggunakan printer yang tersedia di
+                                            sistem Windows.
+                                        </Alert>
+                                    )}
                                 </PrinterInstructions>
                             )}
 
@@ -329,49 +356,47 @@ export default function QueueTerminalSettings({
                                         Tiket dimuat di iframe tersembunyi, lalu
                                         browser membuka dialog cetak standarnya.
                                     </Alert>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<LaunchRounded />}
-                                        onClick={openAndroidPrintSettings}
-                                    >
-                                        Buka pengaturan cetak
-                                    </Button>
                                 </PrinterInstructions>
                             )}
 
-                            {settings.mode === 'android-intent' && (
-                                <PrinterInstructions>
-                                    <Alert severity="info">
-                                        Hubungkan perangkat di pengaturan
-                                        Bluetooth Android, lalu pilih aplikasi
-                                        cetak yang mendukung perintah ESC/POS.
-                                    </Alert>
-                                    <Stack
-                                        direction={{ xs: 'column', sm: 'row' }}
-                                        spacing={1}
-                                    >
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<BluetoothRounded />}
-                                            onClick={
-                                                openAndroidBluetoothSettings
-                                            }
+                            {isAndroid &&
+                                settings.mode === 'android-intent' && (
+                                    <PrinterInstructions>
+                                        <Alert severity="info">
+                                            Hubungkan perangkat di pengaturan
+                                            Bluetooth Android, lalu pilih
+                                            aplikasi cetak yang mendukung
+                                            perintah ESC/POS.
+                                        </Alert>
+                                        <Stack
+                                            direction={{
+                                                xs: 'column',
+                                                sm: 'row',
+                                            }}
+                                            spacing={1}
                                         >
-                                            Buka Bluetooth
-                                        </Button>
-                                        <Button
-                                            component="a"
-                                            href={androidPrintInstallUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            variant="outlined"
-                                            startIcon={<LaunchRounded />}
-                                        >
-                                            Pasang aplikasi cetak
-                                        </Button>
-                                    </Stack>
-                                </PrinterInstructions>
-                            )}
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<BluetoothRounded />}
+                                                onClick={
+                                                    openAndroidBluetoothSettings
+                                                }
+                                            >
+                                                Buka Bluetooth
+                                            </Button>
+                                            <Button
+                                                component="a"
+                                                href={androidPrintInstallUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                variant="outlined"
+                                                startIcon={<LaunchRounded />}
+                                            >
+                                                Pasang aplikasi cetak
+                                            </Button>
+                                        </Stack>
+                                    </PrinterInstructions>
+                                )}
 
                             {settings.mode === 'web-bluetooth' && (
                                 <PrinterInstructions>

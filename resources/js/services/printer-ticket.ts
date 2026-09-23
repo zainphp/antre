@@ -22,7 +22,6 @@ export function buildTicketMarkup(
     photo: string | null,
     paperWidth: PaperWidth,
     imageMode: PrintImageMode,
-    printOnLoad = false,
 ): string {
     const photoMarkup = photo
         ? `<img class="ticket-photo" src="${escapeHtml(photo)}" alt="Foto pelanggan" />`
@@ -56,9 +55,6 @@ export function buildTicketMarkup(
         `<strong class="ticket-number">${escapeHtml(number)}</strong>`,
         '<p class="ticket-note">Silakan menunggu panggilan Anda.</p>',
         `<p class="ticket-date">${escapeHtml(formatDateTime(createdAt))}</p>`,
-        printOnLoad
-            ? "<script>window.addEventListener('load',()=>{window.print();window.close()})</script>"
-            : '',
         '</body></html>',
     ].join('');
 }

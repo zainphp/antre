@@ -23,6 +23,13 @@ export type PrinterSettings = {
     bluetoothDeviceId: string | null;
     bluetoothDeviceName: string | null;
 };
+export type PrinterOperatingSystem =
+    | 'android'
+    | 'ios'
+    | 'linux'
+    | 'macos'
+    | 'unknown'
+    | 'windows';
 
 type BluetoothCharacteristic = {
     properties: {
@@ -75,9 +82,49 @@ let bluetoothConnection: {
     characteristic: BluetoothCharacteristic;
 } | null = null;
 
+export function getPrinterOperatingSystem(): PrinterOperatingSystem {
+    if (typeof navigator === 'undefined') {
+        return 'unknown';
+    }
+
+    const browserNavigator = navigator as Navigator & {
+        userAgentData?: { platform?: string };
+    };
+    const platform = [
+        browserNavigator.userAgentData?.platform,
+        navigator.platform,
+        navigator.userAgent,
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    if (platform.includes('android')) {
+        return 'android';
+    }
+
+    if (platform.includes('iphone') || platform.includes('ipad')) {
+        return 'ios';
+    }
+
+    if (platform.includes('win')) {
+        return 'windows';
+    }
+
+    if (platform.includes('mac')) {
+        return 'macos';
+    }
+
+    if (platform.includes('linux')) {
+        return 'linux';
+    }
+
+    return 'unknown';
+}
+
 export function loadPrinterSettings(): PrinterSettings {
     const defaults: PrinterSettings = {
-        mode: 'iframe',
+        mode: getDefaultPrinterMode(),
         paperWidth: 58,
         imageMode: 'black-and-white',
         bluetoothDeviceId: null,
@@ -252,12 +299,6 @@ export function openAndroidBluetoothSettings(): void {
     );
 }
 
-export function openAndroidPrintSettings(): void {
-    window.location.assign(
-        'intent:#Intent;action=android.settings.ACTION_PRINT_SETTINGS;end',
-    );
-}
-
 export const androidPrintInstallUrl = `https://play.google.com/store/apps/details?id=${androidPrintPackage}`;
 
 async function printWithWebBluetooth(
@@ -391,6 +432,15 @@ function printWithTicketWindow(
         return;
     }
 
+    popup.addEventListener('afterprint', () => popup.close(), { once: true });
+    popup.addEventListener(
+        'load',
+        () => {
+            popup.focus();
+            popup.print();
+        },
+        { once: true },
+    );
     popup.document.write(
         buildTicketMarkup(
             number,
@@ -400,7 +450,6 @@ function printWithTicketWindow(
             photo,
             paperWidth,
             imageMode,
-            true,
         ),
     );
     popup.document.close();
@@ -426,8 +475,14 @@ function isPrintImageMode(value: unknown): value is PrintImageMode {
 }
 
 function normalizePrinterMode(value: unknown): PrinterMode {
+    if (value === undefined || value === null || value === 'browser-default') {
+        return getDefaultPrinterMode();
+    }
+
     if (value === 'android-intent' || value === 'rawbt') {
-        return 'android-intent';
+        return getPrinterOperatingSystem() === 'android'
+            ? 'android-intent'
+            : getDefaultPrinterMode();
     }
 
     if (value === 'web-bluetooth') {
@@ -439,6 +494,16 @@ function normalizePrinterMode(value: unknown): PrinterMode {
     }
 
     return 'iframe';
+}
+
+function getDefaultPrinterMode(): PrinterMode {
+    const operatingSystem = getPrinterOperatingSystem();
+
+    return operatingSystem === 'windows' ||
+        operatingSystem === 'macos' ||
+        operatingSystem === 'linux'
+        ? 'window'
+        : 'iframe';
 }
 
 async function findRememberedDevice(
