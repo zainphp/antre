@@ -19,14 +19,13 @@ import Typography from '@mui/material/Typography';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
+import { PrinterTestPreview } from '@/components/printer-test-preview';
 import { queueTerminal } from '@/routes';
-import { formatDateTime } from '@/utils/format';
 import {
     loadPrinterSettings,
     openAndroidBluetoothSettings,
     openAndroidPrintSettings,
     pairWebBluetoothPrinter,
-    printerTestPhotoUrl,
     printPrinterTest,
     rawBtInstallUrl,
     savePrinterSettings,
@@ -452,95 +451,13 @@ export default function QueueTerminalSettings({
                                         </Button>
                                     ))}
                                 </Stack>
-                                <Box
-                                    sx={{
-                                        alignItems: 'center',
-                                        backgroundColor: '#eef3ef',
-                                        borderRadius: 2,
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        minHeight: 260,
-                                        mt: 2,
-                                        p: 2,
-                                    }}
-                                >
-                                    <Box
-                                        component="article"
-                                        sx={{
-                                            backgroundColor: '#fff',
-                                            border: '1px solid #dfe7e1',
-                                            borderRadius: 1,
-                                            boxShadow:
-                                                '0 8px 20px rgba(18, 72, 59, 0.1)',
-                                            color: '#17211c',
-                                            px: 1.5,
-                                            py: 1.75,
-                                            textAlign: 'center',
-                                            width:
-                                                settings.paperWidth === 58
-                                                    ? 190
-                                                    : 245,
-                                        }}
-                                    >
-                                        <Typography
-                                            sx={{
-                                                fontSize: 11,
-                                                fontWeight: 800,
-                                                lineHeight: 1.25,
-                                            }}
-                                        >
-                                            {brandName}
-                                        </Typography>
-                                        <Typography
-                                            color="text.secondary"
-                                            sx={{ fontSize: 9, mt: 0.25 }}
-                                        >
-                                            {sessionName}
-                                        </Typography>
-                                        <Box
-                                            component="img"
-                                            src={printerTestPhotoUrl}
-                                            alt="Foto contoh untuk tes printer"
-                                            sx={{
-                                                aspectRatio: '1',
-                                                borderRadius: 1.5,
-                                                display: 'block',
-                                                filter:
-                                                    testImageMode ===
-                                                    'full-color'
-                                                        ? 'none'
-                                                        : testImageMode ===
-                                                            'grayscale'
-                                                          ? 'grayscale(1)'
-                                                          : 'grayscale(1) contrast(4)',
-                                                mx: 'auto',
-                                                my: 1,
-                                                objectFit: 'cover',
-                                                width: '40%',
-                                            }}
-                                        />
-                                        <Typography
-                                            sx={{
-                                                color: 'var(--green)',
-                                                fontFamily: 'Georgia, serif',
-                                                fontSize:
-                                                    settings.paperWidth === 58
-                                                        ? 38
-                                                        : 44,
-                                                fontWeight: 700,
-                                                lineHeight: 1,
-                                            }}
-                                        >
-                                            UJI
-                                        </Typography>
-                                        <Typography
-                                            color="text.secondary"
-                                            sx={{ fontSize: 8, mt: 0.75 }}
-                                        >
-                                            {formatDateTime(testCreatedAt)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                                <PrinterTestPreview
+                                    brandName={brandName}
+                                    createdAt={testCreatedAt}
+                                    imageMode={testImageMode}
+                                    paperWidth={settings.paperWidth}
+                                    sessionName={sessionName}
+                                />
                                 <Button
                                     fullWidth
                                     variant="contained"
