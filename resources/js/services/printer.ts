@@ -173,7 +173,9 @@ export function supportsWebBluetooth(): boolean {
     return getBluetoothApi() !== null;
 }
 
-export async function pairWebBluetoothPrinter(): Promise<{
+export async function pairWebBluetoothPrinter(
+    onDisconnected?: () => void,
+): Promise<{
     id: string;
     name: string;
 }> {
@@ -188,7 +190,7 @@ export async function pairWebBluetoothPrinter(): Promise<{
     });
     const characteristic = await findWritableCharacteristic(device);
 
-    bluetoothConnection = { device, characteristic };
+    rememberBluetoothConnection(device, characteristic, onDisconnected);
 
     return {
         id: device.id,
@@ -207,10 +209,30 @@ export async function connectRememberedWebBluetoothPrinter(
     const device = await findRememberedDevice(settings.bluetoothDeviceId);
     const characteristic = await findWritableCharacteristic(device);
 
-    bluetoothConnection = { device, characteristic };
-    if (onDisconnected) {
-        device.addEventListener?.('gattserverdisconnected', onDisconnected);
+    rememberBluetoothConnection(device, characteristic, onDisconnected);
+}
+
+export async function repairWebBluetoothPrinter(
+    settings: PrinterSettings,
+    onDisconnected?: () => void,
+): Promise<{ id: string; name: string }> {
+    if (settings.mode !== 'web-bluetooth') {
+        throw new Error('Metode cetak Web Bluetooth belum dipilih.');
     }
+
+    if (bluetoothConnection?.device.id === settings.bluetoothDeviceId) {
+        const device = bluetoothConnection.device;
+        const characteristic = await findWritableCharacteristic(device);
+
+        rememberBluetoothConnection(device, characteristic, onDisconnected);
+
+        return {
+            id: device.id,
+            name: device.name ?? 'Printer BLE',
+        };
+    }
+
+    return pairWebBluetoothPrinter(onDisconnected);
 }
 
 export async function printQueueTicket(
@@ -464,6 +486,18 @@ function getBluetoothApi(): BluetoothApi | null {
         (navigator as Navigator & { bluetooth?: BluetoothApi }).bluetooth ??
         null
     );
+}
+
+function rememberBluetoothConnection(
+    device: BluetoothDevice,
+    characteristic: BluetoothCharacteristic,
+    onDisconnected?: () => void,
+): void {
+    bluetoothConnection = { device, characteristic };
+
+    if (onDisconnected) {
+        device.addEventListener?.('gattserverdisconnected', onDisconnected);
+    }
 }
 
 function isPrintImageMode(value: unknown): value is PrintImageMode {

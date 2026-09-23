@@ -412,9 +412,7 @@ export default function QueueTerminalSettings({
                                         onClick={() => void connectBluetooth()}
                                         disabled={busy || !bluetoothAvailable}
                                     >
-                                        {settings.bluetoothDeviceName
-                                            ? `Hubungkan ulang ${settings.bluetoothDeviceName}`
-                                            : 'Pilih printer BLE'}
+                                        Pilih printer BLE
                                     </Button>
                                     {!bluetoothAvailable && (
                                         <Typography

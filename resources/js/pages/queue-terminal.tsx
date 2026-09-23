@@ -9,7 +9,6 @@ import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import PrintRounded from '@mui/icons-material/PrintRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
-import SyncRounded from '@mui/icons-material/SyncRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -17,12 +16,13 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Head, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import queue from '@/routes/queue';
@@ -37,6 +37,8 @@ import {
     connectRememberedWebBluetoothPrinter,
     loadPrinterSettings,
     printQueueTicket,
+    repairWebBluetoothPrinter,
+    savePrinterSettings,
     type PrinterSettings,
 } from '@/services/printer';
 import { useOnlineState } from '@/hooks/use-online-state';
@@ -62,8 +64,8 @@ export default function QueueTerminal({
 }: QueueTerminalProps) {
     const online = useOnlineState();
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [printerSettings] = useState<PrinterSettings>(() =>
-        loadPrinterSettings(),
+    const [printerSettings, setPrinterSettings] = useState<PrinterSettings>(
+        () => loadPrinterSettings(),
     );
     const [printerState, setPrinterState] = useState<BluetoothPrinterState>(
         printerSettings.mode === 'web-bluetooth'
@@ -76,6 +78,41 @@ export default function QueueTerminal({
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+
+    const reconnectBluetooth = useCallback((): void => {
+        if (printerSettings.mode !== 'web-bluetooth') {
+            return;
+        }
+
+        setPrinterState('RECONNECTING');
+        void connectRememberedWebBluetoothPrinter(printerSettings, () => {
+            setPrinterState('DISCONNECTED');
+        })
+            .then(() => setPrinterState('CONNECTED'))
+            .catch(() => setPrinterState('FAILED'));
+    }, [printerSettings]);
+
+    const repairBluetooth = useCallback((): void => {
+        if (printerSettings.mode !== 'web-bluetooth') {
+            return;
+        }
+
+        setPrinterState('RECONNECTING');
+        void repairWebBluetoothPrinter(printerSettings, () => {
+            setPrinterState('DISCONNECTED');
+        })
+            .then((device) => {
+                const nextSettings = {
+                    ...printerSettings,
+                    bluetoothDeviceId: device.id,
+                    bluetoothDeviceName: device.name,
+                };
+                setPrinterSettings(nextSettings);
+                savePrinterSettings(nextSettings);
+                setPrinterState('CONNECTED');
+            })
+            .catch(() => setPrinterState('FAILED'));
+    }, [printerSettings]);
 
     useEffect(() => {
         if (step !== 'camera' || !videoRef.current) {
@@ -111,29 +148,8 @@ export default function QueueTerminal({
             return;
         }
 
-        let active = true;
-        setPrinterState('RECONNECTING');
-
-        void connectRememberedWebBluetoothPrinter(printerSettings, () => {
-            if (active) {
-                setPrinterState('DISCONNECTED');
-            }
-        })
-            .then(() => {
-                if (active) {
-                    setPrinterState('CONNECTED');
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setPrinterState('FAILED');
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [printerSettings]);
+        reconnectBluetooth();
+    }, [printerSettings.mode, reconnectBluetooth]);
 
     const reset = () => {
         setStep('ready');
@@ -231,6 +247,7 @@ export default function QueueTerminal({
                             <BluetoothPrinterBadge
                                 name={printerSettings.bluetoothDeviceName}
                                 state={printerState}
+                                onReconnect={repairBluetooth}
                             />
                         )}
                         <IconButton
@@ -624,19 +641,22 @@ function csrfToken(): string {
 function BluetoothPrinterBadge({
     name,
     state,
+    onReconnect,
 }: {
     name: string | null;
     state: BluetoothPrinterState;
+    onReconnect?: () => void;
 }) {
     const connected = state === 'CONNECTED';
     const reconnecting = state === 'RECONNECTING';
+    const canReconnect = !connected && !reconnecting && onReconnect;
 
     return (
         <Chip
             size="small"
             icon={
                 reconnecting ? (
-                    <SyncRounded fontSize="small" />
+                    <CircularProgress color="inherit" size={16} />
                 ) : connected ? (
                     <BluetoothConnectedRounded fontSize="small" />
                 ) : (
@@ -652,6 +672,16 @@ function BluetoothPrinterBadge({
             }
             color={connected ? 'success' : reconnecting ? 'warning' : 'error'}
             variant={connected ? 'filled' : 'outlined'}
+            clickable={Boolean(canReconnect)}
+            disabled={reconnecting}
+            onClick={canReconnect ? onReconnect : undefined}
+            aria-label={
+                canReconnect
+                    ? 'Hubungkan ulang printer'
+                    : connected
+                      ? 'Printer terhubung'
+                      : 'Printer sedang disambungkan'
+            }
             title={name ? `Printer: ${name}` : undefined}
         />
     );
