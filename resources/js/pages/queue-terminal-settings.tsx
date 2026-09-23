@@ -71,7 +71,10 @@ export default function QueueTerminalSettings({
         const next = { ...settings, ...changes };
         setSettings(next);
         savePrinterSettings(next);
-        setFeedback(null);
+        setFeedback({
+            severity: 'success',
+            message: 'Pengaturan tersimpan di terminal ini.',
+        });
     };
 
     const connectBluetooth = async (): Promise<void> => {
@@ -145,6 +148,13 @@ export default function QueueTerminalSettings({
                     paddingTop: { xs: 2.5, sm: 3.5 },
                 }}
             >
+                <Button
+                    onClick={() => router.visit(queueTerminal.url())}
+                    startIcon={<ArrowBackRounded />}
+                    sx={{ minHeight: 48, mb: 1 }}
+                >
+                    Kembali ke terminal
+                </Button>
                 <Box
                     className="self-service-header"
                     sx={{ alignItems: 'center', marginBottom: 2.25 }}
@@ -248,14 +258,14 @@ export default function QueueTerminalSettings({
                                     <PrinterModeOption
                                         value="iframe"
                                         selected={settings.mode === 'iframe'}
-                                        title="Dialog cetak (iframe)"
-                                        description="Muat tiket di iframe tersembunyi lalu gunakan dialog cetak browser."
+                                        title="Dialog cetak"
+                                        description="Buka dialog cetak browser tanpa meninggalkan halaman terminal."
                                     />
                                     <PrinterModeOption
                                         value="window"
                                         selected={settings.mode === 'window'}
-                                        title="Jendela tiket (native window.print)"
-                                        description="Buka tiket di jendela baru lalu panggil native window.print()."
+                                        title="Jendela tiket"
+                                        description="Buka tiket di jendela baru lalu cetak dari browser."
                                     />
                                     {isAndroid && (
                                         <PrinterModeOption
@@ -264,8 +274,8 @@ export default function QueueTerminalSettings({
                                                 settings.mode ===
                                                 'android-intent'
                                             }
-                                            title="Aplikasi cetak (intent)"
-                                            description="Kirim tiket ke aplikasi Android yang mendukung perintah ESC/POS."
+                                            title="Aplikasi Android"
+                                            description="Kirim tiket ke aplikasi Android yang mendukung pencetakan."
                                         />
                                     )}
                                     <PrinterModeOption
@@ -273,8 +283,12 @@ export default function QueueTerminalSettings({
                                         selected={
                                             settings.mode === 'web-bluetooth'
                                         }
-                                        title="Web Bluetooth (BLE)"
-                                        description="Untuk printer Bluetooth LE yang mendukung cetak."
+                                        title="Printer Bluetooth"
+                                        description={
+                                            bluetoothAvailable
+                                                ? 'Cetak langsung ke printer Bluetooth yang didukung.'
+                                                : 'Tidak tersedia di browser atau perangkat ini. Pilih metode lain.'
+                                        }
                                         disabled={!bluetoothAvailable}
                                     />
                                 </RadioGroup>
@@ -294,14 +308,15 @@ export default function QueueTerminalSettings({
                                         textTransform: 'uppercase',
                                     }}
                                 >
-                                    Lebar kertas thermal
+                                    Ukuran kertas
                                 </Typography>
                                 <Typography
                                     color="text.secondary"
                                     variant="body2"
                                     sx={{ mb: 0.75 }}
                                 >
-                                    Ukuran umum roll printer: 58 mm atau 80 mm.
+                                    Pilih lebar kertas printer: 58 mm atau 80
+                                    mm.
                                 </Typography>
                                 <RadioGroup
                                     aria-label="Lebar kertas thermal"
@@ -337,8 +352,8 @@ export default function QueueTerminalSettings({
                             {settings.mode === 'window' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Tiket dibuka di jendela baru. Browser
-                                        akan menjalankan native window.print().
+                                        Tiket dibuka di jendela baru, lalu
+                                        dialog cetak browser akan muncul.
                                     </Alert>
                                     {operatingSystem === 'windows' && (
                                         <Alert severity="success">
@@ -353,8 +368,8 @@ export default function QueueTerminalSettings({
                             {settings.mode === 'iframe' && (
                                 <PrinterInstructions>
                                     <Alert severity="info">
-                                        Tiket dimuat di iframe tersembunyi, lalu
-                                        browser membuka dialog cetak standarnya.
+                                        Dialog cetak browser akan dibuka tanpa
+                                        meninggalkan halaman terminal.
                                     </Alert>
                                 </PrinterInstructions>
                             )}
@@ -365,8 +380,7 @@ export default function QueueTerminalSettings({
                                         <Alert severity="info">
                                             Hubungkan perangkat di pengaturan
                                             Bluetooth Android, lalu pilih
-                                            aplikasi cetak yang mendukung
-                                            perintah ESC/POS.
+                                            aplikasi yang mendukung pencetakan.
                                         </Alert>
                                         <Stack
                                             direction={{
@@ -401,9 +415,9 @@ export default function QueueTerminalSettings({
                             {settings.mode === 'web-bluetooth' && (
                                 <PrinterInstructions>
                                     <Alert severity="warning">
-                                        Web Bluetooth hanya mendukung perangkat
-                                        BLE. Jika perangkat tidak muncul, pilih
-                                        aplikasi cetak Android atau metode
+                                        Metode ini memerlukan dukungan Bluetooth
+                                        dari browser dan printer. Jika printer
+                                        tidak muncul, pilih metode cetak
                                         browser.
                                     </Alert>
                                     <Button
@@ -412,22 +426,22 @@ export default function QueueTerminalSettings({
                                         onClick={() => void connectBluetooth()}
                                         disabled={busy || !bluetoothAvailable}
                                     >
-                                        Pilih printer BLE
+                                        Pilih printer Bluetooth
                                     </Button>
                                     {!bluetoothAvailable && (
                                         <Typography
                                             variant="body2"
                                             color="text.secondary"
                                         >
-                                            Browser ini tidak menyediakan Web
-                                            Bluetooth.
+                                            Browser atau perangkat ini tidak
+                                            menyediakan Bluetooth.
                                         </Typography>
                                     )}
                                 </PrinterInstructions>
                             )}
 
                             <Box>
-                                <Typography variant="subtitle1">
+                                <Typography variant="subtitle1" component="h3">
                                     Mode foto tiket
                                 </Typography>
                                 <Typography
@@ -446,7 +460,7 @@ export default function QueueTerminalSettings({
                                     {(
                                         [
                                             ['full-color', 'Warna penuh'],
-                                            ['grayscale', 'Grayscale'],
+                                            ['grayscale', 'Abu-abu'],
                                             ['black-and-white', 'Hitam putih'],
                                         ] as const
                                     ).map(([value, label]) => (
@@ -494,13 +508,6 @@ export default function QueueTerminalSettings({
                     </CardContent>
                 </Card>
 
-                <Button
-                    onClick={() => router.visit(queueTerminal.url())}
-                    startIcon={<ArrowBackRounded />}
-                    sx={{ minHeight: 48, mt: 1.25 }}
-                >
-                    Kembali ke terminal
-                </Button>
                 <Typography component="p" className="self-service-copyright">
                     © {new Date().getFullYear()} Antre by zainphp
                 </Typography>

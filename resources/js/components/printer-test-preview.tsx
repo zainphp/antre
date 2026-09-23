@@ -53,7 +53,8 @@ export function PrinterTestPreview({
                     borderRadius: 1,
                     boxShadow: '0 8px 20px rgba(18, 72, 59, 0.1)',
                     display: 'block',
-                    height: paperWidth === 58 ? 420 : 500,
+                    height: paperWidth === 58 ? 280 : 320,
+                    maxWidth: '100%',
                     width: paperWidth === 58 ? 232 : 320,
                 }}
             />

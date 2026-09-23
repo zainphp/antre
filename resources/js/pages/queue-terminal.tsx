@@ -78,6 +78,7 @@ export default function QueueTerminal({
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+    const [cameraAttempt, setCameraAttempt] = useState(0);
 
     const reconnectBluetooth = useCallback((): void => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -141,7 +142,7 @@ export default function QueueTerminal({
             active = false;
             stopCamera(stream);
         };
-    }, [photoRequired, step]);
+    }, [cameraAttempt, photoRequired, step]);
 
     useEffect(() => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -310,6 +311,10 @@ export default function QueueTerminal({
                                     setError(null);
                                 }}
                                 onBack={reset}
+                                onRetry={() => {
+                                    setError(null);
+                                    setCameraAttempt((attempt) => attempt + 1);
+                                }}
                             />
                         )}
                         {step === 'review' && (
@@ -411,6 +416,7 @@ function CameraStep({
     onCapture,
     onWithoutPhoto,
     onBack,
+    onRetry,
 }: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     photoError: boolean;
@@ -418,6 +424,7 @@ function CameraStep({
     onCapture: () => void;
     onWithoutPhoto: () => void;
     onBack: () => void;
+    onRetry: () => void;
 }) {
     return (
         <Box className="self-step">
@@ -434,20 +441,18 @@ function CameraStep({
             >
                 Pastikan wajah terlihat jelas dan pencahayaan cukup.
             </Typography>
-            <Box className="camera-frame">
+            <Box
+                className={
+                    photoError
+                        ? 'camera-frame camera-frame-error'
+                        : 'camera-frame'
+                }
+            >
                 {photoError ? (
                     <Box className="camera-fallback">
                         <CameraAltRounded />
-                        <Typography sx={{ fontWeight: 700 }}>
+                        <Typography sx={{ color: 'inherit', fontWeight: 700 }}>
                             Kamera tidak tersedia
-                        </Typography>
-                        <Typography
-                            className="kiosk-help"
-                            color="text.secondary"
-                        >
-                            {photoRequired
-                                ? 'Foto wajib diambil. Izinkan akses kamera pada browser, lalu coba lagi.'
-                                : 'Anda tetap dapat mengambil nomor tanpa foto.'}
                         </Typography>
                     </Box>
                 ) : (
@@ -460,16 +465,27 @@ function CameraStep({
                 )}
             </Box>
             <Stack spacing={1.25} sx={{ mt: 2.5 }}>
-                <Button
-                    className="kiosk-button"
-                    variant="contained"
-                    size="large"
-                    onClick={onCapture}
-                    disabled={photoError}
-                    startIcon={<PhotoCameraRounded />}
-                >
-                    Ambil foto
-                </Button>
+                {photoError ? (
+                    <Button
+                        className="kiosk-button"
+                        variant="contained"
+                        size="large"
+                        onClick={onRetry}
+                        startIcon={<ReplayRounded />}
+                    >
+                        Coba lagi
+                    </Button>
+                ) : (
+                    <Button
+                        className="kiosk-button"
+                        variant="contained"
+                        size="large"
+                        onClick={onCapture}
+                        startIcon={<PhotoCameraRounded />}
+                    >
+                        Ambil foto
+                    </Button>
+                )}
                 {!photoRequired && (
                     <Button
                         className="kiosk-button"
