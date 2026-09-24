@@ -46,6 +46,14 @@ final class QueueStateService
             ->where('status', QueueStatus::Waiting)
             ->count();
         $current = $session->currentEntry;
+        if (! $current?->status?->isActive()) {
+            $current = $session->entries()
+                ->with('counter')
+                ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
+                ->orderByDesc('called_at')
+                ->orderByDesc('sequence')
+                ->first();
+        }
 
         $state = [
             'session' => [
@@ -75,7 +83,10 @@ final class QueueStateService
                 ->get();
 
             $state['callable'] = $callable
-                ->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))
+                ->map(fn (QueueEntry $entry): array => $this->entryPayload(
+                    $entry,
+                    includePhoto: $includePhoto && $entry->status->isActive(),
+                ))
                 ->values()
                 ->all();
         }

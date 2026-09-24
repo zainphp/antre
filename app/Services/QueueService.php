@@ -87,7 +87,8 @@ final readonly class QueueService
     {
         $entry = DB::transaction(function () use ($counterName, $device): QueueEntry {
             $session = $this->lockCurrentSession();
-            if ($session->current_entry_id) {
+            $counter = $this->configuredCounter($counterName);
+            if ($this->activeEntryForCounter($session, $counter->id)) {
                 throw new QueueConflictException('Selesaikan nomor yang sedang dilayani sebelum memanggil berikutnya.');
             }
 
@@ -99,8 +100,6 @@ final readonly class QueueService
             if (! $entry) {
                 throw new QueueConflictException('Belum ada nomor yang menunggu.');
             }
-
-            $counter = $this->configuredCounter($counterName);
 
             $entry->update([
                 'status' => QueueStatus::Called,
@@ -125,11 +124,11 @@ final readonly class QueueService
     {
         $entry = DB::transaction(function () use ($counterName, $entryId, $device): QueueEntry {
             $session = $this->lockCurrentSession();
+            $counter = $this->configuredCounter($counterName);
             $entry = $entryId
                 ? $session->entries()->whereKey($entryId)->lockForUpdate()->first()
-                : ($session->current_entry_id
-                    ? $session->entries()->whereKey($session->current_entry_id)->lockForUpdate()->first()
-                    : $session->entries()
+                : ($this->activeEntryForCounter($session, $counter->id)
+                    ?? $session->entries()
                         ->where('status', QueueStatus::Skipped)
                         ->orderByDesc('completed_at')
                         ->orderByDesc('sequence')
@@ -144,26 +143,22 @@ final readonly class QueueService
                 throw new QueueConflictException('Nomor yang sudah selesai tidak dapat dipanggil kembali.');
             }
 
-            if ($session->current_entry_id && $session->current_entry_id !== $entry->id) {
-                $current = $session->entries()
-                    ->whereKey($session->current_entry_id)
-                    ->lockForUpdate()
-                    ->first();
-                if (! $current || ! $current->status->isActive()) {
-                    throw new QueueConflictException('Nomor aktif tidak dapat dilewati saat ini.');
-                }
-
-                $this->skipEntry($current, $device);
-                $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
-            }
-
             if ($entry->status->isActive()) {
-                if ($session->current_entry_id !== $entry->id) {
-                    throw new QueueConflictException('Nomor ini sedang tidak aktif.');
+                if ($entry->counter_id !== $counter->id) {
+                    $entry->loadMissing('counter');
+                    $assignedCounter = $entry->counter;
+                    throw new QueueConflictException(sprintf(
+                        'Nomor ini sedang dipanggil oleh %s.',
+                        $assignedCounter === null ? 'loket lain' : $assignedCounter->name,
+                    ));
                 }
 
                 $this->ensureActive($entry);
                 $entry->update(['called_at' => now()]);
+                $session->update([
+                    'current_entry_id' => $entry->id,
+                    'current_counter_id' => $counter->id,
+                ]);
                 $this->audit->record('queue.recalled', device: $device, subject: $entry);
 
                 return $entry->load('counter');
@@ -173,7 +168,11 @@ final readonly class QueueService
                 throw new QueueConflictException('Nomor ini belum dapat dipanggil kembali.');
             }
 
-            $counter = $this->configuredCounter($counterName);
+            $current = $this->activeEntryForCounter($session, $counter->id);
+            if ($current) {
+                $this->skipEntry($current, $device);
+            }
+
             $fromStatus = $entry->status->value;
             $entry->update([
                 'status' => QueueStatus::Called,
@@ -200,10 +199,10 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function startServing(Device $device): QueueEntry
+    public function startServing(Device $device, ?string $counterName = null): QueueEntry
     {
-        $entry = DB::transaction(function () use ($device): QueueEntry {
-            [$session, $entry] = $this->lockCurrentEntry();
+        $entry = DB::transaction(function () use ($counterName, $device): QueueEntry {
+            [$session, $entry] = $this->lockActiveEntry($counterName);
             if ($entry->status !== QueueStatus::Called) {
                 throw new QueueConflictException('Nomor belum siap untuk dilayani.');
             }
@@ -219,14 +218,14 @@ final readonly class QueueService
         return $entry;
     }
 
-    public function complete(Device $device): QueueEntry
+    public function complete(Device $device, ?string $counterName = null): QueueEntry
     {
-        return $this->finishCurrent(QueueStatus::Completed, 'queue.completed', 'Nomor ini belum dapat diselesaikan.', $device);
+        return $this->finishCurrent(QueueStatus::Completed, 'queue.completed', 'Nomor ini belum dapat diselesaikan.', $device, $counterName);
     }
 
-    public function skip(Device $device): QueueEntry
+    public function skip(Device $device, ?string $counterName = null): QueueEntry
     {
-        return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $device);
+        return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $device, $counterName);
     }
 
     public function reset(Device $device): QueueSession
@@ -277,10 +276,15 @@ final readonly class QueueService
         return $session;
     }
 
-    private function finishCurrent(QueueStatus $status, string $eventName, string $message, Device $device): QueueEntry
-    {
-        $entry = DB::transaction(function () use ($status, $eventName, $message, $device): QueueEntry {
-            [$session, $entry] = $this->lockCurrentEntry();
+    private function finishCurrent(
+        QueueStatus $status,
+        string $eventName,
+        string $message,
+        Device $device,
+        ?string $counterName,
+    ): QueueEntry {
+        $entry = DB::transaction(function () use ($counterName, $status, $eventName, $message, $device): QueueEntry {
+            [$session, $entry] = $this->lockActiveEntry($counterName);
             if (! $entry->status->isActive()) {
                 throw new QueueConflictException($message);
             }
@@ -294,7 +298,7 @@ final readonly class QueueService
                 ]);
                 $this->audit->record($eventName, device: $device, subject: $entry);
             }
-            $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
+            $this->refreshCurrentPointer($session);
 
             return $entry->load('counter');
         });
@@ -376,15 +380,41 @@ final readonly class QueueService
     }
 
     /** @return array{0: QueueSession, 1: QueueEntry} */
-    private function lockCurrentEntry(): array
+    private function lockActiveEntry(?string $counterName): array
     {
         $session = $this->lockCurrentSession();
-        $entry = $session->entries()->whereKey($session->current_entry_id)->lockForUpdate()->first();
+        $counter = $this->configuredCounter($counterName);
+        $entry = $this->activeEntryForCounter($session, $counter->id);
         if (! $entry) {
             throw new QueueConflictException('Belum ada nomor yang sedang dipanggil.');
         }
 
         return [$session, $entry];
+    }
+
+    private function activeEntryForCounter(QueueSession $session, string $counterId): ?QueueEntry
+    {
+        return $session->entries()
+            ->where('counter_id', $counterId)
+            ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
+            ->orderByDesc('called_at')
+            ->orderByDesc('sequence')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function refreshCurrentPointer(QueueSession $session): void
+    {
+        $current = $session->entries()
+            ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
+            ->orderByDesc('called_at')
+            ->orderByDesc('sequence')
+            ->first();
+
+        $session->update([
+            'current_entry_id' => $current?->id,
+            'current_counter_id' => $current?->counter_id,
+        ]);
     }
 
     private function ensureActive(QueueEntry $entry): void
