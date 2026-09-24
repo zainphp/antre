@@ -2,7 +2,6 @@ import CallRounded from '@mui/icons-material/CallRounded';
 import CheckRounded from '@mui/icons-material/CheckRounded';
 import ConfirmationNumberRounded from '@mui/icons-material/ConfirmationNumberRounded';
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded';
-import EventBusyRounded from '@mui/icons-material/EventBusyRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
@@ -27,7 +26,6 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
-import { SectionHeading } from '@/components/section-heading';
 import { display, queueTerminal } from '@/routes';
 import queue from '@/routes/queue';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
@@ -228,14 +226,15 @@ export default function OperatorTerminal({
                     </CardContent>
                 </Card>
                 <Card className="waiting-card">
-                    <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                    <CardContent sx={{ p: { xs: 3, md: 3 } }}>
                         <Box className="section-title-row">
-                            <SectionHeading
-                                eyebrow="Belum selesai"
-                                title="Nomor yang dapat dipanggil"
-                                detail="Pilih nomor untuk memanggilnya."
+                            <Typography className="eyebrow">
+                                Sila panggil nomor di bawah
+                            </Typography>
+                            <Chip
+                                label={callableEntries.length + ' nomor'}
+                                size="small"
                             />
-                            <Chip label={`${callableEntries.length} nomor`} />
                         </Box>
                         <Box className="queue-counter-row">
                             <TextField
@@ -256,9 +255,6 @@ export default function OperatorTerminal({
                                     </MenuItem>
                                 ))}
                             </TextField>
-                            <Typography variant="body2" color="text.secondary">
-                                Pilih nomor pada daftar untuk memanggilnya.
-                            </Typography>
                         </Box>
                         {callableEntries.length ? (
                             <List className="waiting-list">
@@ -400,64 +396,6 @@ export default function OperatorTerminal({
                     </CardContent>
                 </Card>
             </Box>
-            <Box className="operator-terminal-lower-grid">
-                <Card>
-                    <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                        <SectionHeading
-                            eyebrow="Ringkasan sesi"
-                            title="Hari ini"
-                        />
-                        <Box className="stats-grid">
-                            <Stat label="Total" value={state.stats.total} />
-                            <Stat
-                                label="Menunggu"
-                                value={state.stats.waiting}
-                            />
-                            <Stat
-                                label="Selesai"
-                                value={state.stats.completed}
-                            />
-                            <Stat
-                                label="Dilewati"
-                                value={state.stats.skipped}
-                            />
-                        </Box>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                        <SectionHeading
-                            eyebrow="Tindakan khusus"
-                            title="Sesi antrian"
-                        />
-                        <Box className="device-empty">
-                            <EventBusyRounded />
-                            <Typography sx={{ fontWeight: 700 }}>
-                                Mulai dari awal
-                            </Typography>
-                            <Typography color="text.secondary">
-                                Gunakan reset setelah layanan hari ini
-                                benar-benar selesai.
-                            </Typography>
-                            <Button
-                                color="warning"
-                                variant="outlined"
-                                startIcon={<EventBusyRounded />}
-                                disabled={
-                                    action.processing ||
-                                    !hasSelectedCounter ||
-                                    Boolean(
-                                        state.waiting.length || state.current,
-                                    )
-                                }
-                                onClick={() => post(queue.reset.url())}
-                            >
-                                Reset sesi
-                            </Button>
-                        </Box>
-                    </CardContent>
-                </Card>
-            </Box>
             <Dialog
                 open={counterDialogOpen || !hasSelectedCounter}
                 disableEscapeKeyDown
@@ -567,17 +505,6 @@ export default function OperatorTerminal({
                     </Button>
                 </DialogActions>
             </Dialog>
-        </Box>
-    );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-    return (
-        <Box className="stat-cell">
-            <Typography variant="caption" color="text.secondary">
-                {label}
-            </Typography>
-            <Typography className="stat-value">{value}</Typography>
         </Box>
     );
 }

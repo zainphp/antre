@@ -3,6 +3,7 @@ import DevicesOtherRounded from '@mui/icons-material/DevicesOtherRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
+import StorageRounded from '@mui/icons-material/StorageRounded';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -36,6 +37,12 @@ const navigation = [
         label: 'Pengaturan',
         description: 'Atur format nomor antrian',
         icon: <SettingsRounded />,
+    },
+    {
+        href: admin.storage.url(),
+        label: 'Penyimpanan',
+        description: 'Pantau tiket dan foto tersimpan',
+        icon: <StorageRounded />,
     },
     {
         href: admin.integrations.url(),
