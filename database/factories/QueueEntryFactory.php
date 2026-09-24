@@ -39,6 +39,7 @@ class QueueEntryFactory extends Factory
             },
             'status' => QueueStatus::Waiting,
             'photo_path' => null,
+            'forfeit_reason' => null,
             'request_id' => Str::uuid()->toString(),
             'counter_id' => null,
             'device_id' => null,

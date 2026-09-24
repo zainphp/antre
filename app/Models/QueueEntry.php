@@ -20,13 +20,14 @@ use Illuminate\Support\Carbon;
  * @property string $number
  * @property QueueStatus $status
  * @property string|null $photo_path
+ * @property string|null $forfeit_reason
  * @property string|null $request_id
  * @property string|null $counter_id
  * @property string|null $device_id
  * @property Carbon|null $called_at
  * @property Carbon|null $completed_at
  */
-#[Fillable(['queue_session_id', 'sequence', 'number', 'status', 'photo_path', 'request_id', 'counter_id', 'device_id', 'called_at', 'completed_at'])]
+#[Fillable(['queue_session_id', 'sequence', 'number', 'status', 'photo_path', 'forfeit_reason', 'request_id', 'counter_id', 'device_id', 'called_at', 'completed_at'])]
 class QueueEntry extends Model
 {
     /** @use HasFactory<QueueEntryFactory> */

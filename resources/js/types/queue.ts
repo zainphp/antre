@@ -3,7 +3,8 @@ export type QueueStatus =
     | 'CALLED'
     | 'SERVING'
     | 'COMPLETED'
-    | 'SKIPPED';
+    | 'SKIPPED'
+    | 'FORFEITED';
 
 export type QueueEntry = {
     id: string;
@@ -20,6 +21,11 @@ export type QueueCounter = {
     current: QueueEntry | null;
 };
 
+export type QueueHistoryEntry = QueueEntry & {
+    completed_at: string | null;
+    forfeit_reason: string | null;
+};
+
 export type QueueState = {
     session: {
         date: string;
@@ -29,10 +35,12 @@ export type QueueState = {
     counters: QueueCounter[];
     waiting: QueueEntry[];
     callable?: QueueEntry[];
+    history?: QueueHistoryEntry[];
     stats: {
         total: number;
         waiting: number;
         completed: number;
         skipped: number;
+        forfeited: number;
     };
 };

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Data\ForfeitQueueData;
 use App\Data\QueueActionData;
 use App\Data\TakeQueueNumberData;
 use App\Enums\QueueStatus;
@@ -98,6 +99,20 @@ final class QueueController extends Controller
             $request,
             fn () => $queues->skip($this->device($request), $data->counter),
             'Nomor dilewati.',
+        );
+    }
+
+    public function forfeit(ForfeitQueueData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    {
+        return $this->run(
+            $request,
+            fn () => $queues->forfeit(
+                $data->counter,
+                $data->entryId,
+                $data->reason,
+                $this->device($request),
+            ),
+            'Nomor dihanguskan.',
         );
     }
 

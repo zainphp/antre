@@ -11,6 +11,7 @@ enum QueueStatus: string
     case Serving = 'SERVING';
     case Completed = 'COMPLETED';
     case Skipped = 'SKIPPED';
+    case Forfeited = 'FORFEITED';
 
     public function isActive(): bool
     {
@@ -31,7 +32,7 @@ enum QueueStatus: string
     public function isFinal(): bool
     {
         return match ($this) {
-            self::Completed, self::Skipped => true,
+            self::Completed, self::Skipped, self::Forfeited => true,
             default => false,
         };
     }
