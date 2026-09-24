@@ -13,6 +13,7 @@ use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Models\QueueSession;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -228,11 +229,11 @@ final readonly class QueueService
         return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $device, $counterName);
     }
 
-    public function reset(Device $device): QueueSession
+    public function reset(Device|User $actor): QueueSession
     {
         /** @var list<string> $photoPaths */
         $photoPaths = [];
-        $session = DB::transaction(function () use ($device, &$photoPaths): QueueSession {
+        $session = DB::transaction(function () use ($actor, &$photoPaths): QueueSession {
             $current = $this->lockCurrentSession();
             $settings = Setting::current();
             $entries = $current->entries()->get();
@@ -265,7 +266,13 @@ final readonly class QueueService
                 'status' => QueueSessionStatus::Running,
                 'started_at' => now(),
             ]);
-            $this->audit->record('queue.reset', device: $device, subject: $next, metadata: ['archived_session_id' => $current->id]);
+            $this->audit->record(
+                'queue.reset',
+                user: $actor instanceof User ? $actor : null,
+                device: $actor instanceof Device ? $actor : null,
+                subject: $next,
+                metadata: ['archived_session_id' => $current->id],
+            );
 
             return $next;
         });

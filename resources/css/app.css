@@ -254,7 +254,7 @@ select:focus-visible {
 
 .operator-terminal-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
     align-items: start;
 }
@@ -340,7 +340,7 @@ select:focus-visible {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-top: 24px;
+    margin-top: 16px;
 }
 
 .waiting-card {
@@ -367,10 +367,10 @@ select:focus-visible {
 }
 
 .waiting-list .MuiListItem-root {
-    min-height: 72px;
+    min-height: 64px;
     align-items: center;
-    gap: 16px;
-    padding-block: 14px;
+    gap: 12px;
+    padding-block: 8px;
 }
 
 .waiting-entry-content {
@@ -421,51 +421,6 @@ select:focus-visible {
     color: var(--green);
     font-size: 36px;
     margin-bottom: 8px;
-}
-
-.operator-terminal-lower-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 18px;
-    margin-top: 18px;
-}
-
-.device-empty {
-    min-height: 145px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 9px;
-}
-
-.device-empty > svg {
-    color: var(--green);
-    font-size: 30px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--line);
-}
-
-.stat-cell {
-    min-height: 94px;
-    padding: 15px 16px;
-    background: #fbfcfa;
-}
-
-.stat-value {
-    color: var(--green);
-    font-family: Georgia, serif;
-    font-size: 2.25rem !important;
-    line-height: 1 !important;
-    letter-spacing: -0.06em !important;
 }
 
 .loading-panel {
@@ -891,8 +846,7 @@ select:focus-visible {
 }
 
 @media (max-width: 850px) {
-    .operator-terminal-grid,
-    .operator-terminal-lower-grid {
+    .operator-terminal-grid {
         grid-template-columns: 1fr;
     }
 
