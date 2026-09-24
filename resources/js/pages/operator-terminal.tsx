@@ -55,9 +55,11 @@ export default function OperatorTerminal({
     const realtime = useQueueRealtime(state, { refreshOnEvent: true });
     state = realtime.state;
     const action = useForm({
-        counter: counters[0] ?? 'Loket 1',
+        counter: '',
         entry_id: null as string | null,
     });
+    const [counterDialogOpen, setCounterDialogOpen] = useState(true);
+    const hasSelectedCounter = counters.includes(action.data.counter);
     const callableEntries = state.callable ?? [];
     const displayedEntry = callableEntries.find(
         (entry) =>
@@ -75,8 +77,12 @@ export default function OperatorTerminal({
     };
 
     useEffect(() => {
-        if (!counters.includes(action.data.counter)) {
-            action.setData('counter', counters[0] ?? 'Loket 1');
+        if (
+            action.data.counter !== '' &&
+            !counters.includes(action.data.counter)
+        ) {
+            action.setData('counter', '');
+            setCounterDialogOpen(true);
         }
     }, [action, counters]);
 
@@ -211,7 +217,9 @@ export default function OperatorTerminal({
                                 variant="outlined"
                                 color="secondary"
                                 startIcon={<ReplayRounded />}
-                                disabled={action.processing}
+                                disabled={
+                                    action.processing || !hasSelectedCounter
+                                }
                                 onClick={() => post(queue.recall.url())}
                             >
                                 Panggil ulang
@@ -321,7 +329,8 @@ export default function OperatorTerminal({
                                                                 <CheckRounded />
                                                             }
                                                             disabled={
-                                                                action.processing
+                                                                action.processing ||
+                                                                !hasSelectedCounter
                                                             }
                                                             onClick={() =>
                                                                 post(
@@ -339,7 +348,8 @@ export default function OperatorTerminal({
                                                             <DoneAllRounded />
                                                         }
                                                         disabled={
-                                                            action.processing
+                                                            action.processing ||
+                                                            !hasSelectedCounter
                                                         }
                                                         onClick={() =>
                                                             setCompleteDialogOpen(
@@ -358,6 +368,7 @@ export default function OperatorTerminal({
                                                         }
                                                         disabled={
                                                             action.processing ||
+                                                            !hasSelectedCounter ||
                                                             isActiveAtAnotherCounter
                                                         }
                                                         onClick={() =>
@@ -434,6 +445,7 @@ export default function OperatorTerminal({
                                 startIcon={<EventBusyRounded />}
                                 disabled={
                                     action.processing ||
+                                    !hasSelectedCounter ||
                                     Boolean(
                                         state.waiting.length || state.current,
                                     )
@@ -446,6 +458,52 @@ export default function OperatorTerminal({
                     </CardContent>
                 </Card>
             </Box>
+            <Dialog
+                open={counterDialogOpen || !hasSelectedCounter}
+                disableEscapeKeyDown
+                maxWidth="xs"
+                fullWidth
+                aria-labelledby="counter-dialog-title"
+                aria-describedby="counter-dialog-description"
+            >
+                <DialogTitle id="counter-dialog-title">
+                    Pilih loket terlebih dahulu
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText
+                        id="counter-dialog-description"
+                        sx={{ mb: 2 }}
+                    >
+                        Pilih loket yang akan Anda gunakan sebelum mengelola
+                        antrian.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        select
+                        fullWidth
+                        label="Loket"
+                        value={action.data.counter}
+                        onChange={(event) =>
+                            action.setData('counter', event.target.value)
+                        }
+                    >
+                        {counters.map((counter) => (
+                            <MenuItem key={counter} value={counter}>
+                                {counter}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        variant="contained"
+                        disabled={!hasSelectedCounter}
+                        onClick={() => setCounterDialogOpen(false)}
+                    >
+                        Mulai mengelola
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Dialog
                 open={Boolean(photoDialog)}
                 onClose={() => setPhotoDialog(null)}
@@ -499,7 +557,7 @@ export default function OperatorTerminal({
                     <Button
                         variant="contained"
                         startIcon={<DoneAllRounded />}
-                        disabled={action.processing}
+                        disabled={action.processing || !hasSelectedCounter}
                         onClick={() => {
                             setCompleteDialogOpen(false);
                             post(queue.complete.url());
