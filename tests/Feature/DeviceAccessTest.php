@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use App\Enums\DeviceRole;
 use App\Enums\DeviceStatus;
+use App\Events\DeviceChanged;
 use App\Models\AuditEvent;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\DeviceRegistry;
 use App\Services\PairingSession;
+use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function deviceCookie(Device $device, string $credential): string
@@ -161,6 +163,30 @@ test('only administrators can assign devices', function () {
 
     $response->assertForbidden();
     expect($device->fresh()->status)->toBe(DeviceStatus::Unregistered);
+});
+
+test('device changes use the normalized device payload', function () {
+    $admin = User::factory()->administrator()->create();
+    $device = Device::factory()->unregistered()->create();
+    Event::fake([DeviceChanged::class]);
+
+    $this->actingAs($admin)->patch(route('admin.devices.assign', $device), [
+        'name' => 'Layar depan',
+        'roles' => [DeviceRole::Display->value, DeviceRole::QueueTerminal->value],
+    ])->assertRedirect();
+
+    Event::assertDispatched(
+        DeviceChanged::class,
+        fn (DeviceChanged $event): bool => data_get($event->broadcastWith(), 'device.id') === $device->id
+            && data_get($event->broadcastWith(), 'device.roles') === [
+                DeviceRole::Display->value,
+                DeviceRole::QueueTerminal->value,
+            ]
+            && data_get($event->broadcastWith(), 'device.role_labels') === [
+                DeviceRole::Display->label(),
+                DeviceRole::QueueTerminal->label(),
+            ],
+    );
 });
 
 test('device assignment requires at least one role', function () {

@@ -11,6 +11,8 @@ use App\Exceptions\QueueConflictException;
 use App\Models\Device;
 use App\Models\QueueEntry;
 use App\Services\QueueService;
+use App\Services\QueueStateService;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,15 +21,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class QueueController extends Controller
 {
-    public function take(TakeQueueNumberData $data, Request $request, QueueService $queues): JsonResponse
-    {
+    public function take(
+        TakeQueueNumberData $data,
+        Request $request,
+        QueueService $queues,
+        QueueStateService $state,
+    ): JsonResponse {
         $entry = $queues->take(
             $data->photo,
             $data->requestId,
             $this->device($request),
         );
 
-        return response()->json(['data' => $this->entryPayload($entry)], 201);
+        return response()->json(['data' => $state->entry($entry)], 201);
     }
 
     public function photo(QueueEntry $entry): StreamedResponse
@@ -53,65 +59,67 @@ final class QueueController extends Controller
 
     public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->callNext($data->counter, $this->device($request));
-
-            return back()->with('success', 'Nomor berikutnya dipanggil.');
-        } catch (QueueConflictException $exception) {
-            return $this->conflict($request, $exception);
-        }
+        return $this->run(
+            $request,
+            fn () => $queues->callNext($data->counter, $this->device($request)),
+            'Nomor berikutnya dipanggil.',
+        );
     }
 
     public function recall(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->recall($data->counter, $data->entryId, $this->device($request));
-
-            return back()->with('success', 'Nomor dipanggil kembali.');
-        } catch (QueueConflictException $exception) {
-            return $this->conflict($request, $exception);
-        }
+        return $this->run(
+            $request,
+            fn () => $queues->recall($data->counter, $data->entryId, $this->device($request)),
+            'Nomor dipanggil kembali.',
+        );
     }
 
     public function serve(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->startServing($this->device($request));
-
-            return back()->with('success', 'Nomor ditandai sedang dilayani.');
-        } catch (QueueConflictException $exception) {
-            return $this->conflict($request, $exception);
-        }
+        return $this->run(
+            $request,
+            fn () => $queues->startServing($this->device($request)),
+            'Nomor ditandai sedang dilayani.',
+        );
     }
 
     public function complete(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->complete($this->device($request));
-
-            return back()->with('success', 'Nomor selesai dilayani.');
-        } catch (QueueConflictException $exception) {
-            return $this->conflict($request, $exception);
-        }
+        return $this->run(
+            $request,
+            fn () => $queues->complete($this->device($request)),
+            'Nomor selesai dilayani.',
+        );
     }
 
     public function skip(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->skip($this->device($request));
-
-            return back()->with('success', 'Nomor dilewati.');
-        } catch (QueueConflictException $exception) {
-            return $this->conflict($request, $exception);
-        }
+        return $this->run(
+            $request,
+            fn () => $queues->skip($this->device($request)),
+            'Nomor dilewati.',
+        );
     }
 
     public function reset(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
-        try {
-            $queues->reset($this->device($request));
+        return $this->run(
+            $request,
+            fn () => $queues->reset($this->device($request)),
+            'Antrian direset. Nomor baru dimulai dari awal.',
+        );
+    }
 
-            return back()->with('success', 'Antrian direset. Nomor baru dimulai dari awal.');
+    /**
+     * @param  Closure(): mixed  $operation
+     */
+    private function run(Request $request, Closure $operation, string $success): RedirectResponse|JsonResponse
+    {
+        try {
+            $operation();
+
+            return back()->with('success', $success);
         } catch (QueueConflictException $exception) {
             return $this->conflict($request, $exception);
         }
@@ -132,18 +140,5 @@ final class QueueController extends Controller
         abort_unless($device instanceof Device, 403);
 
         return $device;
-    }
-
-    /** @return array<string, string|null> */
-    private function entryPayload(QueueEntry $entry): array
-    {
-        return [
-            'id' => $entry->id,
-            'number' => $entry->number,
-            'status' => $entry->status->value,
-            'created_at' => $entry->created_at?->toISOString(),
-            'called_at' => $entry->called_at?->toISOString(),
-            'counter' => $entry->counter?->name,
-        ];
     }
 }

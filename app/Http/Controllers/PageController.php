@@ -7,14 +7,14 @@ namespace App\Http\Controllers;
 use App\Enums\DeviceRole;
 use App\Models\Device;
 use App\Models\Setting;
-use App\Services\QueueService;
+use App\Services\QueueStateService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final class PageController extends Controller
 {
-    public function display(QueueService $queues): Response
+    public function display(QueueStateService $queues): Response
     {
         return Inertia::render('display', [
             'state' => $queues->state(),
@@ -43,7 +43,7 @@ final class PageController extends Controller
         ]);
     }
 
-    public function operatorTerminal(Request $request, QueueService $queues): Response
+    public function operatorTerminal(Request $request, QueueStateService $queues): Response
     {
         $settings = Setting::current();
         $device = $request->attributes->get('device');
