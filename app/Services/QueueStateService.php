@@ -31,10 +31,31 @@ final class QueueStateService
             ->first();
 
         if ($session === null) {
-            return $this->emptyState($settings->session_name, $includeCallable);
+            return $this->emptyState(
+                $settings->session_name,
+                $settings->counterNames(),
+                $includeCallable,
+            );
         }
 
         $session->load(['currentEntry.counter']);
+        $counterNames = $settings->counterNames();
+        $activeEntries = $session->entries()
+            ->with('counter')
+            ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
+            ->whereNotNull('counter_id')
+            ->orderByDesc('called_at')
+            ->orderByDesc('sequence')
+            ->get();
+
+        /** @var array<string, QueueEntry> $activeEntriesByCounter */
+        $activeEntriesByCounter = [];
+        foreach ($activeEntries as $entry) {
+            $counterName = $entry->counter?->name;
+            if ($counterName !== null) {
+                $activeEntriesByCounter[$counterName] ??= $entry;
+            }
+        }
 
         $waiting = $session->entries()
             ->with('counter')
@@ -63,6 +84,17 @@ final class QueueStateService
             'current' => $current?->status?->isActive()
                 ? $this->entryPayload($current, includePhoto: $includePhoto)
                 : null,
+            'counters' => array_map(
+                function (string $name) use ($activeEntriesByCounter): array {
+                    $entry = $activeEntriesByCounter[$name] ?? null;
+
+                    return [
+                        'name' => $name,
+                        'current' => $entry === null ? null : $this->entryPayload($entry),
+                    ];
+                },
+                $counterNames,
+            ),
             'waiting' => $waiting
                 ->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))
                 ->values()
@@ -95,9 +127,10 @@ final class QueueStateService
     }
 
     /**
+     * @param  non-empty-list<string>  $counterNames
      * @return array<string, mixed>
      */
-    private function emptyState(string $sessionName, bool $includeCallable): array
+    private function emptyState(string $sessionName, array $counterNames, bool $includeCallable): array
     {
         $state = [
             'session' => [
@@ -105,6 +138,10 @@ final class QueueStateService
                 'service_name' => $sessionName,
             ],
             'current' => null,
+            'counters' => array_map(
+                static fn (string $name): array => ['name' => $name, 'current' => null],
+                $counterNames,
+            ),
             'waiting' => [],
             'stats' => [
                 'total' => 0,

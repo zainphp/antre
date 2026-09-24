@@ -50,19 +50,53 @@ export default function Display({
                 </Box>
                 <ConnectionBadge state={realtime.connection} />
             </Box>
-            <Box component="main" className="display-center" aria-live="polite">
-                <Typography className="display-label">
-                    Nomor yang dipanggil
-                </Typography>
-                <Typography
-                    className={`display-number ${state.current ? 'is-current' : ''}`}
-                    key={state.current?.id ?? 'empty'}
+            <Box component="main" className="display-main" aria-live="polite">
+                <Box className="display-main-heading">
+                    <Box>
+                        <Typography className="display-label">
+                            Status loket
+                        </Typography>
+                        <Typography component="h2" className="display-title">
+                            Nomor yang sedang dilayani
+                        </Typography>
+                    </Box>
+                </Box>
+                <Box
+                    className="display-counter-grid"
+                    data-counter-count={state.counters.length}
+                    aria-label="Nomor pada setiap loket"
                 >
-                    {state.current?.number ?? '— — —'}
-                </Typography>
-                <Typography className="display-counter">
-                    {state.current?.counter ?? 'Menunggu panggilan berikutnya'}
-                </Typography>
+                    {state.counters.map((counter) => {
+                        const isLatest =
+                            counter.current?.id === state.current?.id;
+
+                        return (
+                            <Box
+                                component="article"
+                                className={`display-counter-card ${counter.current ? 'has-current' : ''} ${isLatest ? 'is-latest' : ''}`}
+                                key={counter.name}
+                                aria-label={`${counter.name}: ${counter.current?.number ?? 'belum ada panggilan'}`}
+                            >
+                                <Typography className="display-counter-name">
+                                    {counter.name}
+                                </Typography>
+                                <Typography
+                                    className={`display-counter-number ${isLatest ? 'is-current' : ''}`}
+                                    key={`${counter.name}:${counter.current?.id ?? 'empty'}:${counter.current?.called_at ?? ''}`}
+                                >
+                                    {counter.current?.number ?? '—'}
+                                </Typography>
+                                <Typography className="display-counter-status">
+                                    {counter.current?.status === 'SERVING'
+                                        ? 'Sedang dilayani'
+                                        : counter.current
+                                          ? 'Dipanggil'
+                                          : 'Belum ada panggilan'}
+                                </Typography>
+                            </Box>
+                        );
+                    })}
+                </Box>
             </Box>
             <Box component="footer" className="display-footer">
                 <Box className="display-footer-info">

@@ -61,6 +61,13 @@ test('call next is serialized per counter while counters stay active independent
         ->and($next->status)->toBe(QueueStatus::Called)
         ->and($otherCounter->fresh()->status)->toBe(QueueStatus::Called)
         ->and($queues->state()['current']['number'])->toBe($next->number);
+
+    $state = $queues->state();
+    expect($state['counters'])->toHaveCount(2)
+        ->and($state['counters'][0]['name'])->toBe('Loket 1')
+        ->and($state['counters'][0]['current']['number'])->toBe('003')
+        ->and($state['counters'][1]['name'])->toBe('Loket 2')
+        ->and($state['counters'][1]['current']['number'])->toBe('002');
 });
 
 test('an active number cannot be called from another counter', function () {

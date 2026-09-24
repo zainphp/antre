@@ -15,12 +15,18 @@ export type QueueEntry = {
     photo_url?: string;
 };
 
+export type QueueCounter = {
+    name: string;
+    current: QueueEntry | null;
+};
+
 export type QueueState = {
     session: {
         date: string;
         service_name: string;
     };
     current: QueueEntry | null;
+    counters: QueueCounter[];
     waiting: QueueEntry[];
     callable?: QueueEntry[];
     stats: {

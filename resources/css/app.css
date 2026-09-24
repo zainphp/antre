@@ -688,15 +688,14 @@ select:focus-visible {
     margin-top: 3px !important;
 }
 
-.display-center {
+.display-main {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    text-align: center;
-    padding: clamp(16px, 3.9vh, 42px) 0;
+    gap: clamp(14px, 2.5vh, 28px);
+    padding: clamp(18px, 2.5vh, 34px) 0;
 }
 
 .display-label {
@@ -706,31 +705,82 @@ select:focus-visible {
     text-transform: uppercase;
 }
 
-.display-number {
-    color: #fff;
-    font-family: Georgia, serif;
-    font-size: clamp(5rem, min(25vw, 32vh), 22rem) !important;
-    line-height: 0.78 !important;
-    letter-spacing: -0.1em !important;
-    margin: clamp(28px, 4.5vh, 48px) 0 clamp(18px, 2.8vh, 30px) !important;
-    text-shadow: 0 10px 60px rgba(0, 0, 0, 0.16);
+.display-main-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
 }
 
-.display-number.is-current {
+.display-title {
+    color: #fff;
+    font-size: clamp(1.15rem, 2.4vw, 2rem) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em;
+    margin-top: 4px !important;
+}
+
+.display-counter-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    align-content: center;
+    gap: clamp(10px, 1.4vw, 20px);
+}
+
+.display-counter-card {
+    min-width: 0;
+    min-height: clamp(112px, 15vh, 210px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(14px, 1.8vw, 26px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.07);
+    transition:
+        background-color 180ms ease,
+        border-color 180ms ease;
+}
+
+.display-counter-card.has-current {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.display-counter-card.is-latest {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px rgba(212, 168, 84, 0.32);
+}
+
+.display-counter-name {
+    color: var(--gold);
+    font-size: clamp(0.8rem, 1.5vw, 1.15rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+}
+
+.display-counter-number {
+    color: #fff;
+    font-family: Georgia, serif;
+    font-size: clamp(3rem, min(8vw, 13vh), 9rem) !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.08em !important;
+    line-height: 0.85 !important;
+    margin: auto 0 clamp(10px, 1.5vh, 18px) !important;
+    text-shadow: 0 8px 40px rgba(0, 0, 0, 0.14);
+}
+
+.display-counter-number.is-current {
     animation: called-in 0.35s ease-out both;
 }
 
-.display-counter {
-    color: var(--gold);
-    font-size: clamp(1.4rem, min(4vw, 6vh), 3.8rem) !important;
-    font-weight: 700 !important;
+.display-counter-status {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: clamp(0.72rem, 1vw, 0.95rem) !important;
 }
 
-.display-waiting {
-    font-family: Georgia, serif;
-    font-size: clamp(1.25rem, min(2.4vw, 4vh), 2.75rem) !important;
-    color: rgba(255, 255, 255, 0.86);
-    margin: 0 !important;
+.display-counter-card.has-current .display-counter-status {
+    color: rgba(255, 255, 255, 0.82);
 }
 
 .display-footer-info {
@@ -979,12 +1029,30 @@ select:focus-visible {
         flex-direction: column;
     }
 
-    .display-center {
+    .display-main {
         padding-inline: 12px;
     }
 
-    .display-number {
-        font-size: clamp(6rem, 29vw, 11rem) !important;
+    .display-main-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .display-counter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .display-counter-grid[data-counter-count='1'] {
+        grid-template-columns: 1fr;
+    }
+
+    .display-counter-card {
+        min-height: 132px;
+    }
+
+    .display-counter-number {
+        font-size: clamp(2.8rem, 12vw, 5.5rem) !important;
     }
 
     .self-service-header {
@@ -1004,21 +1072,22 @@ select:focus-visible {
         padding-bottom: max(env(safe-area-inset-bottom), 12px);
     }
 
-    .display-center {
+    .display-main {
+        gap: 12px;
         padding-block: 8px;
     }
 
-    .display-number {
-        font-size: clamp(4.5rem, min(25vw, 18vh), 7rem) !important;
-        margin-block: 12px 8px !important;
+    .display-counter-grid {
+        gap: 10px;
     }
 
-    .display-counter {
-        font-size: clamp(1.25rem, min(4vw, 4.5vh), 2rem) !important;
+    .display-counter-card {
+        min-height: 100px;
+        padding: 12px 14px;
     }
 
-    .display-waiting {
-        font-size: clamp(1.1rem, min(2.4vw, 3.2vh), 2rem) !important;
+    .display-counter-number {
+        font-size: clamp(2.6rem, min(7vw, 8vh), 5.5rem) !important;
     }
 
     .display-public-monitor {
