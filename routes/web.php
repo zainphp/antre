@@ -48,6 +48,7 @@ Route::middleware(['device.auth', 'device.role:OPERATOR_TERMINAL'])->group(funct
     Route::post('/operator-terminal/queue/serve', [QueueController::class, 'serve'])->name('queue.serve');
     Route::post('/operator-terminal/queue/complete', [QueueController::class, 'complete'])->name('queue.complete');
     Route::post('/operator-terminal/queue/skip', [QueueController::class, 'skip'])->name('queue.skip');
+    Route::post('/operator-terminal/queue/forfeit', [QueueController::class, 'forfeit'])->name('queue.forfeit');
     Route::post('/operator-terminal/queue/reset', [QueueController::class, 'reset'])->name('queue.reset');
 });
 

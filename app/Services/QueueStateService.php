@@ -24,6 +24,7 @@ final class QueueStateService
         bool $includeCallable = false,
         bool $includePhoto = false,
         int $waitingLimit = 20,
+        bool $includeHistory = false,
     ): array {
         $settings = Setting::current();
         $session = QueueSession::query()
@@ -35,6 +36,7 @@ final class QueueStateService
                 $settings->session_name,
                 $settings->counterNames(),
                 $includeCallable,
+                $includeHistory,
             );
         }
 
@@ -104,13 +106,19 @@ final class QueueStateService
                 'waiting' => $waitingCount,
                 'completed' => $session->entries()->where('status', QueueStatus::Completed)->count(),
                 'skipped' => $session->entries()->where('status', QueueStatus::Skipped)->count(),
+                'forfeited' => $session->entries()->where('status', QueueStatus::Forfeited)->count(),
             ],
         ];
 
         if ($includeCallable) {
             $callable = $session->entries()
                 ->with('counter')
-                ->where('status', '!=', QueueStatus::Completed)
+                ->whereIn('status', [
+                    QueueStatus::Waiting->value,
+                    QueueStatus::Called->value,
+                    QueueStatus::Serving->value,
+                    QueueStatus::Skipped->value,
+                ])
                 ->orderBy('sequence')
                 ->get();
 
@@ -123,6 +131,16 @@ final class QueueStateService
                 ->all();
         }
 
+        if ($includeHistory) {
+            $state['history'] = $session->entries()
+                ->with('counter')
+                ->orderByDesc('sequence')
+                ->get()
+                ->map(fn (QueueEntry $entry): array => $this->historyPayload($entry))
+                ->values()
+                ->all();
+        }
+
         return $state;
     }
 
@@ -130,8 +148,12 @@ final class QueueStateService
      * @param  non-empty-list<string>  $counterNames
      * @return array<string, mixed>
      */
-    private function emptyState(string $sessionName, array $counterNames, bool $includeCallable): array
-    {
+    private function emptyState(
+        string $sessionName,
+        array $counterNames,
+        bool $includeCallable,
+        bool $includeHistory,
+    ): array {
         $state = [
             'session' => [
                 'date' => now()->toDateString(),
@@ -148,6 +170,7 @@ final class QueueStateService
                 'waiting' => 0,
                 'completed' => 0,
                 'skipped' => 0,
+                'forfeited' => 0,
             ],
         ];
 
@@ -155,7 +178,21 @@ final class QueueStateService
             $state['callable'] = [];
         }
 
+        if ($includeHistory) {
+            $state['history'] = [];
+        }
+
         return $state;
+    }
+
+    /** @return array<string, mixed> */
+    private function historyPayload(QueueEntry $entry): array
+    {
+        return [
+            ...$this->entryPayload($entry),
+            'completed_at' => $entry->completed_at?->toISOString(),
+            'forfeit_reason' => $entry->forfeit_reason,
+        ];
     }
 
     /** @return array<string, mixed> */

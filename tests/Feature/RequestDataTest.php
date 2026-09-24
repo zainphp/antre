@@ -143,6 +143,28 @@ test('queue action data authorizes an operator terminal request', function () {
         ->counter->name->toBe('Loket 1');
 });
 
+test('forfeit queue data requires a reason', function () {
+    User::factory()->administrator()->create();
+    $credential = 'operator-forfeit-secret';
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create([
+        'credential_hash' => hash('sha256', $credential),
+    ]);
+    $queues = app(QueueService::class);
+    $entry = $queues->take(null, (string) Str::uuid(), $device);
+    $queues->callNext('Loket 1', $device);
+
+    $response = $this->withCookie(
+        DeviceRegistry::COOKIE,
+        $device->id.'.'.$credential,
+    )->withHeaders(['Accept' => 'application/json'])->post(route('queue.forfeit'), [
+        'counter' => 'Loket 1',
+        'entry_id' => $entry->id,
+    ]);
+
+    $response->assertUnprocessable()->assertJsonValidationErrors('reason');
+    expect($entry->fresh()->status)->toBe(QueueStatus::Called);
+});
+
 test('operator terminals can recall a selected unfinished number', function () {
     User::factory()->administrator()->create();
     $credential = 'operator-recall-secret';

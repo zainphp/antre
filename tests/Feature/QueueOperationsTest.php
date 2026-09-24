@@ -6,6 +6,7 @@ use App\Enums\DeviceRole;
 use App\Enums\QueueStatus;
 use App\Events\QueueChanged;
 use App\Exceptions\QueueConflictException;
+use App\Models\AuditEvent;
 use App\Models\Device;
 use App\Models\QueueSession;
 use App\Models\Setting;
@@ -127,6 +128,32 @@ test('operators can recall any unfinished number', function () {
         ->and($recalledWaiting->counter?->name)->toBe('Loket 2')
         ->and($first->fresh()->status)->toBe(QueueStatus::Skipped)
         ->and($second->fresh()->status)->toBe(QueueStatus::Completed);
+});
+
+test('forfeiting an active number records a reason and removes it from callable history', function () {
+    Event::fake([QueueChanged::class]);
+    $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
+    $queues = app(QueueService::class);
+    $entry = $queues->take(null, (string) Str::uuid(), $device);
+    $queues->callNext('Loket 1', $device);
+
+    $forfeited = $queues->forfeit(
+        'Loket 1',
+        $entry->id,
+        'Pelanggan tidak hadir setelah dipanggil.',
+        $device,
+    );
+
+    expect($forfeited->status)->toBe(QueueStatus::Forfeited)
+        ->and($forfeited->forfeit_reason)->toBe('Pelanggan tidak hadir setelah dipanggil.')
+        ->and($queues->state(includeCallable: true)['callable'])->toBeEmpty()
+        ->and($queues->state(includeHistory: true)['history'][0]['forfeit_reason'])
+        ->toBe('Pelanggan tidak hadir setelah dipanggil.')
+        ->and(AuditEvent::query()->where('event_name', 'queue.forfeited')->exists())
+        ->toBeTrue();
+
+    expect(fn () => $queues->recall('Loket 1', $entry->id, $device))
+        ->toThrow(QueueConflictException::class, 'dipanggil kembali');
 });
 
 test('reset archives the current session and starts numbering again', function () {

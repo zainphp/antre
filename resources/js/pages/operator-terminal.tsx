@@ -1,8 +1,10 @@
 import CallRounded from '@mui/icons-material/CallRounded';
 import CheckRounded from '@mui/icons-material/CheckRounded';
+import BlockRounded from '@mui/icons-material/BlockRounded';
 import ConfirmationNumberRounded from '@mui/icons-material/ConfirmationNumberRounded';
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
+import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import ReplayRounded from '@mui/icons-material/ReplayRounded';
 import Alert from '@mui/material/Alert';
@@ -20,6 +22,12 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { Head, useForm, usePage } from '@inertiajs/react';
@@ -30,6 +38,7 @@ import { display, queueTerminal } from '@/routes';
 import queue from '@/routes/queue';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
 import type { QueueState, QueueStatus } from '@/types/queue';
+import { formatTime } from '@/utils/format';
 
 const statusLabels: Record<QueueStatus, string> = {
     WAITING: 'Menunggu',
@@ -37,6 +46,7 @@ const statusLabels: Record<QueueStatus, string> = {
     SERVING: 'Sedang dilayani',
     COMPLETED: 'Selesai',
     SKIPPED: 'Dilewati',
+    FORFEITED: 'Hangus',
 };
 
 export default function OperatorTerminal({
@@ -66,10 +76,18 @@ export default function OperatorTerminal({
     );
     const canRecall = Boolean(displayedEntry);
     const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+    const [forfeitDialogOpen, setForfeitDialogOpen] = useState(false);
+    const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+    const forfeitForm = useForm({
+        counter: '',
+        entry_id: null as string | null,
+        reason: '',
+    });
     const [photoDialog, setPhotoDialog] = useState<{
         number: string;
         url: string;
     } | null>(null);
+    const historyEntries = state.history ?? [];
     const { errors } = usePage().props as unknown as {
         errors: { queue?: string };
     };
@@ -87,6 +105,28 @@ export default function OperatorTerminal({
     const post = (url: string, entryId: string | null = null) => {
         action.transform((data) => ({ ...data, entry_id: entryId }));
         action.post(url, { preserveScroll: true });
+    };
+
+    const openForfeitDialog = () => {
+        if (!displayedEntry) {
+            return;
+        }
+
+        forfeitForm.clearErrors();
+        forfeitForm.setData('counter', action.data.counter);
+        forfeitForm.setData('entry_id', displayedEntry.id);
+        forfeitForm.setData('reason', '');
+        setForfeitDialogOpen(true);
+    };
+
+    const submitForfeit = () => {
+        forfeitForm.post(queue.forfeit.url(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setForfeitDialogOpen(false);
+                forfeitForm.reset();
+            },
+        });
     };
 
     return (
@@ -209,20 +249,36 @@ export default function OperatorTerminal({
                                 </Typography>
                             </Box>
                         </Box>
-                        {canRecall && (
-                            <Button
-                                className="display-control current-recall"
-                                variant="outlined"
-                                color="secondary"
-                                startIcon={<ReplayRounded />}
-                                disabled={
-                                    action.processing || !hasSelectedCounter
-                                }
-                                onClick={() => post(queue.recall.url())}
-                            >
-                                Panggil ulang
-                            </Button>
-                        )}
+                        <Box className="current-card-actions">
+                            {displayedEntry && (
+                                <Button
+                                    className="current-forfeit"
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<BlockRounded />}
+                                    disabled={
+                                        action.processing || !hasSelectedCounter
+                                    }
+                                    onClick={openForfeitDialog}
+                                >
+                                    Hangus
+                                </Button>
+                            )}
+                            {canRecall && (
+                                <Button
+                                    className="display-control current-recall"
+                                    variant="outlined"
+                                    color="secondary"
+                                    startIcon={<ReplayRounded />}
+                                    disabled={
+                                        action.processing || !hasSelectedCounter
+                                    }
+                                    onClick={() => post(queue.recall.url())}
+                                >
+                                    Panggil ulang
+                                </Button>
+                            )}
+                        </Box>
                     </CardContent>
                 </Card>
                 <Card className="waiting-card">
@@ -231,10 +287,24 @@ export default function OperatorTerminal({
                             <Typography className="eyebrow">
                                 Sila panggil nomor di bawah
                             </Typography>
-                            <Chip
-                                label={callableEntries.length + ' nomor'}
-                                size="small"
-                            />
+                            <Stack
+                                className="waiting-header-actions"
+                                direction="row"
+                                spacing={1}
+                                sx={{ alignItems: 'center' }}
+                            >
+                                <Chip
+                                    label={callableEntries.length + ' nomor'}
+                                    size="small"
+                                />
+                                <Button
+                                    size="small"
+                                    startIcon={<HistoryRounded />}
+                                    onClick={() => setHistoryDialogOpen(true)}
+                                >
+                                    Riwayat
+                                </Button>
+                            </Stack>
                         </Box>
                         <Box className="queue-counter-row">
                             <TextField
@@ -398,7 +468,7 @@ export default function OperatorTerminal({
             </Box>
             <Dialog
                 open={counterDialogOpen || !hasSelectedCounter}
-                disableEscapeKeyDown
+                onClose={() => undefined}
                 maxWidth="xs"
                 fullWidth
                 aria-labelledby="counter-dialog-title"
@@ -502,6 +572,151 @@ export default function OperatorTerminal({
                         }}
                     >
                         Selesaikan
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={forfeitDialogOpen}
+                onClose={() => setForfeitDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                aria-labelledby="forfeit-dialog-title"
+                aria-describedby="forfeit-dialog-description"
+            >
+                <DialogTitle id="forfeit-dialog-title">
+                    Hanguskan nomor ini?
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="forfeit-dialog-description">
+                        Nomor {displayedEntry?.number ?? 'ini'} tidak akan bisa
+                        dipanggil lagi. Tuliskan alasan agar riwayatnya jelas.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        label="Alasan hangus"
+                        value={forfeitForm.data.reason}
+                        onChange={(event) =>
+                            forfeitForm.setData('reason', event.target.value)
+                        }
+                        error={Boolean(forfeitForm.errors.reason)}
+                        helperText={
+                            forfeitForm.errors.reason ??
+                            'Contoh: pelanggan tidak hadir setelah dipanggil.'
+                        }
+                        sx={{ mt: 2 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setForfeitDialogOpen(false)}>
+                        Batal
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        startIcon={<BlockRounded />}
+                        disabled={
+                            forfeitForm.processing ||
+                            forfeitForm.data.reason.trim().length < 3
+                        }
+                        onClick={submitForfeit}
+                    >
+                        Hanguskan nomor
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={historyDialogOpen}
+                onClose={() => setHistoryDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+                scroll="paper"
+                aria-labelledby="history-dialog-title"
+            >
+                <DialogTitle id="history-dialog-title">
+                    Riwayat sesi antrian
+                </DialogTitle>
+                <DialogContent dividers>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Semua nomor pada sesi hari ini, termasuk yang sudah
+                        selesai atau hangus.
+                    </DialogContentText>
+                    {historyEntries.length ? (
+                        <TableContainer className="operator-history-table-container">
+                            <Table
+                                aria-label="Riwayat sesi antrian"
+                                className="operator-history-table"
+                                size="small"
+                            >
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell scope="col">Nomor</TableCell>
+                                        <TableCell scope="col">
+                                            Status
+                                        </TableCell>
+                                        <TableCell scope="col">Loket</TableCell>
+                                        <TableCell scope="col">Waktu</TableCell>
+                                        <TableCell scope="col">
+                                            Keterangan
+                                        </TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {historyEntries.map((entry) => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell className="history-number-cell">
+                                                {entry.number}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={
+                                                        statusLabels[
+                                                            entry.status
+                                                        ]
+                                                    }
+                                                    size="small"
+                                                    color={
+                                                        entry.status ===
+                                                        'FORFEITED'
+                                                            ? 'error'
+                                                            : entry.status ===
+                                                                'COMPLETED'
+                                                              ? 'success'
+                                                              : 'default'
+                                                    }
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {entry.counter ??
+                                                    'Belum dipanggil'}
+                                            </TableCell>
+                                            <TableCell className="history-time-cell">
+                                                {formatTime(
+                                                    entry.completed_at ??
+                                                        entry.called_at ??
+                                                        entry.created_at,
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="history-reason-cell">
+                                                {entry.forfeit_reason ?? '—'}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    ) : (
+                        <Typography color="text.secondary">
+                            Belum ada riwayat nomor pada sesi ini.
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setHistoryDialogOpen(false)}>
+                        Tutup
                     </Button>
                 </DialogActions>
             </Dialog>

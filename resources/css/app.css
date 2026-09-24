@@ -351,8 +351,16 @@ select:focus-visible {
     min-width: 145px;
 }
 
+.current-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 28px;
+}
+
 .current-recall {
-    margin-top: 28px !important;
+    margin-top: 0 !important;
 }
 
 .section-title-row {
@@ -421,6 +429,45 @@ select:focus-visible {
     color: var(--green);
     font-size: 36px;
     margin-bottom: 8px;
+}
+
+.operator-history-table-container {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+
+.operator-history-table {
+    min-width: 620px;
+}
+
+.operator-history-table .MuiTableCell-root {
+    padding: 9px 12px;
+    vertical-align: top;
+}
+
+.operator-history-table .MuiTableHead-root .MuiTableCell-root {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.history-number-cell {
+    font-weight: 800 !important;
+    white-space: nowrap;
+}
+
+.history-time-cell {
+    white-space: nowrap;
+}
+
+.history-reason-cell {
+    min-width: 190px;
+    max-width: 280px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
 }
 
 .loading-panel {
@@ -952,6 +999,15 @@ select:focus-visible {
         margin: 0 !important;
     }
 
+    .current-card-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .current-card-actions .MuiButton-root {
+        width: 100%;
+    }
+
     .operator-photo-frame {
         width: 112px;
         height: 112px;
@@ -969,6 +1025,10 @@ select:focus-visible {
 
     .waiting-card .section-title-row > .MuiChip-root {
         align-self: flex-start;
+    }
+
+    .waiting-header-actions {
+        flex-wrap: wrap;
     }
 
     .waiting-list .MuiListItem-root {
@@ -1012,6 +1072,10 @@ select:focus-visible {
     .waiting-entry-actions .MuiButton-root {
         min-width: 0;
         padding-inline: 10px;
+    }
+
+    .operator-history-table-container {
+        margin-inline: -4px;
     }
 
     .queue-counter-row .MuiTextField-root {

@@ -33,8 +33,14 @@ final readonly class QueueService
         bool $includeCallable = false,
         bool $includePhoto = false,
         int $waitingLimit = 20,
+        bool $includeHistory = false,
     ): array {
-        return $this->stateService->state($includeCallable, $includePhoto, $waitingLimit);
+        return $this->stateService->state(
+            includeCallable: $includeCallable,
+            includePhoto: $includePhoto,
+            waitingLimit: $waitingLimit,
+            includeHistory: $includeHistory,
+        );
     }
 
     public function take(
@@ -227,6 +233,47 @@ final readonly class QueueService
     public function skip(Device $device, ?string $counterName = null): QueueEntry
     {
         return $this->finishCurrent(QueueStatus::Skipped, 'queue.skipped', 'Nomor ini belum dapat dilewati.', $device, $counterName);
+    }
+
+    public function forfeit(
+        ?string $counterName,
+        ?string $entryId,
+        string $reason,
+        Device $device,
+    ): QueueEntry {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new QueueConflictException('Alasan hangus wajib diisi.');
+        }
+
+        $entry = DB::transaction(function () use ($counterName, $device, $entryId, $reason): QueueEntry {
+            [$session, $entry] = $this->lockActiveEntry($counterName);
+            if ($entryId !== null && $entry->id !== $entryId) {
+                throw new QueueConflictException('Nomor aktif sudah berubah. Periksa kembali sebelum menghanguskan.');
+            }
+
+            $entry->update([
+                'status' => QueueStatus::Forfeited,
+                'forfeit_reason' => $reason,
+                'completed_at' => now(),
+            ]);
+            $this->audit->record(
+                'queue.forfeited',
+                device: $device,
+                subject: $entry,
+                metadata: [
+                    'counter' => $entry->counter?->name,
+                    'reason' => $reason,
+                ],
+            );
+            $this->refreshCurrentPointer($session);
+
+            return $entry->load('counter');
+        });
+
+        $this->broadcastStateChanged();
+
+        return $entry;
     }
 
     public function reset(Device|User $actor): QueueSession
