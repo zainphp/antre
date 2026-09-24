@@ -20,7 +20,10 @@ use Illuminate\Support\Facades\Storage;
 
 final readonly class QueueService
 {
-    public function __construct(private AuditLogger $audit) {}
+    public function __construct(
+        private AuditLogger $audit,
+        private QueueStateService $stateService,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -30,75 +33,7 @@ final readonly class QueueService
         bool $includePhoto = false,
         int $waitingLimit = 20,
     ): array {
-        $settings = Setting::current();
-        $session = $this->currentSession(create: false);
-        if ($session === null) {
-            $state = [
-                'session' => [
-                    'date' => now()->toDateString(),
-                    'service_name' => $settings->session_name,
-                ],
-                'current' => null,
-                'waiting' => [],
-                'stats' => [
-                    'total' => 0,
-                    'waiting' => 0,
-                    'completed' => 0,
-                    'skipped' => 0,
-                ],
-            ];
-
-            if ($includeCallable) {
-                $state['callable'] = [];
-            }
-
-            return $state;
-        }
-
-        $session->load(['currentEntry.counter']);
-
-        $waiting = $session->entries()
-            ->with('counter')
-            ->where('status', QueueStatus::Waiting)
-            ->orderBy('sequence')
-            ->limit($waitingLimit)
-            ->get();
-        $waitingCount = $session->entries()
-            ->where('status', QueueStatus::Waiting)
-            ->count();
-        $state = [
-            'session' => [
-                'date' => $session->business_date->format('Y-m-d'),
-                'service_name' => $settings->session_name,
-            ],
-            'current' => $session->currentEntry && in_array(
-                $session->currentEntry->status,
-                [QueueStatus::Called, QueueStatus::Serving],
-                true,
-            ) ? $this->entryPayload($session->currentEntry, includePhoto: $includePhoto) : null,
-            'waiting' => $waiting->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))->values()->all(),
-            'stats' => [
-                'total' => $session->entries()->count(),
-                'waiting' => $waitingCount,
-                'completed' => $session->entries()->where('status', QueueStatus::Completed)->count(),
-                'skipped' => $session->entries()->where('status', QueueStatus::Skipped)->count(),
-            ],
-        ];
-
-        if ($includeCallable) {
-            $callable = $session->entries()
-                ->with('counter')
-                ->where('status', '!=', QueueStatus::Completed)
-                ->orderBy('sequence')
-                ->get();
-
-            $state['callable'] = $callable
-                ->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))
-                ->values()
-                ->all();
-        }
-
-        return $state;
+        return $this->stateService->state($includeCallable, $includePhoto, $waitingLimit);
     }
 
     public function take(
@@ -143,7 +78,7 @@ final readonly class QueueService
             throw $exception;
         }
 
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $entry;
     }
@@ -181,7 +116,7 @@ final readonly class QueueService
             return $entry->load('counter');
         });
 
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $entry;
     }
@@ -214,7 +149,7 @@ final readonly class QueueService
                     ->whereKey($session->current_entry_id)
                     ->lockForUpdate()
                     ->first();
-                if (! $current || ! in_array($current->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+                if (! $current || ! $current->status->isActive()) {
                     throw new QueueConflictException('Nomor aktif tidak dapat dilewati saat ini.');
                 }
 
@@ -222,7 +157,7 @@ final readonly class QueueService
                 $session->update(['current_entry_id' => null, 'current_counter_id' => null]);
             }
 
-            if (in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+            if ($entry->status->isActive()) {
                 if ($session->current_entry_id !== $entry->id) {
                     throw new QueueConflictException('Nomor ini sedang tidak aktif.');
                 }
@@ -234,7 +169,7 @@ final readonly class QueueService
                 return $entry->load('counter');
             }
 
-            if (! in_array($entry->status, [QueueStatus::Waiting, QueueStatus::Skipped], true)) {
+            if (! $entry->status->canBeCalled()) {
                 throw new QueueConflictException('Nomor ini belum dapat dipanggil kembali.');
             }
 
@@ -260,7 +195,7 @@ final readonly class QueueService
             return $entry->load('counter');
         });
 
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $entry;
     }
@@ -279,7 +214,7 @@ final readonly class QueueService
             return $entry->load('counter');
         });
 
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $entry;
     }
@@ -308,7 +243,7 @@ final readonly class QueueService
                 }
 
                 $updates = ['photo_path' => null];
-                if (! in_array($entry->status, [QueueStatus::Completed, QueueStatus::Skipped], true)) {
+                if (! $entry->status->isFinal()) {
                     $updates['status'] = QueueStatus::Skipped;
                     $updates['completed_at'] = now();
                 }
@@ -337,7 +272,7 @@ final readonly class QueueService
         });
 
         $this->deletePhotos($photoPaths);
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $session;
     }
@@ -346,7 +281,7 @@ final readonly class QueueService
     {
         $entry = DB::transaction(function () use ($status, $eventName, $message, $device): QueueEntry {
             [$session, $entry] = $this->lockCurrentEntry();
-            if (! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+            if (! $entry->status->isActive()) {
                 throw new QueueConflictException($message);
             }
 
@@ -364,7 +299,7 @@ final readonly class QueueService
             return $entry->load('counter');
         });
 
-        event(new QueueChanged($this->state()));
+        $this->broadcastStateChanged();
 
         return $entry;
     }
@@ -376,6 +311,11 @@ final readonly class QueueService
             'completed_at' => now(),
         ]);
         $this->audit->record('queue.skipped', device: $device, subject: $entry);
+    }
+
+    private function broadcastStateChanged(): void
+    {
+        event(new QueueChanged($this->state()));
     }
 
     /** @param list<string> $photoPaths */
@@ -449,7 +389,7 @@ final readonly class QueueService
 
     private function ensureActive(QueueEntry $entry): void
     {
-        if (! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)) {
+        if (! $entry->status->isActive()) {
             throw new QueueConflictException('Nomor ini belum dapat dipanggil ulang.');
         }
     }
@@ -484,28 +424,5 @@ final readonly class QueueService
         }
 
         return ($prefix ?? '').str_pad((string) $sequence, $digits, '0', STR_PAD_LEFT);
-    }
-
-    /** @return array<string, mixed> */
-    private function entryPayload(QueueEntry $entry, bool $includePhoto = false): array
-    {
-        $payload = [
-            'id' => $entry->id,
-            'number' => $entry->number,
-            'status' => $entry->status->value,
-            'counter' => $entry->counter?->name,
-            'created_at' => $entry->created_at?->toISOString(),
-            'called_at' => $entry->called_at?->toISOString(),
-        ];
-
-        if ($includePhoto && $entry->photo_path !== null) {
-            $payload['photo_url'] = route(
-                'operator.queue.photo',
-                ['entry' => $entry->getKey()],
-                false,
-            );
-        }
-
-        return $payload;
     }
 }
