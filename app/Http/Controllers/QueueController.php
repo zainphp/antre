@@ -44,7 +44,6 @@ final class QueueController extends Controller
         if (
             $photoPath === null
             || $session->active_key !== now()->toDateString()
-            || $session->current_entry_id !== $entry->id
             || ! in_array($entry->status, [QueueStatus::Called, QueueStatus::Serving], true)
             || ! Storage::disk('local')->exists($photoPath)
         ) {
@@ -79,7 +78,7 @@ final class QueueController extends Controller
     {
         return $this->run(
             $request,
-            fn () => $queues->startServing($this->device($request)),
+            fn () => $queues->startServing($this->device($request), $data->counter),
             'Nomor ditandai sedang dilayani.',
         );
     }
@@ -88,7 +87,7 @@ final class QueueController extends Controller
     {
         return $this->run(
             $request,
-            fn () => $queues->complete($this->device($request)),
+            fn () => $queues->complete($this->device($request), $data->counter),
             'Nomor selesai dilayani.',
         );
     }
@@ -97,7 +96,7 @@ final class QueueController extends Controller
     {
         return $this->run(
             $request,
-            fn () => $queues->skip($this->device($request)),
+            fn () => $queues->skip($this->device($request), $data->counter),
             'Nomor dilewati.',
         );
     }

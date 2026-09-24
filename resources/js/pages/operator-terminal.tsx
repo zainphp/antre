@@ -59,8 +59,12 @@ export default function OperatorTerminal({
         entry_id: null as string | null,
     });
     const callableEntries = state.callable ?? [];
-    const displayedEntry = state.current;
-    const canRecall = Boolean(state.current);
+    const displayedEntry = callableEntries.find(
+        (entry) =>
+            (entry.status === 'CALLED' || entry.status === 'SERVING') &&
+            entry.counter === action.data.counter,
+    );
+    const canRecall = Boolean(displayedEntry);
     const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
     const [photoDialog, setPhotoDialog] = useState<{
         number: string;
@@ -196,7 +200,7 @@ export default function OperatorTerminal({
                                     {displayedEntry?.number ?? '— — —'}
                                 </Typography>
                                 <Typography className="current-counter">
-                                    {state.current?.counter ??
+                                    {displayedEntry?.counter ??
                                         'Belum ada nomor aktif'}
                                 </Typography>
                             </Box>
@@ -252,7 +256,12 @@ export default function OperatorTerminal({
                             <List className="waiting-list">
                                 {callableEntries.map((entry) => {
                                     const isCurrent =
-                                        state.current?.id === entry.id;
+                                        displayedEntry?.id === entry.id;
+                                    const isActiveAtAnotherCounter =
+                                        (entry.status === 'CALLED' ||
+                                            entry.status === 'SERVING') &&
+                                        entry.counter !== null &&
+                                        entry.counter !== action.data.counter;
 
                                     return (
                                         <ListItem
@@ -267,9 +276,31 @@ export default function OperatorTerminal({
                                                 <Typography className="waiting-entry-number">
                                                     {entry.number}
                                                 </Typography>
-                                                <Typography className="waiting-entry-status">
-                                                    {statusLabels[entry.status]}
-                                                </Typography>
+                                                <Box
+                                                    sx={{
+                                                        alignItems: 'center',
+                                                        display: 'flex',
+                                                        flexWrap: 'wrap',
+                                                        gap: 1,
+                                                    }}
+                                                >
+                                                    <Typography className="waiting-entry-status">
+                                                        {
+                                                            statusLabels[
+                                                                entry.status
+                                                            ]
+                                                        }
+                                                    </Typography>
+                                                    {isActiveAtAnotherCounter && (
+                                                        <Chip
+                                                            label={
+                                                                entry.counter
+                                                            }
+                                                            color="warning"
+                                                            size="small"
+                                                        />
+                                                    )}
+                                                </Box>
                                             </Box>
                                             <Box
                                                 className={`waiting-entry-actions ${isCurrent ? 'is-current' : ''} ${isCurrent && entry.status !== 'CALLED' ? 'only-action' : ''}`}
@@ -326,7 +357,8 @@ export default function OperatorTerminal({
                                                             <CallRounded />
                                                         }
                                                         disabled={
-                                                            action.processing
+                                                            action.processing ||
+                                                            isActiveAtAnotherCounter
                                                         }
                                                         onClick={() =>
                                                             post(
@@ -456,7 +488,7 @@ export default function OperatorTerminal({
                 <DialogTitle>Selesaikan nomor ini?</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Nomor {state.current?.number ?? 'ini'} akan ditandai
+                        Nomor {displayedEntry?.number ?? 'ini'} akan ditandai
                         selesai dan tidak dapat dipanggil kembali.
                     </DialogContentText>
                 </DialogContent>
