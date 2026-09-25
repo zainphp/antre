@@ -78,17 +78,16 @@ php artisan reverb:start
 
 The first visit redirects to `/onboarding` when no administrator exists.
 
-## Checks
+## Quality
 
-Run the project checks before committing:
+Apply the project's automatic code fixes before committing:
 
 ```bash
-composer run test
-bun run check
-bun run types:check
-bun run build
-composer audit --no-interaction
+composer quality
 ```
+
+CI runs the read-only checks, Vet, Checkpoint, Knip, and tests through
+`composer ci:check`. The GitHub posture audit runs when `MOAT_TOKEN` is set.
 
 Frontend files use kebab-case. Use direct MUI subpath imports, for example
 `@mui/material/Button`, and use generated Wayfinder functions for Laravel

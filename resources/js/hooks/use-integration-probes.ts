@@ -9,7 +9,7 @@ import echo, {
     type BroadcastConnection,
 } from '@/services/echo';
 
-export type ProbeStatus = 'idle' | 'testing' | 'passed' | 'failed';
+type ProbeStatus = 'idle' | 'testing' | 'passed' | 'failed';
 
 export type ProbeState = {
     configured: boolean;

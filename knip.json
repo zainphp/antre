@@ -1,0 +1,5 @@
+{
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "ignoreFiles": ["public/sw.js"],
+    "ignoreDependencies": ["@fontsource/inter", "agent-browser", "vite"]
+}

@@ -28,6 +28,7 @@
         "laravel/pail": "^1.2",
         "laravel/pao": "^1.1",
         "laravel/pint": "^1.32",
+        "laravel/vet": "^0.2",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9",
         "pestphp/pest": "^5.2",
@@ -46,14 +47,6 @@
         }
     },
     "scripts": {
-        "setup": [
-            "composer install",
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "bun install",
-            "bun run build"
-        ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
@@ -74,28 +67,26 @@
             "chmod +x scotty",
             "./scotty list"
         ],
-        "lint": [
-            "pint --parallel"
+        "quality": [
+            "rector process",
+            "pint",
+            "bun run quality"
         ],
-        "lint:check": [
-            "pint --parallel --test"
-        ],
-        "rector": "rector process",
-        "rector:check": "rector process --dry-run",
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "bun run check",
-            "bun run types:check",
-            "@test"
-        ],
-        "types:check": [
-            "phpstan analyse"
+            "bun scripts/check-frontend-filenames.ts",
+            "bunx vp check",
+            "bunx tsc --noEmit",
+            "@test",
+            "vendor/bin/vet",
+            "@php artisan checkpoint:scan --skip=\"NPM CVE Audit\" --json",
+            "bunx knip --no-progress"
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@lint:check",
-            "@rector:check",
-            "@types:check",
+            "pint --test",
+            "rector process --dry-run",
+            "phpstan analyse",
             "@php artisan test"
         ],
         "post-autoload-dump": [
@@ -105,14 +96,6 @@
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
             "@php artisan boost:update --ansi"
-        ],
-        "post-root-package-install": [
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
-        ],
-        "post-create-project-cmd": [
-            "@php artisan key:generate --ansi",
-            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
@@ -128,6 +111,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
+            "laravel/vet": true,
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         }

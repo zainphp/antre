@@ -1,6 +1,6 @@
 export type DeviceRole = 'DISPLAY' | 'QUEUE_TERMINAL' | 'OPERATOR_TERMINAL';
 
-export type DeviceStatus = 'UNREGISTERED' | 'REGISTERED' | 'REVOKED';
+type DeviceStatus = 'UNREGISTERED' | 'REGISTERED' | 'REVOKED';
 
 export type Device = {
     id: string;
