@@ -18,18 +18,18 @@ use Illuminate\Support\Str;
 
 test('login data normalizes credentials before authentication', function () {
     $user = User::factory()->create([
-        'email' => 'operator@example.com',
+        'email' => 'admin@example.com',
         'password' => 'secret',
         'role' => UserRole::Administrator,
     ]);
 
     $response = $this->post(route('login.store'), [
-        'email' => ' OPERATOR@EXAMPLE.COM ',
+        'email' => ' ADMIN@EXAMPLE.COM ',
         'password' => 'secret',
         'remember' => true,
     ]);
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('admin.index'));
     expect(auth()->id())->toBe($user->id);
 });
 
