@@ -21,7 +21,7 @@ final class OnboardingController extends Controller
     public function create(): Response|RedirectResponse
     {
         if ($this->administratorExists()) {
-            return redirect()->route('login');
+            return to_route('login');
         }
 
         $settings = Setting::current();
@@ -79,13 +79,13 @@ final class OnboardingController extends Controller
         });
 
         if (! $administrator instanceof User) {
-            return redirect()->route('login')->with('success', 'Administrator sudah terdaftar.');
+            return to_route('login')->with('success', 'Administrator sudah terdaftar.');
         }
 
         Auth::login($administrator);
         $request->session()->regenerate();
 
-        return redirect()->route('admin.index')->with('success', 'Antre siap digunakan.');
+        return to_route('admin.index')->with('success', 'Antre siap digunakan.');
     }
 
     private function administratorExists(): bool

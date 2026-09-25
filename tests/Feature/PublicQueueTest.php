@@ -45,14 +45,14 @@ test('a public state read before onboarding does not create a queue session', fu
         'number_counters' => 1,
     ])->assertRedirect(route('admin.index'));
 
-    expect(app(QueueService::class)->take(null, (string) Str::uuid())->number)
+    expect(resolve(QueueService::class)->take(null, (string) Str::uuid())->number)
         ->toBe('B0001');
 });
 
 test('public queue state is bounded while its waiting count stays complete', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->unregistered()->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
 
     foreach (range(1, 25) as $number) {
         $queues->take(null, 'request-'.$number, $device);
@@ -67,7 +67,7 @@ test('public queue state is bounded while its waiting count stays complete', fun
 test('public queue state excludes private entry data', function () {
     Event::fake();
     $device = Device::factory()->roles(DeviceRole::QueueTerminal)->create();
-    app(QueueService::class)->take(null, (string) Str::uuid(), $device);
+    resolve(QueueService::class)->take(null, (string) Str::uuid(), $device);
     QueueEntry::query()->firstOrFail()->update(['photo_path' => 'queue-photos/private.jpg']);
 
     $response = $this->getJson('/api/queue/state');
@@ -78,11 +78,8 @@ test('public queue state excludes private entry data', function () {
         ->assertJsonMissingPath('data.waiting.0.photo_url')
         ->assertJsonMissingPath('data.waiting.0.device_id');
 
-    Event::assertDispatched(
-        QueueChanged::class,
-        fn (QueueChanged $event): bool => ! array_key_exists('callable', $event->state)
-            && ! array_key_exists('photo_url', $event->state['waiting'][0] ?? []),
-    );
+    Event::assertDispatched(fn (\App\Events\QueueChanged $event): bool => ! array_key_exists('callable', $event->state)
+        && ! array_key_exists('photo_url', $event->state['waiting'][0] ?? []));
 });
 
 test('a registered operator can privately load the current customer photo', function () {
@@ -94,12 +91,12 @@ test('a registered operator can privately load the current customer photo', func
     $operator = Device::factory()->roles(DeviceRole::OperatorTerminal)->create([
         'credential_hash' => hash('sha256', $operatorCredential),
     ]);
-    $entry = app(QueueService::class)->take(
+    $entry = resolve(QueueService::class)->take(
         UploadedFile::fake()->image('customer.jpg'),
         (string) Str::uuid(),
         $operator,
     );
-    app(QueueService::class)->callNext('Loket 1', $operator);
+    resolve(QueueService::class)->callNext('Loket 1', $operator);
 
     $photoUrl = route('operator.queue.photo', ['entry' => $entry->getKey()], false);
     $cookie = $operator->getKey().'.'.$operatorCredential;

@@ -20,7 +20,7 @@ test('queue numbers are sequential and taking a number is idempotent', function 
     Event::fake([QueueChanged::class]);
     Storage::fake('local');
     $device = Device::factory()->unregistered()->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $requestId = (string) Str::uuid();
 
     $first = $queues->take(null, $requestId, $device);
@@ -39,7 +39,7 @@ test('call next is serialized per counter while counters stay active independent
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
     Setting::current()->update(['number_counters' => 2]);
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $queues->take(null, (string) Str::uuid());
     $queues->take(null, (string) Str::uuid());
     $queues->take(null, (string) Str::uuid());
@@ -75,7 +75,7 @@ test('an active number cannot be called from another counter', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
     Setting::current()->update(['number_counters' => 2]);
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $entry = $queues->take(null, (string) Str::uuid());
 
     $queues->callNext('Loket 1', $device);
@@ -87,7 +87,7 @@ test('an active number cannot be called from another counter', function () {
 test('call next only accepts configured counters', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $queues->take(null, (string) Str::uuid());
 
     expect(fn () => $queues->callNext('Loket 2', $device))
@@ -102,7 +102,7 @@ test('call next only accepts configured counters', function () {
 test('operators can recall any unfinished number', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $first = $queues->take(null, (string) Str::uuid());
     $second = $queues->take(null, (string) Str::uuid());
     $waiting = $queues->take(null, (string) Str::uuid());
@@ -133,7 +133,7 @@ test('operators can recall any unfinished number', function () {
 test('forfeiting an active number records a reason and removes it from callable history', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $entry = $queues->take(null, (string) Str::uuid(), $device);
     $queues->callNext('Loket 1', $device);
 
@@ -159,7 +159,7 @@ test('forfeiting an active number records a reason and removes it from callable 
 test('reset archives the current session and starts numbering again', function () {
     Event::fake([QueueChanged::class]);
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $first = $queues->take(null, (string) Str::uuid());
 
     $newSession = $queues->reset($device);
@@ -174,7 +174,7 @@ test('queue photos remain until the operator resets the session', function () {
     Event::fake([QueueChanged::class]);
     Storage::fake('local');
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $completed = $queues->take(UploadedFile::fake()->image('completed.jpg'), (string) Str::uuid());
     $skipped = $queues->take(UploadedFile::fake()->image('skipped.jpg'), (string) Str::uuid());
 

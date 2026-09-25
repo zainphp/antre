@@ -22,15 +22,15 @@ final class RootController extends Controller
             $device = $devices->resolve($request);
 
             if ($device?->hasRole(DeviceRole::OperatorTerminal)) {
-                return redirect()->route('operator-terminal');
+                return to_route('operator-terminal');
             }
 
             if ($device?->hasRole(DeviceRole::QueueTerminal)) {
-                return redirect()->route('queue-terminal');
+                return to_route('queue-terminal');
             }
 
             if ($device?->hasRole(DeviceRole::Display)) {
-                return redirect()->route('display');
+                return to_route('display');
             }
         }
 

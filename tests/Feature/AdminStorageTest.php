@@ -37,7 +37,7 @@ test('an administrator can reset the active queue session from storage', functio
     Event::fake([QueueChanged::class]);
     Storage::fake('local');
     $admin = User::factory()->administrator()->create();
-    $entry = app(QueueService::class)->take(
+    $entry = resolve(QueueService::class)->take(
         UploadedFile::fake()->image('customer.jpg'),
         (string) Str::uuid(),
     );

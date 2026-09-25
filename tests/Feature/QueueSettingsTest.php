@@ -199,7 +199,7 @@ test('brand and session names cannot be empty', function () {
 test('a nullable default prefix formats new queue numbers without a separator', function () {
     $admin = User::factory()->administrator()->create();
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create();
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
 
     expect($queues->take(null, (string) Str::uuid())->number)->toBe('001');
     $this->actingAs($admin)

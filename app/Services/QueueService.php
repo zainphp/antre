@@ -137,7 +137,7 @@ final readonly class QueueService
                 : ($this->activeEntryForCounter($session, $counter->id)
                     ?? $session->entries()
                         ->where('status', QueueStatus::Skipped)
-                        ->orderByDesc('completed_at')
+                        ->latest('completed_at')
                         ->orderByDesc('sequence')
                         ->lockForUpdate()
                         ->first());
@@ -451,7 +451,7 @@ final readonly class QueueService
         return $session->entries()
             ->where('counter_id', $counterId)
             ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
-            ->orderByDesc('called_at')
+            ->latest('called_at')
             ->orderByDesc('sequence')
             ->lockForUpdate()
             ->first();
@@ -461,7 +461,7 @@ final readonly class QueueService
     {
         $current = $session->entries()
             ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
-            ->orderByDesc('called_at')
+            ->latest('called_at')
             ->orderByDesc('sequence')
             ->first();
 
