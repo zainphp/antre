@@ -16,12 +16,12 @@ export type QueueEntry = {
     photo_url?: string;
 };
 
-export type QueueCounter = {
+type QueueCounter = {
     name: string;
     current: QueueEntry | null;
 };
 
-export type QueueHistoryEntry = QueueEntry & {
+type QueueHistoryEntry = QueueEntry & {
     completed_at: string | null;
     forfeit_reason: string | null;
 };

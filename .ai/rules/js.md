@@ -13,7 +13,7 @@ Call Laravel routes and controller actions through generated Wayfinder helpers f
 Import MUI components and icons from their package subpaths, such as @mui/material/Button and @mui/icons-material/CheckRounded. Do not import from the @mui/material or @mui/icons-material barrels.
 
 ## Keep frontend paths in kebab-case
-Name frontend source files and directories with kebab-case. Keep the repository filename check passing through the normal bun run check command.
+Name frontend source files and directories with kebab-case. Keep the repository filename check passing through the normal `bun run quality` command.
 
 ## Do not reintroduce browser authority
 Use Laravel and the database as the source of truth for queue, roles, devices, and registration. Do not add WebRTC, peer-to-peer synchronization, client-authoritative queue state, or a global client store for server domain state.

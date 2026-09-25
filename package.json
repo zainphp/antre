@@ -5,10 +5,7 @@
     "scripts": {
         "build": "vp build",
         "dev": "vp dev",
-        "check": "bun run check:filenames && vp check",
-        "check:filenames": "bun scripts/check-frontend-filenames.ts",
-        "check:fix": "vp check --fix",
-        "types:check": "tsc --noEmit"
+        "quality": "vp check --fix && bun scripts/check-frontend-filenames.ts"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",
@@ -22,15 +19,13 @@
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.1.1",
-        "concurrently": "^10.0.5",
         "laravel-echo": "^2.5.0",
         "laravel-vite-plugin": "^3.2.0",
         "pusher-js": "^8.6.0",
         "qrcode.react": "^4.2.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
-        "typescript": "^7.0.2",
-        "zod": "^4.6.5"
+        "typescript": "^7.0.2"
     },
     "devDependencies": {
         "@laravel/vite-plugin-wayfinder": "^0.1.10",
@@ -39,6 +34,7 @@
         "agent-browser": "^0.38.1",
         "babel-plugin-react-compiler": "^1.0.0",
         "fontaine": "^0.8.2",
+        "knip": "^6.38.0",
         "vite-plugin-zip-pack": "^1.2.4",
         "vite-plus": "^0.3.3"
     },
