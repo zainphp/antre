@@ -14,7 +14,7 @@ class QueueChanged implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /** @param array<string, mixed> $state */
+    /** @param array<array-key, mixed> $state */
     public function __construct(public readonly array $state) {}
 
     /**

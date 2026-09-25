@@ -18,14 +18,14 @@ use Spatie\LaravelData\Optional;
 
 final class QueueStateService
 {
-    /** @return array<string, mixed> */
+    /** @return array<array-key, mixed> */
     public function entry(QueueEntry $entry): array
     {
         return QueueEntryData::fromModel($entry)->toArray();
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public function state(
         bool $includeCallable = false,
@@ -87,30 +87,34 @@ final class QueueStateService
 
         $callable = Optional::create();
         if ($includeCallable) {
-            $callable = $session->entries()
-                ->with('counter')
-                ->whereIn('status', [
-                    QueueStatus::Waiting->value,
-                    QueueStatus::Called->value,
-                    QueueStatus::Serving->value,
-                    QueueStatus::Skipped->value,
-                ])
-                ->orderBy('sequence')
-                ->get()
-                ->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel(
-                    $entry,
-                    includePhoto: $includePhoto && $entry->status->isActive(),
-                ))
-                ->all();
+            $callable = array_values(
+                $session->entries()
+                    ->with('counter')
+                    ->whereIn('status', [
+                        QueueStatus::Waiting->value,
+                        QueueStatus::Called->value,
+                        QueueStatus::Serving->value,
+                        QueueStatus::Skipped->value,
+                    ])
+                    ->orderBy('sequence')
+                    ->get()
+                    ->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel(
+                        $entry,
+                        includePhoto: $includePhoto && $entry->status->isActive(),
+                    ))
+                    ->all(),
+            );
         }
 
         $history = $includeHistory
-            ? $session->entries()
-                ->with('counter')
-                ->orderByDesc('sequence')
-                ->get()
-                ->map(fn (QueueEntry $entry): QueueHistoryEntryData => QueueHistoryEntryData::fromHistory($entry))
-                ->all()
+            ? array_values(
+                $session->entries()
+                    ->with('counter')
+                    ->orderByDesc('sequence')
+                    ->get()
+                    ->map(fn (QueueEntry $entry): QueueHistoryEntryData => QueueHistoryEntryData::fromHistory($entry))
+                    ->all(),
+            )
             : Optional::create();
 
         return (new QueueStateData(
@@ -132,9 +136,9 @@ final class QueueStateService
                 },
                 $counterNames,
             ),
-            waiting: $waiting
-                ->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel($entry))
-                ->all(),
+            waiting: array_values(
+                $waiting->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel($entry))->all(),
+            ),
             stats: new QueueStatsData(
                 total: $session->entries()->count(),
                 waiting: $waitingCount,
@@ -149,7 +153,7 @@ final class QueueStateService
 
     /**
      * @param  non-empty-list<string>  $counterNames
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private function emptyState(
         string $sessionName,
