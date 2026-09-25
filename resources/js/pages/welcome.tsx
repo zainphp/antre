@@ -5,8 +5,6 @@ import { Head } from '@inertiajs/react';
 
 import { ConnectionBadge } from '@/components/connection-badge';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
-import type { FooterLink } from '@/types/footer-link';
-import type { QueueState } from '@/types/queue';
 import { formatDate } from '@/utils/format';
 
 export default function Welcome({
@@ -14,9 +12,9 @@ export default function Welcome({
     brandName,
     footerLinks,
 }: {
-    state: QueueState;
+    state: App.Data.Frontend.QueueStateData;
     brandName: string;
-    footerLinks: FooterLink[];
+    footerLinks: App.Data.Frontend.FooterLinkData[];
 }) {
     const realtime = useQueueRealtime(state);
     const queue = realtime.state;

@@ -18,9 +18,10 @@ import { type FormEvent } from 'react';
 
 import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
-import type { FooterLink } from '@/types/footer-link';
-
-const emptyFooterLink = (): FooterLink => ({ label: '', url: '' });
+const emptyFooterLink = (): App.Data.Frontend.FooterLinkData => ({
+    label: '',
+    url: '',
+});
 
 export default function Settings({
     brandName,
@@ -37,7 +38,7 @@ export default function Settings({
     numberDigits: number;
     numberCounters: number;
     photoRequired: boolean;
-    footerLinks: FooterLink[];
+    footerLinks: App.Data.Frontend.FooterLinkData[];
 }) {
     const form = useForm({
         brand_name: brandName,
@@ -53,7 +54,7 @@ export default function Settings({
 
     const updateFooterLink = (
         index: number,
-        field: keyof FooterLink,
+        field: keyof App.Data.Frontend.FooterLinkData,
         value: string,
     ): void => {
         form.setData(

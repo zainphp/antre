@@ -21,10 +21,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AdminLayout } from '@/components/admin-layout';
 import admin from '@/routes/admin';
 import echo from '@/services/echo';
-import type { Device, DeviceRole } from '@/types/device';
 import { formatTime } from '@/utils/format';
 
-const roles: { value: DeviceRole; label: string }[] = [
+const roles: { value: App.Enums.DeviceRole; label: string }[] = [
     { value: 'DISPLAY', label: 'Layar display' },
     { value: 'QUEUE_TERMINAL', label: 'Terminal ambil nomor' },
     { value: 'OPERATOR_TERMINAL', label: 'Terminal operator' },
@@ -40,7 +39,7 @@ export default function Devices({
     devices,
     pairing,
 }: {
-    devices: Device[];
+    devices: App.Data.Frontend.DeviceData[];
     pairing: PairingState;
 }) {
     const pairingForm = useForm({});
@@ -206,12 +205,12 @@ export default function Devices({
     );
 }
 
-function DeviceRow({ device }: { device: Device }) {
+function DeviceRow({ device }: { device: App.Data.Frontend.DeviceData }) {
     const form = useForm({
         name: device.name,
         roles: device.roles.length
             ? device.roles
-            : (['DISPLAY'] as DeviceRole[]),
+            : (['DISPLAY'] as App.Enums.DeviceRole[]),
     });
     const assigned = device.status === 'REGISTERED';
 

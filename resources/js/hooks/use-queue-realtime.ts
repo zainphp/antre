@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ConnectionState } from '@/components/connection-badge';
 import { useQueuePolling } from '@/hooks/use-queue-polling';
 import echo from '@/services/echo';
-import type { QueueState } from '@/types/queue';
-
+type QueueState = App.Data.Frontend.QueueStateData;
 type QueueChangedPayload = { state: QueueState };
 
 export function useQueueRealtime(

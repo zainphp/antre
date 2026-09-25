@@ -1,4 +1,4 @@
-import type { QueueEntry } from '@/types/queue';
+type QueueEntry = App.Data.Frontend.QueueEntryData;
 
 const femaleVoicePattern =
     /female|woman|perempuan|gadis|google bahasa indonesia/i;

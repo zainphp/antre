@@ -14,9 +14,11 @@ import { AppShell } from '@/components/app-shell';
 import { InertiaButton } from '@/components/inertia-button';
 import { display, home, operatorTerminal, queueTerminal } from '@/routes';
 import admin from '@/routes/admin';
-import type { Device } from '@/types/device';
-
-export default function Pair({ device }: { device: Device }) {
+export default function Pair({
+    device,
+}: {
+    device: App.Data.Frontend.PairDeviceData;
+}) {
     usePoll(2500, { only: ['device'] }, { mode: 'rest' });
 
     useEffect(() => {

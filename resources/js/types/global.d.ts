@@ -1,5 +1,4 @@
-import type { Auth } from '@/types/auth';
-import type { QueueState } from '@/types/queue';
+export {};
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -11,9 +10,9 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
-            auth: Auth;
+            auth: App.Data.Frontend.AuthData;
             flash: { success?: string; error?: string };
-            state?: QueueState;
+            state?: App.Data.Frontend.QueueStateData;
             [key: string]: unknown;
         };
     }
