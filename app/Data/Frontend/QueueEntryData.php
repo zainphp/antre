@@ -12,7 +12,7 @@ use Spatie\LaravelData\Optional;
 
 class QueueEntryData extends Data
 {
-    public function __construct(
+    final public function __construct(
         public string $id,
         public string $number,
         public QueueStatus $status,
