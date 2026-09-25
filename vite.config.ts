@@ -58,6 +58,12 @@ export default defineConfig({
             typeAware: true,
         },
         rules: {
+            'unicorn/filename-case': [
+                'error',
+                {
+                    case: 'kebabCase',
+                },
+            ],
             'no-restricted-imports': [
                 'error',
                 {
