@@ -8,6 +8,7 @@ import echo, {
     createEcho,
     type BroadcastConnection,
 } from '@/services/echo';
+import { isSentryEnabled } from '@/utils/sentry';
 
 type ProbeStatus = 'idle' | 'testing' | 'passed' | 'failed';
 
@@ -26,7 +27,7 @@ type IntegrationEvent = {
 };
 
 const broadcastConnections: BroadcastConnection[] = ['ably', 'reverb'];
-const frontendSentryConfigured = Boolean(import.meta.env.VITE_SENTRY_DSN);
+const frontendSentryConfigured = isSentryEnabled;
 const clientConfigured: Record<BroadcastConnection, boolean> = {
     ably: Boolean(import.meta.env.VITE_ABLY_PUBLIC_KEY),
     reverb: Boolean(import.meta.env.VITE_REVERB_APP_KEY),
