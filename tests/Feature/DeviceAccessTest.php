@@ -175,7 +175,7 @@ test('device changes use the normalized device payload', function () {
         'roles' => [DeviceRole::Display->value, DeviceRole::QueueTerminal->value],
     ])->assertRedirect();
 
-    Event::assertDispatched(fn (\App\Events\DeviceChanged $event): bool => data_get($event->broadcastWith(), 'device.id') === $device->id
+    Event::assertDispatched(fn (DeviceChanged $event): bool => data_get($event->broadcastWith(), 'device.id') === $device->id
         && data_get($event->broadcastWith(), 'device.roles') === [
             DeviceRole::Display->value,
             DeviceRole::QueueTerminal->value,
