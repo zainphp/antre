@@ -47,8 +47,11 @@ jobs:
       - name: 📦 Install frontend dependencies
         run: bun install --frozen-lockfile
 
+      - name: ✨ Run quality
+        run: composer quality
+
       - name: 🏗️ Build frontend
         run: bun run build
 
-      - name: ✅ Run application checks
-        run: composer ci:check
+      - name: ✅ Run tests
+        run: composer test
