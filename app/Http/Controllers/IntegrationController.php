@@ -28,7 +28,7 @@ final class IntegrationController extends Controller
 
     public function testBackendSentry(): JsonResponse
     {
-        if (! filled(config('sentry.dsn'))) {
+        if (blank(config('sentry.dsn'))) {
             return response()->json([
                 'message' => 'Sentry backend belum dikonfigurasi.',
             ], 503);
@@ -50,7 +50,7 @@ final class IntegrationController extends Controller
             abort(404);
         }
 
-        if (! filled(config("broadcasting.connections.{$connection}.key"))) {
+        if (blank(config("broadcasting.connections.{$connection}.key"))) {
             return response()->json([
                 'message' => "Broadcaster {$connection} belum dikonfigurasi.",
             ], 503);

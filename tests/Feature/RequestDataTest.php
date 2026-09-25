@@ -128,7 +128,7 @@ test('queue action data authorizes an operator terminal request', function () {
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
-    app(QueueService::class)->take(null, (string) Str::uuid(), $device);
+    resolve(QueueService::class)->take(null, (string) Str::uuid(), $device);
 
     $response = $this->withCookie(
         DeviceRegistry::COOKIE,
@@ -149,7 +149,7 @@ test('forfeit queue data requires a reason', function () {
     $device = Device::factory()->roles(DeviceRole::OperatorTerminal)->create([
         'credential_hash' => hash('sha256', $credential),
     ]);
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $entry = $queues->take(null, (string) Str::uuid(), $device);
     $queues->callNext('Loket 1', $device);
 
@@ -173,7 +173,7 @@ test('operator terminals can recall a selected unfinished number', function () {
         'status' => DeviceStatus::Registered,
         'credential_hash' => hash('sha256', $credential),
     ]);
-    $queues = app(QueueService::class);
+    $queues = resolve(QueueService::class);
     $entry = $queues->take(null, (string) Str::uuid(), $device);
     $cookie = $device->id.'.'.$credential;
 

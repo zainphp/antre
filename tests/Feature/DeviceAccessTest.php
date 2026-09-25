@@ -42,7 +42,7 @@ test('only an administrator can open pairing', function () {
         ->post(route('admin.devices.pairing-session'))
         ->assertRedirect();
 
-    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+    expect(resolve(PairingSession::class)->isOpen())->toBeTrue();
 });
 
 test('an administrator can close pairing before it expires', function () {
@@ -52,31 +52,31 @@ test('an administrator can close pairing before it expires', function () {
         ->post(route('admin.devices.pairing-session'))
         ->assertRedirect();
 
-    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+    expect(resolve(PairingSession::class)->isOpen())->toBeTrue();
 
     $this->actingAs($admin)
         ->post(route('admin.devices.pairing-session.close'))
         ->assertRedirect();
 
-    expect(app(PairingSession::class)->isOpen())->toBeFalse();
+    expect(resolve(PairingSession::class)->isOpen())->toBeFalse();
     $this->get('/pair')->assertForbidden();
 });
 
 test('an administrator pairing session closes after sixty seconds', function () {
     User::factory()->administrator()->create();
-    app(PairingSession::class)->open();
+    resolve(PairingSession::class)->open();
 
-    expect(app(PairingSession::class)->isOpen())->toBeTrue();
+    expect(resolve(PairingSession::class)->isOpen())->toBeTrue();
 
     $this->travel(61)->seconds();
 
-    expect(app(PairingSession::class)->isOpen())->toBeFalse();
+    expect(resolve(PairingSession::class)->isOpen())->toBeFalse();
     $this->get('/pair')->assertForbidden();
 });
 
 test('a new device gets a persistent pairing identity during an open session', function () {
     User::factory()->administrator()->create();
-    app(PairingSession::class)->open();
+    resolve(PairingSession::class)->open();
 
     $response = $this->get('/pair');
 
@@ -175,18 +175,15 @@ test('device changes use the normalized device payload', function () {
         'roles' => [DeviceRole::Display->value, DeviceRole::QueueTerminal->value],
     ])->assertRedirect();
 
-    Event::assertDispatched(
-        DeviceChanged::class,
-        fn (DeviceChanged $event): bool => data_get($event->broadcastWith(), 'device.id') === $device->id
-            && data_get($event->broadcastWith(), 'device.roles') === [
-                DeviceRole::Display->value,
-                DeviceRole::QueueTerminal->value,
-            ]
-            && data_get($event->broadcastWith(), 'device.role_labels') === [
-                DeviceRole::Display->label(),
-                DeviceRole::QueueTerminal->label(),
-            ],
-    );
+    Event::assertDispatched(fn (\App\Events\DeviceChanged $event): bool => data_get($event->broadcastWith(), 'device.id') === $device->id
+        && data_get($event->broadcastWith(), 'device.roles') === [
+            DeviceRole::Display->value,
+            DeviceRole::QueueTerminal->value,
+        ]
+        && data_get($event->broadcastWith(), 'device.role_labels') === [
+            DeviceRole::Display->label(),
+            DeviceRole::QueueTerminal->label(),
+        ]);
 });
 
 test('device assignment requires at least one role', function () {

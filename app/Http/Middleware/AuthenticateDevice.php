@@ -27,7 +27,7 @@ final readonly class AuthenticateDevice
                 return response()->json(['message' => 'Perangkat belum terdaftar.'], 401);
             }
 
-            return redirect()->route('pair')->with('error', 'Hubungkan perangkat ini terlebih dahulu.');
+            return to_route('pair')->with('error', 'Hubungkan perangkat ini terlebih dahulu.');
         }
 
         $this->registry->touch($device);

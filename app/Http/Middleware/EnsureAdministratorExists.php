@@ -24,7 +24,7 @@ final class EnsureAdministratorExists
         }
 
         if (! User::query()->where('role', UserRole::Administrator->value)->exists()) {
-            return redirect()->route('onboarding');
+            return to_route('onboarding');
         }
 
         return $next($request);

@@ -68,11 +68,8 @@ test('an administrator can send a realtime test through each broadcaster', funct
         ->assertJsonPath('connection', $connection)
         ->assertJsonStructure(['test_id']);
 
-    Event::assertDispatched(
-        IntegrationTested::class,
-        fn (IntegrationTested $event): bool => $event->broadcastConnections() === [$connection]
-            && $event->connection === $connection,
-    );
+    Event::assertDispatched(fn (\App\Events\IntegrationTested $event): bool => $event->broadcastConnections() === [$connection]
+        && $event->connection === $connection);
 })->with(['ably', 'reverb']);
 
 test('non administrators cannot send integration tests', function () {

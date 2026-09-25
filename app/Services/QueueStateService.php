@@ -53,7 +53,7 @@ final class QueueStateService
             ->with('counter')
             ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
             ->whereNotNull('counter_id')
-            ->orderByDesc('called_at')
+            ->latest('called_at')
             ->orderByDesc('sequence')
             ->get();
 
@@ -80,7 +80,7 @@ final class QueueStateService
             $current = $session->entries()
                 ->with('counter')
                 ->whereIn('status', [QueueStatus::Called->value, QueueStatus::Serving->value])
-                ->orderByDesc('called_at')
+                ->latest('called_at')
                 ->orderByDesc('sequence')
                 ->first();
         }
