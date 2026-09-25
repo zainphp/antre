@@ -23,6 +23,8 @@ export function AssignedStep({
     const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
     const [printStarted, setPrintStarted] = useState(false);
+    const [autoReturnCancelled, setAutoReturnCancelled] = useState(false);
+    const [countdownVersion, setCountdownVersion] = useState(0);
     const autoPrintStarted = useRef(false);
 
     useEffect(() => {
@@ -39,10 +41,15 @@ export function AssignedStep({
     }, [printCooldown]);
 
     useEffect(() => {
+        if (autoReturnCancelled) {
+            return;
+        }
+
         let timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
         const resetTimeout = (): void => {
             window.clearTimeout(timeout);
             timeout = window.setTimeout(onDone, ASSIGNED_STEP_IDLE_TIMEOUT_MS);
+            setCountdownVersion((version) => version + 1);
         };
         const activityEvents = ['pointerdown', 'keydown'] as const;
 
@@ -56,7 +63,7 @@ export function AssignedStep({
                 window.removeEventListener(event, resetTimeout),
             );
         };
-    }, [onDone]);
+    }, [autoReturnCancelled, onDone]);
 
     const print = useCallback(async (): Promise<void> => {
         setPrinting(true);
@@ -92,6 +99,37 @@ export function AssignedStep({
             role="status"
             aria-live="polite"
         >
+            {!autoReturnCancelled && (
+                <Box
+                    aria-hidden="true"
+                    sx={{
+                        width: '100%',
+                        height: 4,
+                        overflow: 'hidden',
+                        borderRadius: 2,
+                        bgcolor: 'var(--line)',
+                        mb: 3,
+                    }}
+                >
+                    <Box
+                        key={countdownVersion}
+                        sx={{
+                            width: '100%',
+                            height: '100%',
+                            transform: 'scaleX(0)',
+                            transformOrigin: 'left',
+                            bgcolor: 'var(--gold)',
+                            animation: `assigned-step-countdown ${ASSIGNED_STEP_IDLE_TIMEOUT_MS}ms linear forwards`,
+                            '@keyframes assigned-step-countdown': {
+                                to: { transform: 'scaleX(1)' },
+                            },
+                            '@media (prefers-reduced-motion: reduce)': {
+                                animationTimingFunction: 'steps(30, end)',
+                            },
+                        }}
+                    />
+                </Box>
+            )}
             <CheckCircleRounded className="assigned-icon" />
             <Typography className="kiosk-step-label">Nomor Anda</Typography>
             <Typography className="assigned-number">{number}</Typography>
@@ -133,6 +171,30 @@ export function AssignedStep({
                           : 'Ulangi cetak tiket'}
                 </Button>
             </Stack>
+            {autoReturnCancelled ? (
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1.5 }}
+                >
+                    Halaman ini tetap terbuka.
+                </Typography>
+            ) : (
+                <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setAutoReturnCancelled(true)}
+                    sx={{
+                        alignSelf: 'center',
+                        minHeight: 48,
+                        mt: 1,
+                        color: 'text.secondary',
+                        textTransform: 'none',
+                    }}
+                >
+                    Tetap di halaman
+                </Button>
+            )}
         </Box>
     );
 }
