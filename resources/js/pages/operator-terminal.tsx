@@ -37,10 +37,9 @@ import { ConnectionBadge } from '@/components/connection-badge';
 import { display, queueTerminal } from '@/routes';
 import queue from '@/routes/queue';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
-import type { QueueState, QueueStatus } from '@/types/queue';
 import { formatTime } from '@/utils/format';
 
-const statusLabels: Record<QueueStatus, string> = {
+const statusLabels: Record<App.Enums.QueueStatus, string> = {
     WAITING: 'Menunggu',
     CALLED: 'Dipanggil',
     SERVING: 'Sedang dilayani',
@@ -55,7 +54,7 @@ export default function OperatorTerminal({
     canOpenQueueTerminal,
     canOpenDisplay,
 }: {
-    state: QueueState;
+    state: App.Data.Frontend.QueueStateData;
     counters: string[];
     canOpenQueueTerminal: boolean;
     canOpenDisplay: boolean;

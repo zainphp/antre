@@ -80,6 +80,10 @@
             "version": "2.1.1",
             "hash": "tree-v2:5cc304e8a530449d8c745eaec902384554d1740d4e083032d5f9ce3ac1cf25e3"
         },
+        "jetbrains/phpstorm-stubs": {
+            "version": "v2026.2",
+            "hash": "tree-v2:bcde9137050f29ccc13a33b9f1962aad97d5f490124b7c658a502dfbc0d162ee"
+        },
         "laravel/framework": {
             "version": "v13.32.0",
             "hash": "tree-v2:caca971b7adc38887e34db6e9a2cb3f9caadfd0ab0d6fd69b72732d32b601645"
@@ -264,6 +268,10 @@
             "version": "v1.4.0",
             "hash": "tree-v2:24cd9a269d6eef586865cd4525abfa3068f55e7c634a0d938071300df371fbb1"
         },
+        "roave/better-reflection": {
+            "version": "6.73.0",
+            "hash": "tree-v2:0bfabaa6045e38f1cd8a82d4a608264a5ca47a19080334f740477f0cd713feaf"
+        },
         "rybakit/msgpack": {
             "version": "v0.10.0",
             "hash": "tree-v2:aa9a1c75cd5d0c3879cedae131be4b52af24532064188f29d4181d2bedd60784"
@@ -276,6 +284,10 @@
             "version": "4.27.0",
             "hash": "tree-v2:5303ae7449f08c6ad252d2fbbea504d8123279b3a72a32c478fbab234289be25"
         },
+        "spatie/file-system-watcher": {
+            "version": "1.2.1",
+            "hash": "tree-v2:4913439f1716440a3a47ac92ffad0c1b0e80bb3de6eaae2ed013e032f483d81a"
+        },
         "spatie/laravel-data": {
             "version": "4.23.0",
             "hash": "tree-v2:6391465cf6c5a21d901a30b4df29c3039e5e0accb6b41a0c3c71bb4f2b3deb67"
@@ -284,9 +296,17 @@
             "version": "1.93.2",
             "hash": "tree-v2:6769b3e837b78c65b97c797c7b88eb3e0ebaa4e47e91a186f26226d25fa02198"
         },
+        "spatie/laravel-typescript-transformer": {
+            "version": "3.3.0",
+            "hash": "tree-v2:d78efd1f14ba33ceff6d97df13c54b4741493ebd693ea478dd941316ba525244"
+        },
         "spatie/php-structure-discoverer": {
             "version": "2.4.4",
             "hash": "tree-v2:1aa3de6b429a12a5a58af48f8e9721d349df02ace12561b8430ca769f866b468"
+        },
+        "spatie/typescript-transformer": {
+            "version": "3.3.1",
+            "hash": "tree-v2:7ba600083098272ae76c3fbbf0747309caf0cb4287c6bec7b5d7cbec7ce9f0b2"
         },
         "symfony/clock": {
             "version": "v8.1.0",

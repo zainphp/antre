@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Data\Frontend\AuthData;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,17 +39,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->role->value,
-                ] : null,
-            ],
+            'auth' => AuthData::fromUser($user instanceof User ? $user : null)->toArray(),
             'flash' => [
                 'success' => fn (): ?string => $this->flashMessage($request, 'success'),
                 'error' => fn (): ?string => $this->flashMessage($request, 'error'),

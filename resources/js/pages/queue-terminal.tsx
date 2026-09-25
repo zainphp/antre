@@ -38,7 +38,6 @@ import {
     type PrinterSettings,
 } from '@/services/printer';
 import { useOnlineState } from '@/hooks/use-online-state';
-import type { QueueEntry } from '@/types/queue';
 
 type Step = 'ready' | 'camera' | 'review' | 'assigned';
 
@@ -65,7 +64,8 @@ export default function QueueTerminal({
     );
     const [step, setStep] = useState<Step>('ready');
     const [photo, setPhoto] = useState<string | null>(null);
-    const [assigned, setAssigned] = useState<QueueEntry | null>(null);
+    const [assigned, setAssigned] =
+        useState<App.Data.Frontend.QueueEntryData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
@@ -173,7 +173,7 @@ export default function QueueTerminal({
                 body,
             });
             const payload = (await response.json()) as {
-                data?: QueueEntry;
+                data?: App.Data.Frontend.QueueEntryData;
                 message?: string;
                 errors?: { photo?: string[] };
             };

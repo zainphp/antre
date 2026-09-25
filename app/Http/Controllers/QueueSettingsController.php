@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Data\Frontend\FooterLinkData;
 use App\Data\UpdateQueueSettingsData;
 use App\Events\SettingsChanged;
 use App\Models\Setting;
@@ -27,7 +28,10 @@ final class QueueSettingsController extends Controller
             'numberDigits' => $settings->number_digits,
             'numberCounters' => $settings->number_counters,
             'photoRequired' => $settings->photo_required,
-            'footerLinks' => $settings->footerLinks(),
+            'footerLinks' => array_map(
+                static fn (array $link): array => FooterLinkData::from($link)->toArray(),
+                $settings->footerLinks(),
+            ),
         ]);
     }
 

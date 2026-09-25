@@ -4,17 +4,24 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\Frontend\QueueCounterData;
+use App\Data\Frontend\QueueEntryData;
+use App\Data\Frontend\QueueHistoryEntryData;
+use App\Data\Frontend\QueueSessionData;
+use App\Data\Frontend\QueueStateData;
+use App\Data\Frontend\QueueStatsData;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry;
 use App\Models\QueueSession;
 use App\Models\Setting;
+use Spatie\LaravelData\Optional;
 
 final class QueueStateService
 {
     /** @return array<string, mixed> */
     public function entry(QueueEntry $entry): array
     {
-        return $this->entryPayload($entry);
+        return QueueEntryData::fromModel($entry)->toArray();
     }
 
     /**
@@ -78,38 +85,7 @@ final class QueueStateService
                 ->first();
         }
 
-        $state = [
-            'session' => [
-                'date' => $session->business_date->format('Y-m-d'),
-                'service_name' => $settings->session_name,
-            ],
-            'current' => $current?->status?->isActive()
-                ? $this->entryPayload($current, includePhoto: $includePhoto)
-                : null,
-            'counters' => array_map(
-                function (string $name) use ($activeEntriesByCounter): array {
-                    $entry = $activeEntriesByCounter[$name] ?? null;
-
-                    return [
-                        'name' => $name,
-                        'current' => $entry === null ? null : $this->entryPayload($entry),
-                    ];
-                },
-                $counterNames,
-            ),
-            'waiting' => $waiting
-                ->map(fn (QueueEntry $entry): array => $this->entryPayload($entry))
-                ->values()
-                ->all(),
-            'stats' => [
-                'total' => $session->entries()->count(),
-                'waiting' => $waitingCount,
-                'completed' => $session->entries()->where('status', QueueStatus::Completed)->count(),
-                'skipped' => $session->entries()->where('status', QueueStatus::Skipped)->count(),
-                'forfeited' => $session->entries()->where('status', QueueStatus::Forfeited)->count(),
-            ],
-        ];
-
+        $callable = Optional::create();
         if ($includeCallable) {
             $callable = $session->entries()
                 ->with('counter')
@@ -120,28 +96,55 @@ final class QueueStateService
                     QueueStatus::Skipped->value,
                 ])
                 ->orderBy('sequence')
-                ->get();
-
-            $state['callable'] = $callable
-                ->map(fn (QueueEntry $entry): array => $this->entryPayload(
+                ->get()
+                ->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel(
                     $entry,
                     includePhoto: $includePhoto && $entry->status->isActive(),
                 ))
-                ->values()
                 ->all();
         }
 
-        if ($includeHistory) {
-            $state['history'] = $session->entries()
+        $history = $includeHistory
+            ? $session->entries()
                 ->with('counter')
                 ->orderByDesc('sequence')
                 ->get()
-                ->map(fn (QueueEntry $entry): array => $this->historyPayload($entry))
-                ->values()
-                ->all();
-        }
+                ->map(fn (QueueEntry $entry): QueueHistoryEntryData => QueueHistoryEntryData::fromHistory($entry))
+                ->all()
+            : Optional::create();
 
-        return $state;
+        return (new QueueStateData(
+            session: new QueueSessionData(
+                date: $session->business_date->format('Y-m-d'),
+                serviceName: $settings->session_name,
+            ),
+            current: $current?->status?->isActive()
+                ? QueueEntryData::fromModel($current, includePhoto: $includePhoto)
+                : null,
+            counters: array_map(
+                function (string $name) use ($activeEntriesByCounter): QueueCounterData {
+                    $entry = $activeEntriesByCounter[$name] ?? null;
+
+                    return new QueueCounterData(
+                        name: $name,
+                        current: $entry === null ? null : QueueEntryData::fromModel($entry),
+                    );
+                },
+                $counterNames,
+            ),
+            waiting: $waiting
+                ->map(fn (QueueEntry $entry): QueueEntryData => QueueEntryData::fromModel($entry))
+                ->all(),
+            stats: new QueueStatsData(
+                total: $session->entries()->count(),
+                waiting: $waitingCount,
+                completed: $session->entries()->where('status', QueueStatus::Completed)->count(),
+                skipped: $session->entries()->where('status', QueueStatus::Skipped)->count(),
+                forfeited: $session->entries()->where('status', QueueStatus::Forfeited)->count(),
+            ),
+            callable: $callable,
+            history: $history,
+        ))->toArray();
     }
 
     /**
@@ -154,67 +157,29 @@ final class QueueStateService
         bool $includeCallable,
         bool $includeHistory,
     ): array {
-        $state = [
-            'session' => [
-                'date' => now()->toDateString(),
-                'service_name' => $sessionName,
-            ],
-            'current' => null,
-            'counters' => array_map(
-                static fn (string $name): array => ['name' => $name, 'current' => null],
+        return (new QueueStateData(
+            session: new QueueSessionData(
+                date: now()->toDateString(),
+                serviceName: $sessionName,
+            ),
+            current: null,
+            counters: array_map(
+                static fn (string $name): QueueCounterData => new QueueCounterData(
+                    name: $name,
+                    current: null,
+                ),
                 $counterNames,
             ),
-            'waiting' => [],
-            'stats' => [
-                'total' => 0,
-                'waiting' => 0,
-                'completed' => 0,
-                'skipped' => 0,
-                'forfeited' => 0,
-            ],
-        ];
-
-        if ($includeCallable) {
-            $state['callable'] = [];
-        }
-
-        if ($includeHistory) {
-            $state['history'] = [];
-        }
-
-        return $state;
-    }
-
-    /** @return array<string, mixed> */
-    private function historyPayload(QueueEntry $entry): array
-    {
-        return [
-            ...$this->entryPayload($entry),
-            'completed_at' => $entry->completed_at?->toISOString(),
-            'forfeit_reason' => $entry->forfeit_reason,
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function entryPayload(QueueEntry $entry, bool $includePhoto = false): array
-    {
-        $payload = [
-            'id' => $entry->id,
-            'number' => $entry->number,
-            'status' => $entry->status->value,
-            'counter' => $entry->counter?->name,
-            'created_at' => $entry->created_at?->toISOString(),
-            'called_at' => $entry->called_at?->toISOString(),
-        ];
-
-        if ($includePhoto && $entry->photo_path !== null) {
-            $payload['photo_url'] = route(
-                'operator.queue.photo',
-                ['entry' => $entry->getKey()],
-                false,
-            );
-        }
-
-        return $payload;
+            waiting: [],
+            stats: new QueueStatsData(
+                total: 0,
+                waiting: 0,
+                completed: 0,
+                skipped: 0,
+                forfeited: 0,
+            ),
+            callable: $includeCallable ? [] : Optional::create(),
+            history: $includeHistory ? [] : Optional::create(),
+        ))->toArray();
     }
 }

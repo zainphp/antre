@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Data\Frontend\FooterLinkData;
 use App\Enums\DeviceRole;
 use App\Models\Setting;
 use App\Services\DeviceRegistry;
@@ -38,7 +39,10 @@ final class RootController extends Controller
         return Inertia::render('welcome', [
             'state' => $queues->state(),
             'brandName' => $settings->brand_name,
-            'footerLinks' => $settings->footerLinks(),
+            'footerLinks' => array_map(
+                static fn (array $link): array => FooterLinkData::from($link)->toArray(),
+                $settings->footerLinks(),
+            ),
         ]);
     }
 }

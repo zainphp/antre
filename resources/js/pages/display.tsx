@@ -9,13 +9,12 @@ import { useQueueRealtime } from '@/hooks/use-queue-realtime';
 import { home } from '@/routes';
 import { announceQueue } from '@/services/speech';
 import { formatDate } from '@/utils/format';
-import type { QueueState } from '@/types/queue';
 
 export default function Display({
     state,
     brandName,
 }: {
-    state: QueueState;
+    state: App.Data.Frontend.QueueStateData;
     brandName: string;
 }) {
     const realtime = useQueueRealtime(state);

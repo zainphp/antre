@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\DeviceRole;
+use App\Data\Frontend\PairDeviceData;
 use App\Events\DeviceChanged;
 use App\Services\DeviceRegistry;
 use App\Services\PairingSession;
@@ -25,17 +25,8 @@ final class DevicePairController extends Controller
             event(new DeviceChanged($result['device']));
         }
 
-        $device = $result['device'];
-        $roles = $device->assignedRoles();
-
         return Inertia::render('pair', [
-            'device' => [
-                'id' => $device->id,
-                'label' => $device->displayId(),
-                'roles' => array_map(static fn (DeviceRole $role): string => $role->value, $roles),
-                'role_labels' => array_map(static fn (DeviceRole $role): string => $role->label(), $roles),
-                'status' => $device->status->value,
-            ],
+            'device' => PairDeviceData::fromModel($result['device'])->toArray(),
         ]);
     }
 }
