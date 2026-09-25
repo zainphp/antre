@@ -78,7 +78,7 @@ test('public queue state excludes private entry data', function () {
         ->assertJsonMissingPath('data.waiting.0.photo_url')
         ->assertJsonMissingPath('data.waiting.0.device_id');
 
-    Event::assertDispatched(fn (\App\Events\QueueChanged $event): bool => ! array_key_exists('callable', $event->state)
+    Event::assertDispatched(fn (QueueChanged $event): bool => ! array_key_exists('callable', $event->state)
         && ! array_key_exists('photo_url', $event->state['waiting'][0] ?? []));
 });
 

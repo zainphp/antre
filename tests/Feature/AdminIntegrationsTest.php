@@ -68,7 +68,7 @@ test('an administrator can send a realtime test through each broadcaster', funct
         ->assertJsonPath('connection', $connection)
         ->assertJsonStructure(['test_id']);
 
-    Event::assertDispatched(fn (\App\Events\IntegrationTested $event): bool => $event->broadcastConnections() === [$connection]
+    Event::assertDispatched(fn (IntegrationTested $event): bool => $event->broadcastConnections() === [$connection]
         && $event->connection === $connection);
 })->with(['ably', 'reverb']);
 
