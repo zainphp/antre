@@ -70,25 +70,19 @@
             "./scotty list"
         ],
         "quality": [
+            "Composer\\Config::disableProcessTimeout",
             "rector process",
             "pint",
-            "bun run quality"
-        ],
-        "ci:check": [
-            "Composer\\Config::disableProcessTimeout",
+            "bunx vp check --fix",
             "bun scripts/check-frontend-filenames.ts",
-            "bunx vp check",
             "bunx tsc --noEmit",
-            "@test",
+            "phpstan analyse",
             "vendor/bin/vet",
             "@php artisan checkpoint:scan --skip=\"NPM CVE Audit\" --json",
             "bunx knip --no-progress"
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "pint --test",
-            "rector process --dry-run",
-            "phpstan analyse",
             "@php artisan test"
         ],
         "post-autoload-dump": [

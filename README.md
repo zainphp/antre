@@ -86,8 +86,7 @@ Apply the project's automatic code fixes before committing:
 composer quality
 ```
 
-CI runs the read-only checks, Vet, Checkpoint, Knip, and tests through
-`composer ci:check`. The GitHub posture audit runs when `MOAT_TOKEN` is set.
+CI runs `composer quality`, builds the frontend, and runs `composer test`.
 
 Frontend files use kebab-case. Use direct MUI subpath imports, for example
 `@mui/material/Button`, and use generated Wayfinder functions for Laravel

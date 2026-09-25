@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vp build",
         "dev": "vp dev",
-        "quality": "vp check --fix && bun scripts/check-frontend-filenames.ts"
+        "quality": "composer quality"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",
