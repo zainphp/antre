@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Data\ForfeitQueueData;
-use App\Data\QueueActionData;
-use App\Data\TakeQueueNumberData;
+use App\Data\Payload\ForfeitQueuePayload;
+use App\Data\Payload\QueueActionPayload;
+use App\Data\Payload\TakeQueueNumberPayload;
 use App\Enums\QueueStatus;
 use App\Exceptions\QueueConflictException;
 use App\Models\Device;
@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 final class QueueController extends Controller
 {
     public function take(
-        TakeQueueNumberData $data,
+        TakeQueueNumberPayload $data,
         Request $request,
         QueueService $queues,
         QueueStateService $state,
@@ -57,7 +57,7 @@ final class QueueController extends Controller
         ]);
     }
 
-    public function callNext(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function callNext(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -66,7 +66,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function recall(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function recall(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -75,7 +75,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function serve(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function serve(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -84,7 +84,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function complete(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function complete(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -93,7 +93,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function skip(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function skip(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -102,7 +102,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function forfeit(ForfeitQueueData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function forfeit(ForfeitQueuePayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,
@@ -116,7 +116,7 @@ final class QueueController extends Controller
         );
     }
 
-    public function reset(QueueActionData $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
+    public function reset(QueueActionPayload $data, Request $request, QueueService $queues): RedirectResponse|JsonResponse
     {
         return $this->run(
             $request,

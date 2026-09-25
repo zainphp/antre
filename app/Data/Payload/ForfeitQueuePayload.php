@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use App\Enums\DeviceRole;
 use App\Models\Device;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 
-final class ForfeitQueueData extends Data
+final class ForfeitQueuePayload extends Data
 {
     public function __construct(
         public string $reason,

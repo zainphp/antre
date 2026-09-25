@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Data\OnboardingData;
+use App\Data\Payload\OnboardingPayload;
 use App\Enums\UserRole;
 use App\Models\Setting;
 use App\Models\User;
@@ -37,7 +37,7 @@ final class OnboardingController extends Controller
         ]);
     }
 
-    public function store(OnboardingData $data, Request $request, AuditLogger $audit): RedirectResponse
+    public function store(OnboardingPayload $data, Request $request, AuditLogger $audit): RedirectResponse
     {
         $administrator = DB::transaction(function () use ($data, $audit): ?User {
             $settings = Setting::query()->whereKey(1)->lockForUpdate()->firstOrFail();

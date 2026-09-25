@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use App\Enums\DeviceRole;
 use App\Models\User;
@@ -10,7 +10,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
 
-final class AssignDeviceData extends Data
+final class AssignDevicePayload extends Data
 {
     public function __construct(
         public string $name,

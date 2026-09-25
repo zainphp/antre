@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Data\AssignDeviceData;
+use App\Data\Payload\AssignDevicePayload;
 use App\Enums\DeviceRole;
 use App\Enums\DeviceStatus;
 use App\Events\DeviceChanged;
@@ -17,7 +17,7 @@ final readonly class DeviceService
 {
     public function __construct(private AuditLogger $audit) {}
 
-    public function assign(Device $device, AssignDeviceData $data, User $user): void
+    public function assign(Device $device, AssignDevicePayload $data, User $user): void
     {
         $roles = array_map(
             static fn (DeviceRole|string $role): string => $role instanceof DeviceRole

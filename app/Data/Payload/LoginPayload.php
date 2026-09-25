@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use Spatie\LaravelData\Data;
 
-final class LoginData extends Data
+final class LoginPayload extends Data
 {
     public function __construct(
         public string $email,
