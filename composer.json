@@ -75,6 +75,7 @@
             "pint",
             "bunx vp check --fix",
             "bun scripts/check-frontend-filenames.ts",
+            "@php artisan wayfinder:generate --no-interaction",
             "bunx tsc --noEmit",
             "phpstan analyse",
             "vendor/bin/vet",
