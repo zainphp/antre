@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use App\Enums\DeviceRole;
 use App\Models\Device;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 
-final class QueueActionData extends Data
+final class QueueActionPayload extends Data
 {
     public function __construct(
         public ?string $counter = null,

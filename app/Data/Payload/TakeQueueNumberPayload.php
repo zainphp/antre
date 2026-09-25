@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use App\Enums\DeviceRole;
 use App\Models\Device;
@@ -12,7 +12,7 @@ use Illuminate\Validation\Rules\File;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 
-final class TakeQueueNumberData extends Data
+final class TakeQueueNumberPayload extends Data
 {
     public function __construct(
         #[MapInputName('request_id')]

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
-use App\Data\LoginData;
+use App\Data\Payload\LoginPayload;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +20,7 @@ final class LoginController extends Controller
         return Inertia::render('login');
     }
 
-    public function store(LoginData $data, Request $request): RedirectResponse
+    public function store(LoginPayload $data, Request $request): RedirectResponse
     {
         if (! Auth::attempt([
             'email' => $data->email,

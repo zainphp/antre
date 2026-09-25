@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Data\AssignDeviceData;
 use App\Data\Frontend\DeviceData;
+use App\Data\Payload\AssignDevicePayload;
 use App\Enums\DeviceStatus;
 use App\Models\Device;
 use App\Models\User;
@@ -59,7 +59,7 @@ final class DeviceController extends Controller
         return back()->with('success', 'Sesi pairing ditutup.');
     }
 
-    public function assign(AssignDeviceData $data, Device $device, #[CurrentUser] User $user, DeviceService $devices): RedirectResponse
+    public function assign(AssignDevicePayload $data, Device $device, #[CurrentUser] User $user, DeviceService $devices): RedirectResponse
     {
         $devices->assign($device, $data, $user);
 

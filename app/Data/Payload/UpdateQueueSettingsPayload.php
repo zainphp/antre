@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 
-final class UpdateQueueSettingsData extends Data
+final class UpdateQueueSettingsPayload extends Data
 {
     /**
      * @param  list<array{label: string, url: string}>  $footerLinks

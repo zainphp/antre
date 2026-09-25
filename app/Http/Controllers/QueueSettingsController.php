@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Data\Frontend\FooterLinkData;
-use App\Data\UpdateQueueSettingsData;
+use App\Data\Payload\UpdateQueueSettingsPayload;
 use App\Events\SettingsChanged;
 use App\Models\Setting;
 use App\Models\User;
@@ -35,7 +35,7 @@ final class QueueSettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateQueueSettingsData $data, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
+    public function update(UpdateQueueSettingsPayload $data, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
     {
         $settings = Setting::current();
         $settings->update([

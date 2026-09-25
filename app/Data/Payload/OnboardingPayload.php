@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Data;
+namespace App\Data\Payload;
 
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 
-final class OnboardingData extends Data
+final class OnboardingPayload extends Data
 {
     public function __construct(
         public string $name,
