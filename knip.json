@@ -1,5 +1,7 @@
 {
     "$schema": "https://unpkg.com/knip@6/schema.json",
+    "entry": ["scripts/check-frontend-filenames.ts"],
+    "ignoreBinaries": ["composer"],
     "ignoreFiles": ["public/sw.js"],
     "ignoreDependencies": ["@fontsource/inter", "agent-browser", "vite"]
 }
