@@ -6,16 +6,16 @@ import { createRoot } from 'react-dom/client';
 import type { ComponentType } from 'react';
 
 import { theme } from '@/theme';
+import { isSentryEnabled } from '@/utils/sentry';
 
 import '../css/app.css';
 
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
 const appName = import.meta.env.VITE_APP_NAME || 'Antre';
-const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 
-if (sentryDsn) {
+if (isSentryEnabled) {
     Sentry.init({
-        dsn: sentryDsn,
+        dsn: import.meta.env.VITE_SENTRY_DSN,
         environment:
             import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
         release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
@@ -48,11 +48,16 @@ void createInertiaApp({
             throw new Error('Root Inertia tidak ditemukan.');
         }
 
-        createRoot(el, {
-            onCaughtError: Sentry.reactErrorHandler(),
-            onRecoverableError: Sentry.reactErrorHandler(),
-            onUncaughtError: Sentry.reactErrorHandler(),
-        }).render(
+        createRoot(
+            el,
+            isSentryEnabled
+                ? {
+                      onCaughtError: Sentry.reactErrorHandler(),
+                      onRecoverableError: Sentry.reactErrorHandler(),
+                      onUncaughtError: Sentry.reactErrorHandler(),
+                  }
+                : {},
+        ).render(
             <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <App {...props} />
