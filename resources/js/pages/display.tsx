@@ -73,6 +73,12 @@ export default function Display({
                             <Box
                                 component="article"
                                 className={`display-counter-card ${counter.current ? 'has-current' : ''} ${isLatest ? 'is-latest' : ''}`}
+                                sx={{
+                                    '--display-number-length': Math.max(
+                                        4,
+                                        counter.current?.number.length ?? 1,
+                                    ),
+                                }}
                                 key={counter.name}
                                 aria-label={`${counter.name}: ${counter.current?.number ?? 'belum ada panggilan'}`}
                             >
