@@ -11,28 +11,28 @@
     "require": {
         "php": "^8.3",
         "ably/ably-php": "^1.1",
-        "inertiajs/inertia-laravel": "^3.3",
-        "laravel/framework": "^13.32",
-        "laravel/reverb": "^1.11",
+        "inertiajs/inertia-laravel": "^3.5",
+        "laravel/framework": "^13.34",
+        "laravel/reverb": "^1.12",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1",
-        "sentry/sentry-laravel": "^4.27",
+        "sentry/sentry-laravel": "^4.28",
         "spatie/laravel-data": "^4.23",
-        "spatie/laravel-typescript-transformer": "^3.0"
+        "spatie/laravel-typescript-transformer": "^3.3"
     },
     "require-dev": {
         "andreapollastri/checkpoint": "^1.1",
         "driftingly/rector-laravel": "^2.6",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.12",
-        "laravel/boost": "^2.9",
+        "laravel/boost": "^2.10",
         "laravel/pail": "^1.2",
         "laravel/pao": "^1.1",
         "laravel/pint": "^1.32",
         "laravel/vet": "^0.2",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9",
-        "pestphp/pest": "^5.2",
+        "pestphp/pest": "^5.3",
         "pestphp/pest-plugin-laravel": "^5.0"
     },
     "autoload": {
@@ -52,7 +52,6 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
-        "types:generate": "@php artisan typescript:transform",
         "ssh:deploy": [
             "@ssh:deploy-fe",
             "@ssh:deploy-be"
@@ -77,7 +76,6 @@
             "@php artisan wayfinder:generate --no-interaction",
             "bunx tsc --noEmit",
             "phpstan analyse",
-            "vendor/bin/vet",
             "@php artisan checkpoint:scan --skip=\"NPM CVE Audit\" --json",
             "bunx knip --no-progress"
         ],

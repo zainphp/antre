@@ -1,46 +1,49 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vp build",
-        "dev": "vp dev",
-        "quality": "composer quality"
-    },
-    "dependencies": {
-        "@emotion/react": "^11.14.0",
-        "@emotion/styled": "^11.14.1",
-        "@fontsource/inter": "^5.3.0",
-        "@inertiajs/react": "^3.7.1",
-        "@inertiajs/vite": "^3.7.1",
-        "@mui/icons-material": "^9.4.0",
-        "@mui/material": "^9.4.0",
-        "@sentry/react": "^10.75.0",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "@vitejs/plugin-react": "^6.1.1",
-        "laravel-echo": "^2.5.0",
-        "laravel-vite-plugin": "^3.2.0",
-        "pusher-js": "^8.6.0",
-        "qrcode.react": "^4.2.0",
-        "react": "^19.3.0",
-        "react-dom": "^19.3.0",
-        "typescript": "^7.0.2"
-    },
-    "devDependencies": {
-        "@laravel/vite-plugin-wayfinder": "^0.1.10",
-        "@rolldown/plugin-babel": "^0.2.4",
-        "@types/node": "^26.6.2",
-        "agent-browser": "^0.38.1",
-        "babel-plugin-react-compiler": "^1.0.0",
-        "fontaine": "^0.8.2",
-        "knip": "^6.38.0",
-        "vite-plugin-zip-pack": "^1.2.4",
-        "vite-plus": "^0.3.3"
-    },
-    "optionalDependencies": {
-        "@laravel/multiplex": "^0.4.3",
-        "@rollup/rollup-linux-x64-gnu": "4.9.5"
-    },
-    "packageManager": "bun@1.4.2"
+  "$schema": "https://www.schemastore.org/package.json",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vp build",
+    "dev": "vp dev",
+    "quality": "composer quality"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/inter": "^5.3.0",
+    "@inertiajs/react": "^3.8.0",
+    "@inertiajs/vite": "^3.8.0",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
+    "@sentry/react": "^10.76.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "laravel-echo": "^2.5.0",
+    "laravel-vite-plugin": "^3.2.0",
+    "pusher-js": "^8.6.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@laravel/vite-plugin-wayfinder": "^0.1.10",
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@types/node": "^26.6.4",
+    "agent-browser": "^0.38.2",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "fontaine": "^0.8.2",
+    "knip": "^6.39.0",
+    "vite-plugin-zip-pack": "^1.2.4",
+    "vite-plus": "^0.3.3"
+  },
+  "optionalDependencies": {
+    "@laravel/multiplex": "^0.4.5",
+    "@rollup/rollup-linux-x64-gnu": "4.9.5"
+  },
+  "packageManager": "bun@1.4.2",
+  "trustedDependencies": [
+    "agent-browser"
+  ]
 }
