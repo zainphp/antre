@@ -15,9 +15,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConnectionBadge } from '@/components/connection-badge';
 import { AssignedStep } from '@/components/queue-terminal/assigned-step';
 import {
-    BluetoothPrinterBadge,
-    type BluetoothPrinterState,
-} from '@/components/queue-terminal/bluetooth-printer-badge';
+    PrinterConnectionBadge,
+    type PrinterConnectionState,
+} from '@/components/queue-terminal/printer-connection-badge';
 import { CameraStep } from '@/components/queue-terminal/camera-step';
 import { ReadyStep } from '@/components/queue-terminal/ready-step';
 import { ReviewStep } from '@/components/queue-terminal/review-step';
@@ -35,6 +35,10 @@ import {
     printQueueTicket,
     repairWebBluetoothPrinter,
     savePrinterSettings,
+    supportsWebUsb,
+    connectUsbPrinter,
+    getUsbPrinterState,
+    subscribeUsbPrinter,
     type PrinterSettings,
 } from '@/services/printer';
 import { useOnlineState } from '@/hooks/use-online-state';
@@ -57,7 +61,9 @@ export default function QueueTerminal({
     const [printerSettings, setPrinterSettings] = useState<PrinterSettings>(
         () => loadPrinterSettings(),
     );
-    const [printerState, setPrinterState] = useState<BluetoothPrinterState>(
+    const [usbState, setUsbState] = useState(getUsbPrinterState);
+    useEffect(() => subscribeUsbPrinter(setUsbState), []);
+    const [printerState, setPrinterState] = useState<PrinterConnectionState>(
         printerSettings.mode === 'web-bluetooth'
             ? 'RECONNECTING'
             : 'DISCONNECTED',
@@ -73,7 +79,21 @@ export default function QueueTerminal({
     const printerConfigured =
         printerSettings.mode !== null &&
         (printerSettings.mode !== 'android-intent' ||
-            printerSettings.androidApp !== null);
+            printerSettings.androidApp !== null) &&
+        (printerSettings.mode !== 'web-usb' ||
+            (supportsWebUsb() && printerSettings.usbDevice !== null));
+
+    const repairUsb = (): void => {
+        setError(null);
+        void connectUsbPrinter(printerSettings.usbDevice).catch(
+            (reason: unknown) =>
+                setError(
+                    reason instanceof Error
+                        ? reason.message
+                        : 'Printer USB belum dapat dihubungkan.',
+                ),
+        );
+    };
 
     const reconnectBluetooth = useCallback((): void => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -157,6 +177,13 @@ export default function QueueTerminal({
     }, []);
 
     const requestNumber = async () => {
+        if (
+            printerSettings.mode === 'web-usb' &&
+            getUsbPrinterState() !== 'CONNECTED'
+        ) {
+            setError('Hubungkan ulang printer USB sebelum mengambil nomor.');
+            return;
+        }
         setBusy(true);
         setError(null);
         try {
@@ -240,10 +267,18 @@ export default function QueueTerminal({
                             state={online ? 'CONNECTED' : 'DISCONNECTED'}
                         />
                         {printerSettings.mode === 'web-bluetooth' && (
-                            <BluetoothPrinterBadge
+                            <PrinterConnectionBadge
                                 name={printerSettings.bluetoothDeviceName}
                                 state={printerState}
                                 onReconnect={repairBluetooth}
+                            />
+                        )}
+                        {printerSettings.mode === 'web-usb' && (
+                            <PrinterConnectionBadge
+                                usb
+                                name={printerSettings.usbDevice?.name ?? null}
+                                state={usbState}
+                                onReconnect={repairUsb}
                             />
                         )}
                         <IconButton
@@ -305,7 +340,12 @@ export default function QueueTerminal({
                     <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
                         {step === 'ready' && (
                             <ReadyStep
-                                disabled={!online || !printerConfigured}
+                                disabled={
+                                    !online ||
+                                    !printerConfigured ||
+                                    (printerSettings.mode === 'web-usb' &&
+                                        usbState !== 'CONNECTED')
+                                }
                                 printerConfigured={printerConfigured}
                                 photoRequired={photoRequired}
                                 onStart={() => {
@@ -351,6 +391,9 @@ export default function QueueTerminal({
                         )}
                         {step === 'assigned' && assigned && (
                             <AssignedStep
+                                holdUntilPrinted={
+                                    printerSettings.mode === 'web-usb'
+                                }
                                 number={assigned.number}
                                 autoPrint={
                                     printerSettings.mode !== 'android-intent'

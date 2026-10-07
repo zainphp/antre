@@ -15,16 +15,22 @@ export function AssignedStep({
     onPrint,
     onDone,
     autoPrint = true,
+    holdUntilPrinted = false,
 }: {
     number: string;
     onPrint: () => Promise<void>;
     onDone: () => void;
     autoPrint?: boolean;
+    holdUntilPrinted?: boolean;
 }) {
     const [printing, setPrinting] = useState(false);
     const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
     const [printStarted, setPrintStarted] = useState(false);
+    const [printSucceeded, setPrintSucceeded] = useState(false);
+    const holdCountdown =
+        holdUntilPrinted &&
+        (!printSucceeded || printing || printError !== null);
     const [autoReturnCancelled, setAutoReturnCancelled] = useState(!autoPrint);
     const [countdownVersion, setCountdownVersion] = useState(0);
     const autoPrintStarted = useRef(false);
@@ -43,7 +49,7 @@ export function AssignedStep({
     }, [printCooldown]);
 
     useEffect(() => {
-        if (autoReturnCancelled) {
+        if (autoReturnCancelled || holdCountdown) {
             return;
         }
 
@@ -65,16 +71,18 @@ export function AssignedStep({
                 window.removeEventListener(event, resetTimeout),
             );
         };
-    }, [autoReturnCancelled, onDone]);
+    }, [autoReturnCancelled, holdCountdown, onDone]);
 
     const print = useCallback(async (): Promise<void> => {
         setPrinting(true);
         setPrintCooldown(true);
         setPrintStarted(true);
         setPrintError(null);
+        setPrintSucceeded(false);
 
         try {
             await onPrint();
+            setPrintSucceeded(true);
         } catch (reason) {
             setPrintError(
                 reason instanceof Error
@@ -101,7 +109,7 @@ export function AssignedStep({
             role="status"
             aria-live="polite"
         >
-            {!autoReturnCancelled && (
+            {!autoReturnCancelled && !holdCountdown && (
                 <Box
                     aria-hidden="true"
                     sx={{
@@ -155,6 +163,7 @@ export function AssignedStep({
                     variant="contained"
                     size="large"
                     onClick={onDone}
+                    disabled={holdUntilPrinted && printing}
                 >
                     Selesai
                 </Button>

@@ -3,6 +3,8 @@ import BluetoothRounded from '@mui/icons-material/BluetoothRounded';
 import LaunchRounded from '@mui/icons-material/LaunchRounded';
 import PrintRounded from '@mui/icons-material/PrintRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
+import UsbRounded from '@mui/icons-material/UsbRounded';
+import Switch from '@mui/material/Switch';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -17,7 +19,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { PrinterTestPreview } from '@/components/printer-test-preview';
 import { queueTerminal } from '@/routes';
@@ -31,6 +33,10 @@ import {
     printPrinterTest,
     savePrinterSettings,
     supportsWebBluetooth,
+    supportsWebUsb,
+    connectUsbPrinter,
+    getUsbPrinterState,
+    subscribeUsbPrinter,
     type PrintImageMode,
     type PrinterMode,
     type PrinterSettings,
@@ -57,6 +63,9 @@ export default function QueueTerminalSettings({
         new Date().toISOString(),
     );
     const bluetoothAvailable = supportsWebBluetooth();
+    const usbAvailable = supportsWebUsb();
+    const [usbState, setUsbState] = useState(getUsbPrinterState);
+    useEffect(() => subscribeUsbPrinter(setUsbState), []);
     const operatingSystem = getPrinterOperatingSystem();
     const isAndroid = operatingSystem === 'android';
     const androidApp = androidPrinterApps.find(
@@ -103,6 +112,31 @@ export default function QueueTerminalSettings({
                     reason instanceof Error
                         ? reason.message
                         : 'Printer BLE belum dapat dihubungkan.',
+            });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const connectUsb = async (remembered = false): Promise<void> => {
+        setBusy(true);
+        setFeedback(null);
+        try {
+            const device = await connectUsbPrinter(
+                remembered ? settings.usbDevice : null,
+            );
+            updateSettings({ mode: 'web-usb', usbDevice: device });
+            setFeedback({
+                severity: 'success',
+                message: `Printer ${device.name} berhasil dihubungkan.`,
+            });
+        } catch (reason) {
+            setFeedback({
+                severity: 'error',
+                message:
+                    reason instanceof Error
+                        ? reason.message
+                        : 'Printer USB belum dapat dihubungkan.',
             });
         } finally {
             setBusy(false);
@@ -241,7 +275,7 @@ export default function QueueTerminalSettings({
                                 </Alert>
                             )}
 
-                            <FormControl fullWidth>
+                            <FormControl fullWidth disabled={busy}>
                                 <Typography
                                     component="span"
                                     sx={{
@@ -290,6 +324,17 @@ export default function QueueTerminalSettings({
                                         />
                                     )}
                                     <PrinterModeOption
+                                        value="web-usb"
+                                        selected={settings.mode === 'web-usb'}
+                                        title="USB langsung (WebUSB)"
+                                        description={
+                                            usbAvailable
+                                                ? 'Cetak langsung tanpa dialog cetak ke printer USB ESC/POS.'
+                                                : 'Memerlukan HTTPS dan browser yang mendukung WebUSB, seperti Chrome Android.'
+                                        }
+                                        disabled={!usbAvailable}
+                                    />
+                                    <PrinterModeOption
                                         value="web-bluetooth"
                                         selected={
                                             settings.mode === 'web-bluetooth'
@@ -307,7 +352,7 @@ export default function QueueTerminalSettings({
 
                             <Divider />
 
-                            <FormControl fullWidth>
+                            <FormControl fullWidth disabled={busy}>
                                 <Typography
                                     component="span"
                                     sx={{
@@ -388,7 +433,7 @@ export default function QueueTerminalSettings({
                             {isAndroid &&
                                 settings.mode === 'android-intent' && (
                                     <PrinterInstructions>
-                                        <FormControl fullWidth>
+                                        <FormControl fullWidth disabled={busy}>
                                             <Typography
                                                 component="label"
                                                 htmlFor="android-printer-app"
@@ -498,6 +543,65 @@ export default function QueueTerminalSettings({
                                     </PrinterInstructions>
                                 )}
 
+                            {settings.mode === 'web-usb' && (
+                                <PrinterInstructions>
+                                    <Alert severity="info">
+                                        Hubungkan printer lewat USB/OTG dan
+                                        izinkan akses. Tiket dicetak otomatis
+                                        setelah nomor dibuat. Gambar selalu
+                                        dicetak hitam putih.
+                                    </Alert>
+                                    <Typography variant="body2">
+                                        {usbState === 'CONNECTED'
+                                            ? 'Printer terhubung'
+                                            : usbState === 'RECONNECTING'
+                                              ? 'Menyambungkan printer'
+                                              : 'Printer belum terhubung'}
+                                        {settings.usbDevice
+                                            ? `: ${settings.usbDevice.name}`
+                                            : ''}
+                                    </Typography>
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'row' }}
+                                        spacing={1}
+                                    >
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<UsbRounded />}
+                                            disabled={busy || !usbAvailable}
+                                            onClick={() => void connectUsb()}
+                                        >
+                                            Hubungkan printer
+                                        </Button>
+                                        {settings.usbDevice && (
+                                            <Button
+                                                variant="outlined"
+                                                disabled={busy || !usbAvailable}
+                                                onClick={() =>
+                                                    void connectUsb(true)
+                                                }
+                                            >
+                                                Hubungkan ulang
+                                            </Button>
+                                        )}
+                                    </Stack>
+                                    <FormControlLabel
+                                        control={
+                                            <Switch
+                                                checked={settings.usbAutoCut}
+                                                disabled={busy}
+                                                onChange={(_, checked) =>
+                                                    updateSettings({
+                                                        usbAutoCut: checked,
+                                                    })
+                                                }
+                                            />
+                                        }
+                                        label="Potong otomatis"
+                                    />
+                                </PrinterInstructions>
+                            )}
+
                             {settings.mode === 'web-bluetooth' && (
                                 <PrinterInstructions>
                                     <Alert severity="warning">
@@ -571,6 +675,7 @@ export default function QueueTerminalSettings({
                                     ))}
                                 </Stack>
                                 <PrinterTestPreview
+                                    usb={settings.mode === 'web-usb'}
                                     brandName={brandName}
                                     createdAt={testCreatedAt}
                                     imageMode={settings.imageMode}

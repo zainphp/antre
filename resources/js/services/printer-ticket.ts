@@ -14,6 +14,14 @@ const thermalPhotoWidthMm: Record<PaperWidth, number> = {
     80: 32,
 };
 
+export const ticketLayout = {
+    bodyWidth: { 58: 50, 80: 72 },
+    photoWidth: thermalPhotoWidthMm,
+    numberSize: { 58: 48, 80: 56 },
+    brandSize: 13,
+    sessionSize: 11,
+} as const;
+
 export function buildTicketMarkup(
     number: string,
     createdAt: string | null,
@@ -26,7 +34,7 @@ export function buildTicketMarkup(
     const photoMarkup = photo
         ? `<img class="ticket-photo" src="${escapeHtml(photo)}" alt="Foto pelanggan" />`
         : '';
-    const ticketWidth = paperWidth === 58 ? '50mm' : '72mm';
+    const ticketWidth = `${ticketLayout.bodyWidth[paperWidth]}mm`;
     const photoWidth = thermalPhotoWidthMm[paperWidth];
     const ticketStyles = [
         '@page{margin:0}',
@@ -35,12 +43,12 @@ export function buildTicketMarkup(
         'h1,h2,p,strong{margin:0;padding:0;border:0;font-weight:400}',
         'img{border:0;max-width:100%;vertical-align:middle}',
         `body{width:${ticketWidth};font-family:Arial,sans-serif;font-size:16px;line-height:1.2;text-align:center;margin:0 auto;padding:4mm 2mm;color:#17211c}`,
-        'h1{font-size:13px;line-height:1.25;margin:0 0 3px}',
-        'h2{font-size:11px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}',
+        `h1{font-size:${ticketLayout.brandSize}px;line-height:1.25;margin:0 0 3px}`,
+        `h2{font-size:${ticketLayout.sessionSize}px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}`,
         `.ticket-photo{display:block;width:${photoWidth}mm;`,
         `height:${photoWidth}mm;object-fit:cover;border-radius:3mm;`,
         `filter:${getPhotoFilter(imageMode)};margin:0 auto 8px}`,
-        `.ticket-number{display:block;font:700 ${paperWidth === 58 ? '48px' : '56px'} Georgia,serif;line-height:1;margin:8px 0 10px}`,
+        `.ticket-number{display:block;font:700 ${ticketLayout.numberSize[paperWidth]}px Georgia,serif;line-height:1;margin:8px 0 10px}`,
         '.ticket-note{font-size:10px;line-height:1.35;margin:0 0 5px}',
         '.ticket-date{font-size:9px;color:#56645d;margin:0}',
     ].join('');
@@ -144,6 +152,18 @@ async function buildEscPosImage(
         }
     }
 
+    return packEscPosRaster(raster, width, height);
+}
+
+export function packEscPosRaster(
+    raster: Uint8Array,
+    width: number,
+    height: number,
+): Uint8Array {
+    const bytesPerRow = Math.ceil(width / 8);
+    if (height > 65535 || raster.length !== bytesPerRow * height) {
+        throw new Error('Ukuran gambar tiket tidak didukung printer.');
+    }
     const command = new Uint8Array(8 + raster.length);
     command.set([
         0x1d,
@@ -180,7 +200,7 @@ function getLuminance(
     );
 }
 
-function loadImage(source: string): Promise<HTMLImageElement> {
+export function loadImage(source: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => resolve(image);
