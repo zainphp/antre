@@ -22,7 +22,8 @@ import { useState } from 'react';
 import { PrinterTestPreview } from '@/components/printer-test-preview';
 import { queueTerminal } from '@/routes';
 import {
-    androidPrintInstallUrl,
+    androidPrinterApps,
+    getAndroidPrintInstallUrl,
     getPrinterOperatingSystem,
     loadPrinterSettings,
     openAndroidBluetoothSettings,
@@ -58,6 +59,9 @@ export default function QueueTerminalSettings({
     const bluetoothAvailable = supportsWebBluetooth();
     const operatingSystem = getPrinterOperatingSystem();
     const isAndroid = operatingSystem === 'android';
+    const androidApp = androidPrinterApps.find(
+        (app) => app.id === settings.androidApp,
+    );
     const operatingSystemLabel = {
         android: 'Android',
         ios: 'iOS',
@@ -384,11 +388,74 @@ export default function QueueTerminalSettings({
                             {isAndroid &&
                                 settings.mode === 'android-intent' && (
                                     <PrinterInstructions>
+                                        <FormControl fullWidth>
+                                            <Typography
+                                                component="label"
+                                                htmlFor="android-printer-app"
+                                                sx={{ mb: 1 }}
+                                            >
+                                                Aplikasi cetak
+                                            </Typography>
+                                            <Box
+                                                component="select"
+                                                id="android-printer-app"
+                                                value={
+                                                    settings.androidApp ?? ''
+                                                }
+                                                disabled={busy}
+                                                onChange={(event) =>
+                                                    updateSettings({
+                                                        androidApp:
+                                                            androidPrinterApps.find(
+                                                                (app) =>
+                                                                    app.id ===
+                                                                    event.target
+                                                                        .value,
+                                                            )?.id ?? null,
+                                                    })
+                                                }
+                                                sx={{
+                                                    minHeight: 48,
+                                                    p: 1.5,
+                                                    borderRadius: 2,
+                                                    border: '1px solid var(--line)',
+                                                    backgroundColor: 'white',
+                                                    font: 'inherit',
+                                                    width: '100%',
+                                                }}
+                                            >
+                                                <option value="" disabled>
+                                                    Pilih aplikasi cetak
+                                                </option>
+                                                {androidPrinterApps.map(
+                                                    (app) => (
+                                                        <option
+                                                            key={app.id}
+                                                            value={app.id}
+                                                        >
+                                                            {app.name}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </Box>
+                                        </FormControl>
                                         <Alert severity="info">
-                                            Hubungkan perangkat di pengaturan
-                                            Bluetooth Android, lalu pilih
-                                            aplikasi yang mendukung pencetakan.
+                                            Atur koneksi dan ukuran kertas di
+                                            aplikasi yang dipilih, lalu tekan
+                                            Cetak tiket. Android dapat meminta
+                                            izin membuka aplikasi.
                                         </Alert>
+                                        {settings.androidApp ===
+                                            'quick-printer' && (
+                                            <Alert severity="info">
+                                                Quick Printer memakai format
+                                                teks dan foto dari URL publik;
+                                                foto kamera belum didukung. Atur
+                                                kertas dan gambar di Quick
+                                                Printer. Versi gratis
+                                                menambahkan pesan pada tiket.
+                                            </Alert>
+                                        )}
                                         <Stack
                                             direction={{
                                                 xs: 'column',
@@ -396,25 +463,37 @@ export default function QueueTerminalSettings({
                                             }}
                                             spacing={1}
                                         >
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={<BluetoothRounded />}
-                                                onClick={
-                                                    openAndroidBluetoothSettings
-                                                }
-                                            >
-                                                Buka Bluetooth
-                                            </Button>
-                                            <Button
-                                                component="a"
-                                                href={androidPrintInstallUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                variant="outlined"
-                                                startIcon={<LaunchRounded />}
-                                            >
-                                                Pasang aplikasi cetak
-                                            </Button>
+                                            {(settings.androidApp === 'rawbt' ||
+                                                settings.androidApp ===
+                                                    'looped-bluetooth') && (
+                                                <Button
+                                                    variant="outlined"
+                                                    startIcon={
+                                                        <BluetoothRounded />
+                                                    }
+                                                    onClick={
+                                                        openAndroidBluetoothSettings
+                                                    }
+                                                >
+                                                    Buka Bluetooth
+                                                </Button>
+                                            )}
+                                            {androidApp && (
+                                                <Button
+                                                    component="a"
+                                                    href={getAndroidPrintInstallUrl(
+                                                        androidApp.id,
+                                                    )}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    variant="outlined"
+                                                    startIcon={
+                                                        <LaunchRounded />
+                                                    }
+                                                >
+                                                    Pasang {androidApp.name}
+                                                </Button>
+                                            )}
                                         </Stack>
                                     </PrinterInstructions>
                                 )}

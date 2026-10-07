@@ -70,7 +70,10 @@ export default function QueueTerminal({
     const [busy, setBusy] = useState(false);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
     const [cameraAttempt, setCameraAttempt] = useState(0);
-    const printerConfigured = printerSettings.mode !== null;
+    const printerConfigured =
+        printerSettings.mode !== null &&
+        (printerSettings.mode !== 'android-intent' ||
+            printerSettings.androidApp !== null);
 
     const reconnectBluetooth = useCallback((): void => {
         if (printerSettings.mode !== 'web-bluetooth') {
@@ -349,6 +352,9 @@ export default function QueueTerminal({
                         {step === 'assigned' && assigned && (
                             <AssignedStep
                                 number={assigned.number}
+                                autoPrint={
+                                    printerSettings.mode !== 'android-intent'
+                                }
                                 onPrint={() =>
                                     printQueueTicket(
                                         assigned.number,
