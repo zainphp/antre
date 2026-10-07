@@ -4,6 +4,7 @@ import {
     printerTestPhotoUrl,
 } from '@/services/printer-ticket';
 import type { PaperWidth, PrintImageMode } from '@/services/printer-ticket';
+import { formatDateTime } from '@/utils/format';
 
 export {
     buildTicketMarkup,
@@ -18,6 +19,7 @@ export type PrinterMode =
     | 'web-bluetooth';
 export type PrinterSettings = {
     mode: PrinterMode | null;
+    androidApp: AndroidPrinterApp | null;
     paperWidth: PaperWidth;
     imageMode: PrintImageMode;
     bluetoothDeviceId: string | null;
@@ -70,7 +72,39 @@ type BluetoothApi = {
 };
 
 const STORAGE_KEY = 'antre.queue-terminal.printer';
-const androidPrintPackage = 'ru.a402d.rawbtprinter';
+export const androidPrinterApps = [
+    {
+        id: 'rawbt',
+        name: 'RawBT',
+        package: 'ru.a402d.rawbtprinter',
+        transport: null,
+    },
+    {
+        id: 'quick-printer',
+        name: 'Quick Printer',
+        package: 'pe.diegoveloper.printerserverapp',
+        transport: null,
+    },
+    {
+        id: 'looped-usb',
+        name: 'ESC POS USB — Looped Labs',
+        package: 'com.loopedlabs.usbprintservice',
+        transport: 'usb',
+    },
+    {
+        id: 'looped-bluetooth',
+        name: 'ESC POS Bluetooth — Looped Labs',
+        package: 'com.loopedlabs.escposprintservice',
+        transport: 'bt',
+    },
+    {
+        id: 'looped-wifi',
+        name: 'ESC POS Wi-Fi — Looped Labs',
+        package: 'com.loopedlabs.netprintservice',
+        transport: 'net',
+    },
+] as const;
+export type AndroidPrinterApp = (typeof androidPrinterApps)[number]['id'];
 const bluetoothServiceUuids = [
     '000018f0-0000-1000-8000-00805f9b34fb',
     '0000ffe0-0000-1000-8000-00805f9b34fb',
@@ -125,6 +159,7 @@ export function getPrinterOperatingSystem(): PrinterOperatingSystem {
 export function loadPrinterSettings(): PrinterSettings {
     const defaults: PrinterSettings = {
         mode: null,
+        androidApp: 'rawbt',
         paperWidth: 58,
         imageMode: 'black-and-white',
         bluetoothDeviceId: null,
@@ -143,6 +178,12 @@ export function loadPrinterSettings(): PrinterSettings {
 
         return {
             mode,
+            androidApp:
+                stored.androidApp === undefined
+                    ? defaults.androidApp
+                    : (androidPrinterApps.find(
+                          (app) => app.id === stored.androidApp,
+                      )?.id ?? null),
             paperWidth: stored.paperWidth === 80 ? 80 : 58,
             imageMode: isPrintImageMode(stored.imageMode)
                 ? stored.imageMode
@@ -259,6 +300,7 @@ export async function printQueueTicket(
             photo,
             settings.paperWidth,
             selectedImageMode,
+            settings.androidApp,
         );
 
         return;
@@ -325,7 +367,31 @@ export function openAndroidBluetoothSettings(): void {
     );
 }
 
-export const androidPrintInstallUrl = `https://play.google.com/store/apps/details?id=${androidPrintPackage}`;
+export function getAndroidPrintInstallUrl(app: AndroidPrinterApp): string {
+    const profile = androidPrinterApps.find((profile) => profile.id === app)!;
+    return `https://play.google.com/store/apps/details?id=${profile.package}`;
+}
+
+export function buildAndroidPrintIntent(
+    app: AndroidPrinterApp,
+    payload: string,
+): string {
+    const profile = androidPrinterApps.find((profile) => profile.id === app)!;
+    const fallback = encodeURIComponent(getAndroidPrintInstallUrl(app));
+
+    if (app === 'quick-printer') {
+        return `intent://${encodeURIComponent(payload)}#Intent;scheme=quickprinter;package=${profile.package};S.browser_fallback_url=${fallback};end`;
+    }
+
+    if (app === 'rawbt') {
+        return `intent:base64,${payload}#Intent;scheme=rawbt;package=${profile.package};S.browser_fallback_url=${fallback};end`;
+    }
+
+    const source = encodeURIComponent(
+        `'data:text/html;charset=utf-8,${encodeURIComponent(payload)}'`,
+    ).replace(/'/g, '%27');
+    return `intent://escpos.org/escpos/${profile.transport}/print?srcTp=uri&srcObj=html&src=${source}#Intent;scheme=print;package=${profile.package};S.browser_fallback_url=${fallback};end`;
+}
 
 async function printWithWebBluetooth(
     number: string,
@@ -372,7 +438,48 @@ async function printWithAndroidIntent(
     photo: string | null,
     paperWidth: PaperWidth,
     imageMode: PrintImageMode,
+    app: AndroidPrinterApp | null,
 ): Promise<void> {
+    if (app === null) {
+        throw new Error('Pilih aplikasi cetak di pengaturan printer.');
+    }
+
+    if (app === 'quick-printer') {
+        const photoUrl = photo ? new URL(photo, window.location.href) : null;
+        if (photoUrl && !['http:', 'https:'].includes(photoUrl.protocol)) {
+            throw new Error(
+                'Quick Printer hanya mendukung foto dari URL publik. Untuk foto kamera, pilih Looped Labs atau RawBT.',
+            );
+        }
+        const text = (value: string) => value.replace(/[<>\p{Cc}]/gu, ' ');
+        const commands = [
+            '<PRINTER avoid_dialog><CENTER><NORMAL>',
+            `${text(brandName)}<BR>${text(sessionName)}<BR>`,
+            photoUrl ? `<IMAGE>${photoUrl.href}<BR>` : '',
+            `<BIG><BOLD>${text(number)}<BR><NORMAL><SMALL>`,
+            'Silakan menunggu panggilan Anda.<BR>',
+            `${text(formatDateTime(createdAt))}<BR><BR><BR><CUT>`,
+        ].join('');
+        window.location.assign(buildAndroidPrintIntent(app, commands));
+
+        return;
+    }
+
+    if (app !== 'rawbt') {
+        const markup = buildTicketMarkup(
+            number,
+            createdAt,
+            brandName,
+            sessionName,
+            photo ? new URL(photo, window.location.href).href : null,
+            paperWidth,
+            imageMode,
+        );
+        window.location.assign(buildAndroidPrintIntent(app, markup));
+
+        return;
+    }
+
     const bytes = await buildEscPosTicket(
         number,
         createdAt,
@@ -382,7 +489,7 @@ async function printWithAndroidIntent(
         paperWidth,
         imageMode,
     );
-    window.location.assign(`rawbt:base64,${bytesToBase64(bytes)}`);
+    window.location.assign(buildAndroidPrintIntent(app, bytesToBase64(bytes)));
 }
 
 function printWithIframe(

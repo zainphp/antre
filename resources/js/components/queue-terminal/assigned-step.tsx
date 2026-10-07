@@ -14,16 +14,18 @@ export function AssignedStep({
     number,
     onPrint,
     onDone,
+    autoPrint = true,
 }: {
     number: string;
     onPrint: () => Promise<void>;
     onDone: () => void;
+    autoPrint?: boolean;
 }) {
     const [printing, setPrinting] = useState(false);
     const [printCooldown, setPrintCooldown] = useState(false);
     const [printError, setPrintError] = useState<string | null>(null);
     const [printStarted, setPrintStarted] = useState(false);
-    const [autoReturnCancelled, setAutoReturnCancelled] = useState(false);
+    const [autoReturnCancelled, setAutoReturnCancelled] = useState(!autoPrint);
     const [countdownVersion, setCountdownVersion] = useState(0);
     const autoPrintStarted = useRef(false);
 
@@ -85,13 +87,13 @@ export function AssignedStep({
     }, [onPrint]);
 
     useEffect(() => {
-        if (autoPrintStarted.current) {
+        if (!autoPrint || autoPrintStarted.current) {
             return;
         }
 
         autoPrintStarted.current = true;
         void print();
-    }, [print]);
+    }, [autoPrint, print]);
 
     return (
         <Box
@@ -168,7 +170,9 @@ export function AssignedStep({
                         ? 'Mencetak…'
                         : printCooldown
                           ? 'Tunggu sebentar…'
-                          : 'Ulangi cetak tiket'}
+                          : printStarted
+                            ? 'Ulangi cetak tiket'
+                            : 'Cetak tiket'}
                 </Button>
             </Stack>
             {autoReturnCancelled ? (
