@@ -515,6 +515,7 @@ function printWithIframe(
         return;
     }
 
+    frameWindow.document.open();
     frameWindow.addEventListener('afterprint', () => frame.remove(), {
         once: true,
     });
@@ -526,7 +527,6 @@ function printWithIframe(
         },
         { once: true },
     );
-    frameWindow.document.open();
     frameWindow.document.write(
         buildTicketMarkup(
             number,
@@ -565,6 +565,7 @@ function printWithTicketWindow(
         return;
     }
 
+    popup.document.open();
     popup.addEventListener('afterprint', () => popup.close(), { once: true });
     popup.addEventListener(
         'load',

@@ -58,6 +58,92 @@ void test('iframe printer selection survives saving and reloading settings', () 
     }
 });
 
+void test('browser test printing survives document.open and cleans up only after printing', async () => {
+    const originals = ['window', 'document'].map(
+        (key) =>
+            [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+    );
+
+    try {
+        for (const mode of ['iframe', 'window', 'blocked-window'] as const) {
+            const storage = new Map<string, string>();
+            const listeners = new Map<string, () => void>();
+            let opened = false;
+            let markup = '';
+            let printed = 0;
+            let cleanedUp = 0;
+            const printWindow = {
+                addEventListener: (event: string, listener: () => void) =>
+                    listeners.set(event, listener),
+                focus: () => {},
+                print: () => printed++,
+                close: () => cleanedUp++,
+                document: {
+                    open: () => {
+                        listeners.clear();
+                        opened = true;
+                    },
+                    write: (html: string) => {
+                        if (!opened) {
+                            listeners.clear();
+                        }
+                        markup = html;
+                    },
+                    close: () => {},
+                },
+            };
+            const frame = {
+                setAttribute: () => {},
+                style: { cssText: '' },
+                contentWindow: printWindow,
+                remove: () => cleanedUp++,
+            };
+            Object.defineProperty(globalThis, 'window', {
+                configurable: true,
+                value: {
+                    localStorage: {
+                        getItem: (key: string) => storage.get(key) ?? null,
+                        setItem: (key: string, value: string) =>
+                            storage.set(key, value),
+                    },
+                    open: () =>
+                        mode === 'blocked-window' ? null : printWindow,
+                },
+            });
+            Object.defineProperty(globalThis, 'document', {
+                configurable: true,
+                value: {
+                    createElement: () => frame,
+                    body: { append: () => {} },
+                },
+            });
+            savePrinterSettings({
+                ...loadPrinterSettings(),
+                mode: mode === 'iframe' ? 'iframe' : 'window',
+            });
+
+            await printPrinterTest('Antre', 'Sesi', 'grayscale');
+            assert.ok(markup.includes('UJI'));
+            assert.ok(markup.includes('/images/printer-test-photo.jpg'));
+            assert.equal(printed, 0);
+            assert.equal(cleanedUp, 0);
+            listeners.get('load')?.();
+            assert.equal(printed, 1, `${mode} must print after loading`);
+            assert.equal(cleanedUp, 0);
+            listeners.get('afterprint')?.();
+            assert.equal(cleanedUp, 1);
+        }
+    } finally {
+        for (const [key, original] of originals) {
+            if (original) {
+                Object.defineProperty(globalThis, key, original);
+            } else {
+                Reflect.deleteProperty(globalThis, key);
+            }
+        }
+    }
+});
+
 void test('selected USB app receives the ticket and test photo without changing printer apps', async () => {
     const originals = ['window', 'navigator'].map(
         (key) =>
