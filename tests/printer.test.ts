@@ -10,7 +10,7 @@ import {
     savePrinterSettings,
 } from '../resources/js/services/printer';
 
-test('iframe printer selection survives saving and reloading settings', () => {
+void test('iframe printer selection survives saving and reloading settings', () => {
     const originalWindow = Object.getOwnPropertyDescriptor(
         globalThis,
         'window',
@@ -58,7 +58,7 @@ test('iframe printer selection survives saving and reloading settings', () => {
     }
 });
 
-test('selected USB app receives the ticket and test photo without changing printer apps', async () => {
+void test('selected USB app receives the ticket and test photo without changing printer apps', async () => {
     const originals = ['window', 'navigator'].map(
         (key) =>
             [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
@@ -188,7 +188,7 @@ test('selected USB app receives the ticket and test photo without changing print
     }
 });
 
-test('RawBT intent keeps binary data and provides its own installation fallback', () => {
+void test('RawBT intent keeps binary data and provides its own installation fallback', () => {
     const payload = 'G0BB+/==';
     assert.equal(
         buildAndroidPrintIntent('rawbt', payload),
@@ -196,7 +196,7 @@ test('RawBT intent keeps binary data and provides its own installation fallback'
     );
 });
 
-test('Quick Printer encodes commands without allowing intent delimiter injection', () => {
+void test('Quick Printer encodes commands without allowing intent delimiter injection', () => {
     const payload = '<CENTER>Café #Intent;scheme=bad;&? +/%<BR><CUT>';
     const [uri, extras] = buildAndroidPrintIntent(
         'quick-printer',
@@ -209,7 +209,7 @@ test('Quick Printer encodes commands without allowing intent delimiter injection
     );
 });
 
-test('Looped Labs intents preserve HTML and target the selected connection app', () => {
+void test('Looped Labs intents preserve HTML and target the selected connection app', () => {
     const markup =
         '<html><body>Antre & café #1; "uji" <img src="data:image/png;base64,AA+/=" /></body></html>';
     const profiles = [
