@@ -521,6 +521,10 @@ function normalizePrinterMode(value: unknown): PrinterMode | null {
         return getDefaultPrinterMode();
     }
 
+    if (value === 'iframe') {
+        return 'iframe';
+    }
+
     if (value === 'android-intent' || value === 'rawbt') {
         return getPrinterOperatingSystem() === 'android'
             ? 'android-intent'
