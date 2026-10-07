@@ -522,6 +522,7 @@ function printWithIframe(
     frameWindow.addEventListener(
         'load',
         () => {
+            sizeTicketPage(frameWindow, paperWidth);
             frameWindow.focus();
             frameWindow.print();
         },
@@ -570,6 +571,7 @@ function printWithTicketWindow(
     popup.addEventListener(
         'load',
         () => {
+            sizeTicketPage(popup, paperWidth);
             popup.focus();
             popup.print();
         },
@@ -587,6 +589,15 @@ function printWithTicketWindow(
         ),
     );
     popup.document.close();
+}
+
+function sizeTicketPage(printWindow: Window, paperWidth: PaperWidth): void {
+    const printDocument = printWindow.document;
+    const height = printDocument.body.getBoundingClientRect().height;
+    const heightMm = Math.ceil(((height + 1) * 25.4) / 96);
+    const style = printDocument.createElement('style');
+    style.textContent = `@page{size:${paperWidth}mm ${heightMm}mm;margin:0}`;
+    printDocument.head.append(style);
 }
 
 function getBluetoothApi(): BluetoothApi | null {

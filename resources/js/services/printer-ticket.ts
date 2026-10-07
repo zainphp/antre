@@ -29,12 +29,12 @@ export function buildTicketMarkup(
     const ticketWidth = paperWidth === 58 ? '50mm' : '72mm';
     const photoWidth = thermalPhotoWidthMm[paperWidth];
     const ticketStyles = [
-        `@page{size:${paperWidth}mm auto;margin:0}`,
+        '@page{margin:0}',
         'html,body{margin:0;padding:0;background:#fff}',
         '*,*::before,*::after{box-sizing:border-box}',
         'h1,h2,p,strong{margin:0;padding:0;border:0;font-weight:400}',
         'img{border:0;max-width:100%;vertical-align:middle}',
-        `body{width:${ticketWidth};font-family:Arial,sans-serif;font-size:16px;line-height:1.2;text-align:center;margin:0 auto;padding:4mm 2mm 12mm;color:#17211c}`,
+        `body{width:${ticketWidth};font-family:Arial,sans-serif;font-size:16px;line-height:1.2;text-align:center;margin:0 auto;padding:4mm 2mm;color:#17211c}`,
         'h1{font-size:13px;line-height:1.25;margin:0 0 3px}',
         'h2{font-size:11px;font-weight:400;line-height:1.3;margin:0 0 10px;color:#56645d}',
         `.ticket-photo{display:block;width:${photoWidth}mm;`,
