@@ -5,6 +5,18 @@ import {
 } from '@/services/printer-ticket';
 import type { PaperWidth, PrintImageMode } from '@/services/printer-ticket';
 import { formatDateTime } from '@/utils/format';
+import { renderUsbTicket } from '@/services/printer-raster';
+import {
+    disconnectUsbPrinter,
+    printUsbTicket,
+    type UsbPrinterIdentity,
+} from '@/services/printer-usb';
+export {
+    connectUsbPrinter,
+    getUsbPrinterState,
+    subscribeUsbPrinter,
+    supportsWebUsb,
+} from '@/services/printer-usb';
 
 export {
     buildTicketMarkup,
@@ -16,6 +28,7 @@ export type PrinterMode =
     | 'iframe'
     | 'window'
     | 'android-intent'
+    | 'web-usb'
     | 'web-bluetooth';
 export type PrinterSettings = {
     mode: PrinterMode | null;
@@ -24,6 +37,8 @@ export type PrinterSettings = {
     imageMode: PrintImageMode;
     bluetoothDeviceId: string | null;
     bluetoothDeviceName: string | null;
+    usbDevice: UsbPrinterIdentity | null;
+    usbAutoCut: boolean;
 };
 export type PrinterOperatingSystem =
     | 'android'
@@ -164,6 +179,8 @@ export function loadPrinterSettings(): PrinterSettings {
         imageMode: 'black-and-white',
         bluetoothDeviceId: null,
         bluetoothDeviceName: null,
+        usbDevice: null,
+        usbAutoCut: true,
     };
 
     if (typeof window === 'undefined') {
@@ -178,6 +195,13 @@ export function loadPrinterSettings(): PrinterSettings {
 
         return {
             mode,
+            usbDevice: validUsbIdentity(stored.usbDevice)
+                ? stored.usbDevice
+                : null,
+            usbAutoCut:
+                typeof stored.usbAutoCut === 'boolean'
+                    ? stored.usbAutoCut
+                    : true,
             androidApp:
                 stored.androidApp === undefined
                     ? defaults.androidApp
@@ -208,6 +232,27 @@ export function savePrinterSettings(settings: PrinterSettings): void {
     }
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    if (settings.mode !== 'web-usb') {
+        void disconnectUsbPrinter();
+    }
+}
+
+function validUsbIdentity(value: unknown): value is UsbPrinterIdentity {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const device = value as Partial<UsbPrinterIdentity>;
+    return (
+        Number.isInteger(device.vendorId) &&
+        device.vendorId! >= 0 &&
+        device.vendorId! <= 65535 &&
+        Number.isInteger(device.productId) &&
+        device.productId! >= 0 &&
+        device.productId! <= 65535 &&
+        (device.serialNumber === null ||
+            typeof device.serialNumber === 'string') &&
+        typeof device.name === 'string'
+    );
 }
 
 export function supportsWebBluetooth(): boolean {
@@ -289,6 +334,26 @@ export async function printQueueTicket(
 
     if (settings.mode === null) {
         throw new Error('Metode cetak belum dikonfigurasi.');
+    }
+
+    if (settings.mode === 'web-usb') {
+        await printUsbTicket(
+            settings.usbDevice,
+            async () =>
+                (
+                    await renderUsbTicket(
+                        number,
+                        createdAt,
+                        brandName,
+                        sessionName,
+                        photo,
+                        settings.paperWidth,
+                        selectedImageMode,
+                    )
+                ).bytes,
+            settings.usbAutoCut,
+        );
+        return;
     }
 
     if (settings.mode === 'android-intent') {
@@ -650,8 +715,8 @@ function normalizePrinterMode(value: unknown): PrinterMode | null {
             : getDefaultPrinterMode();
     }
 
-    if (value === 'web-bluetooth') {
-        return 'web-bluetooth';
+    if (value === 'web-bluetooth' || value === 'web-usb') {
+        return value;
     }
 
     if (value === 'window' || value === 'browser') {

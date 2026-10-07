@@ -1,22 +1,25 @@
 import BluetoothConnectedRounded from '@mui/icons-material/BluetoothConnectedRounded';
 import BluetoothDisabledRounded from '@mui/icons-material/BluetoothDisabledRounded';
+import UsbRounded from '@mui/icons-material/UsbRounded';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export type BluetoothPrinterState =
+export type PrinterConnectionState =
     | 'CONNECTED'
     | 'DISCONNECTED'
     | 'RECONNECTING'
     | 'FAILED';
 
-export function BluetoothPrinterBadge({
+export function PrinterConnectionBadge({
     name,
     state,
     onReconnect,
+    usb = false,
 }: {
     name: string | null;
-    state: BluetoothPrinterState;
+    state: PrinterConnectionState;
     onReconnect?: () => void;
+    usb?: boolean;
 }) {
     const connected = state === 'CONNECTED';
     const reconnecting = state === 'RECONNECTING';
@@ -28,6 +31,8 @@ export function BluetoothPrinterBadge({
             icon={
                 reconnecting ? (
                     <CircularProgress color="inherit" size={16} />
+                ) : usb ? (
+                    <UsbRounded fontSize="small" />
                 ) : connected ? (
                     <BluetoothConnectedRounded fontSize="small" />
                 ) : (
