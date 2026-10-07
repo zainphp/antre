@@ -72,6 +72,9 @@ void test('browser test printing survives document.open and cleans up only after
             let markup = '';
             let printed = 0;
             let cleanedUp = 0;
+            const pageStyles: { textContent: string }[] = [];
+            const paperWidth = mode === 'window' ? 80 : 58;
+            const ticketHeight = mode === 'window' ? 480 : 240;
             const printWindow = {
                 addEventListener: (event: string, listener: () => void) =>
                     listeners.set(event, listener),
@@ -79,6 +82,16 @@ void test('browser test printing survives document.open and cleans up only after
                 print: () => printed++,
                 close: () => cleanedUp++,
                 document: {
+                    body: {
+                        getBoundingClientRect: () => ({
+                            height: ticketHeight,
+                        }),
+                    },
+                    head: {
+                        append: (style: { textContent: string }) =>
+                            pageStyles.push(style),
+                    },
+                    createElement: () => ({ textContent: '' }),
                     open: () => {
                         listeners.clear();
                         opened = true;
@@ -120,6 +133,7 @@ void test('browser test printing survives document.open and cleans up only after
             savePrinterSettings({
                 ...loadPrinterSettings(),
                 mode: mode === 'iframe' ? 'iframe' : 'window',
+                paperWidth,
             });
 
             await printPrinterTest('Antre', 'Sesi', 'grayscale');
@@ -129,6 +143,10 @@ void test('browser test printing survives document.open and cleans up only after
             assert.equal(cleanedUp, 0);
             listeners.get('load')?.();
             assert.equal(printed, 1, `${mode} must print after loading`);
+            assert.equal(
+                pageStyles[0].textContent,
+                `@page{size:${paperWidth}mm ${mode === 'window' ? 128 : 64}mm;margin:0}`,
+            );
             assert.equal(cleanedUp, 0);
             listeners.get('afterprint')?.();
             assert.equal(cleanedUp, 1);
@@ -194,7 +212,7 @@ void test('selected USB app receives the ticket and test photo without changing 
         );
         assert.ok(markup.includes('Antre &amp; Café'));
         assert.ok(markup.includes('A001'));
-        assert.ok(markup.includes('size:80mm'));
+        assert.ok(markup.includes('body{width:72mm'));
         assert.ok(markup.includes('data:image/png;base64,AA=='));
         assert.ok(
             dispatched[0].includes('package=com.loopedlabs.usbprintservice;'),
