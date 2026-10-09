@@ -54,4 +54,6 @@ jobs:
         run: bun run build
 
       - name: ✅ Run tests
-        run: composer test
+        run: |
+          composer test
+          bun test tests/Unit/speech.test.ts

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { ConnectionBadge } from '@/components/connection-badge';
 import { useQueueRealtime } from '@/hooks/use-queue-realtime';
 import { home } from '@/routes';
-import { announceQueue } from '@/services/speech';
+import { announceQueue, stopAnnouncement } from '@/services/speech';
 import { formatDate } from '@/utils/format';
 
 export default function Display({
@@ -23,15 +23,28 @@ export default function Display({
     const [lastAnnouncement, setLastAnnouncement] = useState<string | null>(
         null,
     );
+    const [audioError, setAudioError] = useState<string | null>(null);
+
+    useEffect(() => stopAnnouncement, []);
 
     useEffect(() => {
         const announcement = state.current
             ? `${state.current.id}:${state.current.called_at ?? ''}`
             : null;
 
-        if (announcement && announcement !== lastAnnouncement) {
+        if (!announcement) {
+            stopAnnouncement();
+        } else if (announcement !== lastAnnouncement) {
             setLastAnnouncement(announcement);
-            announceQueue(state.current);
+            void announceQueue(state.current)
+                .then(() => setAudioError(null))
+                .catch((error: Error) => {
+                    setAudioError(
+                        error.name === 'NotAllowedError'
+                            ? 'Browser memblokir suara otomatis. Izinkan autoplay pada pengaturan browser.'
+                            : 'Panggilan suara gagal diputar.',
+                    );
+                });
         }
     }, [lastAnnouncement, state.current]);
 
@@ -49,6 +62,11 @@ export default function Display({
                 </Box>
                 <ConnectionBadge state={realtime.connection} />
             </Box>
+            {audioError && (
+                <Typography role="alert" color="error">
+                    {audioError}
+                </Typography>
+            )}
             <Box component="main" className="display-main" aria-live="polite">
                 <Box className="display-main-heading">
                     <Box>
