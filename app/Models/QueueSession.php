@@ -7,12 +7,15 @@ namespace App\Models;
 use App\Enums\QueueSessionStatus;
 use Database\Factories\QueueSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
@@ -32,6 +35,23 @@ class QueueSession extends Model
 {
     /** @use HasFactory<QueueSessionFactory> */
     use HasFactory, HasUuids;
+
+    use Prunable;
+
+    /** @return Builder<static> */
+    public function prunable(): Builder
+    {
+        return static::query()->where('business_date', '<', today()->subMonthsNoOverflow(3)->toDateString());
+    }
+
+    protected function pruning(): void
+    {
+        $this->entries()->whereNotNull('photo_path')->each(function (QueueEntry $entry): void {
+            if ($entry->photo_path !== null && ! Storage::disk('local')->delete($entry->photo_path)) {
+                throw new \RuntimeException('Could not delete queue photo: '.$entry->photo_path);
+            }
+        });
+    }
 
     /** @return list<string> */
     public function uniqueIds(): array
